@@ -15,7 +15,14 @@ export interface DiscoveredCalendar {
   color: string | null;
 }
 
-export type CalDavErrorKind = "auth" | "http" | "network" | "not-found";
+export type CalDavErrorKind = "auth" | "forbidden" | "conflict" | "http" | "network" | "not-found";
+
+export interface CalDavResource {
+  /** Absolute URL of the .ics resource. */
+  href: string;
+  etag: string | null;
+  ics: string;
+}
 
 export class CalDavError extends Error {
   public constructor(
@@ -35,6 +42,13 @@ const CALENDARS_BODY = `<?xml version="1.0" encoding="UTF-8"?>
 <d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav" xmlns:a="http://apple.com/ns/ical/">
   <d:prop><d:displayname/><d:resourcetype/><c:supported-calendar-component-set/><a:calendar-color/></d:prop>
 </d:propfind>`;
+
+const escapeXmlText = (value: string): string =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** URL for a new event resource inside a calendar collection. */
+export const eventResourceUrl = (calendarUrl: string, uid: string): string =>
+  new URL(`${encodeURIComponent(uid.replace(/[^w@.-]/g, "_"))}.ics`, calendarUrl.endsWith("/") ? calendarUrl : `${calendarUrl}/`).toString();
 
 const formatUtc = (value: Date): string => value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
@@ -121,6 +135,61 @@ export class CalDavClient {
     });
   }
 
+  /** Looks up the resource holding an event (master and overrides share one resource). */
+  public async findByUid(credentials: CalDavCredentials, calendarUrl: string, uid: string): Promise<CalDavResource | null> {
+    const body = `<?xml version="1.0" encoding="UTF-8"?>
+<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+  <d:prop><d:getetag/><c:calendar-data/></d:prop>
+  <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">
+    <c:prop-filter name="UID"><c:text-match collation="i;octet">${escapeXmlText(uid)}</c:text-match></c:prop-filter>
+  </c:comp-filter></c:comp-filter></c:filter>
+</c:calendar-query>`;
+
+    const response = await this.request(credentials, calendarUrl, "REPORT", "1", body);
+    const block = responseBlocks(await response.text()).find((entry) => tagContent(entry, "calendar-data"));
+    if (!block) {
+      return null;
+    }
+
+    const etag = tagContent(block, "getetag");
+    return {
+      href: new URL(unescapeXml(tagContent(block, "href") ?? ""), calendarUrl).toString(),
+      etag: etag ? unescapeXml(etag) : null,
+      ics: unescapeXml(tagContent(block, "calendar-data")!)
+    };
+  }
+
+  /**
+   * Writes an event resource. With an etag the write only succeeds if nobody changed it meanwhile;
+   * with create=true it never overwrites an existing resource.
+   */
+  public async putEvent(credentials: CalDavCredentials, href: string, ics: string, options: { etag?: string | null; create?: boolean }): Promise<void> {
+    const headers: Record<string, string> = { "Content-Type": "text/calendar; charset=utf-8" };
+    if (options.create) {
+      headers["If-None-Match"] = "*";
+    } else if (options.etag) {
+      headers["If-Match"] = options.etag;
+    }
+    await this.write(credentials, href, "PUT", headers, ics);
+  }
+
+  public async deleteEvent(credentials: CalDavCredentials, href: string, etag: string | null): Promise<void> {
+    await this.write(credentials, href, "DELETE", etag ? { "If-Match": etag } : {});
+  }
+
+  private async write(credentials: CalDavCredentials, url: string, method: "PUT" | "DELETE", headers: Record<string, string>, body?: string): Promise<void> {
+    const response = await this.send(credentials, url, { method, headers, body });
+    if (response.status === 412) {
+      throw new CalDavError("conflict", "L'evento è stato modificato altrove nel frattempo. Ricarica e riprova.");
+    }
+    if (response.status === 403) {
+      throw new CalDavError("forbidden", "Non hai il permesso di modificare questo calendario sul provider.");
+    }
+    if (!response.ok) {
+      this.throwForStatus(response.status);
+    }
+  }
+
   private async discoverHomeUrl(credentials: CalDavCredentials): Promise<string> {
     let rootUrl = credentials.serverUrl;
     let response = await this.request(credentials, rootUrl, "PROPFIND", "0", PRINCIPAL_BODY, true);
@@ -162,28 +231,37 @@ export class CalDavClient {
     body: string,
     allowNotFound = false
   ): Promise<Response> {
-    let response: Response;
-    try {
-      response = await this.fetchImpl(url, {
-        method,
-        headers: {
-          Authorization: `Basic ${Buffer.from(`${credentials.username}:${credentials.password}`).toString("base64")}`,
-          Depth: depth,
-          Accept: "application/xml, text/xml",
-          "Content-Type": "application/xml; charset=utf-8"
-        },
-        body,
-        signal: AbortSignal.timeout(this.timeoutMs)
-      });
-    } catch (error) {
-      throw new CalDavError("network", `Server del calendario non raggiungibile: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const response = await this.send(credentials, url, {
+      method,
+      headers: { Depth: depth, Accept: "application/xml, text/xml", "Content-Type": "application/xml; charset=utf-8" },
+      body
+    });
 
     if (!response.ok && !(allowNotFound && (response.status === 404 || response.status === 405))) {
       this.throwForStatus(response.status);
     }
 
     return response;
+  }
+
+  private async send(
+    credentials: CalDavCredentials,
+    url: string,
+    init: { method: string; headers: Record<string, string>; body?: string }
+  ): Promise<Response> {
+    try {
+      return await this.fetchImpl(url, {
+        method: init.method,
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${credentials.username}:${credentials.password}`).toString("base64")}`,
+          ...init.headers
+        },
+        body: init.body,
+        signal: AbortSignal.timeout(this.timeoutMs)
+      });
+    } catch (error) {
+      throw new CalDavError("network", `Server del calendario non raggiungibile: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   private throwForStatus(status: number): never {

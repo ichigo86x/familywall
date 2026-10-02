@@ -13,6 +13,13 @@ export interface RemoteEventRef {
 export const encodeRemoteEventId = (ref: RemoteEventRef): string =>
   REMOTE_PREFIX + Buffer.from(JSON.stringify([ref.calendarId, ref.uid, ref.occurrenceKey])).toString("base64url");
 
+/**
+ * Key of the app-metadata row (members, tag, privacy) for a provider event:
+ * the uid applies to the whole series, uid::occurrence overrides a single occurrence.
+ */
+export const remoteMetaKey = (uid: string, occurrenceKey: string, scope: "occurrence" | "series"): string =>
+  scope === "occurrence" && occurrenceKey ? `${uid}::${occurrenceKey}` : uid;
+
 export const decodeRemoteEventId = (id: string): RemoteEventRef | null => {
   if (!id.startsWith(REMOTE_PREFIX)) {
     return null;

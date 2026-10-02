@@ -1,6 +1,17 @@
 import { useState } from "react";
-import { Button, Checkbox, MessageBar, MessageBarBody } from "@fluentui/react-components";
-import type { EventPrivacy, FamilyEvent, UpdateEventInput, User } from "@familywall/shared";
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
+  MessageBar,
+  MessageBarBody
+} from "@fluentui/react-components";
+import type { EventPrivacy, FamilyEvent, RecurrenceScope, UpdateEventInput, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { DeleteRegular } from "@/lib/fluent-icons";
@@ -65,6 +76,7 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
   const [draft, setDraft] = useState<Draft>(() => (event ? draftFromEvent(event) : newDraft(calendars[0]?.id ?? "")));
   const [feedback, setFeedback] = useState<{ intent: "success" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingScope, setPendingScope] = useState<"save" | "delete" | null>(null);
 
   if (event && (readOnly || event.redacted)) {
     return (
@@ -89,7 +101,6 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
     );
   }
 
-  const isRemote = event?.source === "remote";
   const update = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }));
 
   const toggleAllDay = (allDay: boolean) => {
@@ -107,7 +118,16 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
     });
   };
 
-  const save = async () => {
+  /** Recurring occurrences ask "only this one or the whole series?" before writing. */
+  const withScope = (action: "save" | "delete") => {
+    if (event?.recurring) {
+      setPendingScope(action);
+      return;
+    }
+    void (action === "save" ? save() : remove());
+  };
+
+  const save = async (scope?: RecurrenceScope) => {
     if (!draft.title.trim()) {
       setFeedback({ intent: "error", text: "Il titolo è obbligatorio." });
       return;
@@ -129,7 +149,15 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
         return;
       }
 
-      const input: UpdateEventInput = isRemote ? metadata : { title: draft.title.trim(), allDay: draft.allDay, ...times, ...metadata };
+      // Only changed provider fields are sent, so a metadata-only edit does not rewrite the provider event.
+      const initial = draftFromEvent(event);
+      const timesChanged = draft.start !== initial.start || draft.end !== initial.end || draft.allDay !== initial.allDay;
+      const input: UpdateEventInput = {
+        ...metadata,
+        ...(draft.title.trim() !== initial.title ? { title: draft.title.trim() } : {}),
+        ...(timesChanged ? { allDay: draft.allDay, ...times } : {}),
+        ...(scope ? { scope } : {})
+      };
       await api.updateEvent(event.id, input);
       setFeedback({ intent: "success", text: "Evento salvato." });
       onSaved(event.id);
@@ -140,13 +168,13 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
     }
   };
 
-  const remove = async () => {
-    if (!event || !window.confirm(`Eliminare "${event.title}"?`)) {
+  const remove = async (scope?: RecurrenceScope) => {
+    if (!event || (!scope && !window.confirm(`Eliminare "${event.title}"?`))) {
       return;
     }
     setBusy(true);
     try {
-      await api.deleteEvent(event.id);
+      await api.deleteEvent(event.id, scope);
       onSaved(null);
     } catch (error) {
       setFeedback({ intent: "error", text: error instanceof Error ? error.message : "Impossibile eliminare l'evento." });
@@ -156,15 +184,15 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
 
   return (
     <div className="calendar-detail-form">
-      {isRemote ? (
+      {event?.recurring ? (
         <MessageBar intent="info">
-          <MessageBarBody>Evento di {event?.calendarName}: titolo e orario si modificano dal calendario originale. Qui puoi assegnare membri, tag e privacy.</MessageBarBody>
+          <MessageBarBody>Evento ripetuto: al salvataggio potrai scegliere se modificare solo questo evento o tutta la serie.</MessageBarBody>
         </MessageBar>
       ) : null}
 
       <div className="calendar-detail-row">
         <label htmlFor="event-title">Titolo</label>
-        <input id="event-title" value={draft.title} disabled={isRemote} onChange={(change) => update("title", change.target.value)} placeholder="Karate Luca, vaccino Sofia..." />
+        <input id="event-title" value={draft.title} onChange={(change) => update("title", change.target.value)} placeholder="Karate Luca, vaccino Sofia..." />
       </div>
 
       <div className="calendar-detail-row">
@@ -176,16 +204,16 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
         </select>
       </div>
 
-      <Checkbox label="Tutto il giorno" checked={draft.allDay} disabled={isRemote} onChange={(_, data) => toggleAllDay(Boolean(data.checked))} />
+      <Checkbox label="Tutto il giorno" checked={draft.allDay} onChange={(_, data) => toggleAllDay(Boolean(data.checked))} />
 
       <div className="calendar-detail-grid">
         <div className="calendar-detail-row">
           <label htmlFor="event-start">Inizio</label>
-          <input id="event-start" type={draft.allDay ? "date" : "datetime-local"} value={draft.start} disabled={isRemote} onChange={(change) => update("start", change.target.value)} />
+          <input id="event-start" type={draft.allDay ? "date" : "datetime-local"} value={draft.start} onChange={(change) => update("start", change.target.value)} />
         </div>
         <div className="calendar-detail-row">
           <label htmlFor="event-end">Fine</label>
-          <input id="event-end" type={draft.allDay ? "date" : "datetime-local"} value={draft.end} disabled={isRemote} onChange={(change) => update("end", change.target.value)} />
+          <input id="event-end" type={draft.allDay ? "date" : "datetime-local"} value={draft.end} onChange={(change) => update("end", change.target.value)} />
         </div>
       </div>
 
@@ -237,15 +265,49 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
       ) : null}
 
       <div className="calendar-detail-actions">
-        {event && !isRemote ? (
-          <Button appearance="secondary" icon={<DeleteRegular />} disabled={busy} onClick={remove}>
+        {event ? (
+          <Button appearance="secondary" icon={<DeleteRegular />} disabled={busy} onClick={() => withScope("delete")}>
             Elimina
           </Button>
         ) : null}
-        <Button appearance="primary" disabled={busy} onClick={save}>
+        <Button appearance="primary" disabled={busy} onClick={() => withScope("save")}>
           {busy ? "Salvataggio..." : event ? "Salva modifiche" : "Crea evento"}
         </Button>
       </div>
+
+      <Dialog open={pendingScope !== null} onOpenChange={(_, data) => (!data.open ? setPendingScope(null) : undefined)}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>{pendingScope === "delete" ? "Eliminare l'evento ripetuto?" : "Modificare l'evento ripetuto?"}</DialogTitle>
+            <DialogContent>
+              "{event?.title}" fa parte di una serie. Scegli se {pendingScope === "delete" ? "eliminare" : "modificare"} solo questo evento o tutti gli eventi della serie.
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="secondary" onClick={() => setPendingScope(null)}>Annulla</Button>
+              <Button
+                appearance="secondary"
+                onClick={() => {
+                  const action = pendingScope;
+                  setPendingScope(null);
+                  void (action === "delete" ? remove("series") : save("series"));
+                }}
+              >
+                Tutta la serie
+              </Button>
+              <Button
+                appearance="primary"
+                onClick={() => {
+                  const action = pendingScope;
+                  setPendingScope(null);
+                  void (action === "delete" ? remove("occurrence") : save("occurrence"));
+                }}
+              >
+                Solo questo evento
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </div>
   );
 };

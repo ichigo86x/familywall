@@ -115,6 +115,11 @@ export type CalendarRangeInput = z.infer<typeof calendarRangeSchema>;
 
 const privacySchema = z.enum(["shared", "private", "wall-hidden"]);
 
+/** For recurring events: change only the selected occurrence or the whole series. */
+export const recurrenceScopeSchema = z.enum(["occurrence", "series"]);
+
+export type RecurrenceScope = z.infer<typeof recurrenceScopeSchema>;
+
 export const createEventSchema = z
   .object({
     calendarId: z.string().min(1),
@@ -141,7 +146,8 @@ export const updateEventSchema = z
     allDay: z.boolean().optional(),
     memberIds: z.array(z.string().min(1)).max(20).optional(),
     tagMemberId: z.string().min(1).nullable().optional(),
-    privacy: privacySchema.optional()
+    privacy: privacySchema.optional(),
+    scope: recurrenceScopeSchema.optional()
   })
   .strict()
   .refine((value) => !value.startAt || !value.endAt || new Date(value.endAt) > new Date(value.startAt), {
@@ -150,3 +156,9 @@ export const updateEventSchema = z
   });
 
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
+
+export const deleteEventQuerySchema = z.object({
+  scope: recurrenceScopeSchema.optional()
+});
+
+export type DeleteEventQuery = z.infer<typeof deleteEventQuerySchema>;

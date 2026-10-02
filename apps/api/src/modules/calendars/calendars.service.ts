@@ -16,7 +16,7 @@ import type { RemoteEvent } from "../providers/caldav/ics-parser";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { ProvidersService } from "../providers/providers.service";
 import { CalendarsRepository } from "./calendars.repository";
-import { encodeRemoteEventId } from "./event-ids";
+import { encodeRemoteEventId, remoteMetaKey } from "./event-ids";
 import { projectEventForViewer } from "./event-visibility";
 import { EventsRepository, type StoredEvent } from "./events.repository";
 
@@ -34,22 +34,31 @@ export const storedToEvent = (row: StoredEvent): FamilyEvent => ({
   tagMemberId: row.tag_member_id,
   privacy: row.privacy,
   source: "local",
+  recurring: false,
   redacted: false
 });
 
-const remoteToEvent = (calendarId: string, remote: RemoteEvent, meta: StoredEvent | undefined): FamilyEvent => ({
-  id: encodeRemoteEventId({ calendarId, uid: remote.uid, occurrenceKey: remote.occurrenceKey }),
-  calendarId,
-  title: remote.title,
-  startAt: remote.startAt,
-  endAt: remote.endAt,
-  allDay: remote.allDay,
-  memberIds: meta?.memberIds ?? [],
-  tagMemberId: meta?.tag_member_id ?? null,
-  privacy: meta?.privacy ?? "shared",
-  source: "remote",
-  redacted: false
-});
+/** Occurrence-specific metadata wins over the series metadata. */
+const remoteToEvent = (calendarId: string, remote: RemoteEvent, metaByKey: Map<string, StoredEvent>): FamilyEvent => {
+  const meta =
+    (remote.occurrenceKey ? metaByKey.get(remoteMetaKey(remote.uid, remote.occurrenceKey, "occurrence")) : undefined) ??
+    metaByKey.get(remote.uid);
+
+  return {
+    id: encodeRemoteEventId({ calendarId, uid: remote.uid, occurrenceKey: remote.occurrenceKey }),
+    calendarId,
+    title: remote.title,
+    startAt: remote.startAt,
+    endAt: remote.endAt,
+    allDay: remote.allDay,
+    memberIds: meta?.memberIds ?? [],
+    tagMemberId: meta?.tag_member_id ?? null,
+    privacy: meta?.privacy ?? "shared",
+    source: "remote",
+    recurring: remote.occurrenceKey !== "",
+    redacted: false
+  };
+};
 
 @Injectable()
 export class CalendarsService {
@@ -77,10 +86,10 @@ export class CalendarsService {
       configs.map(async (config): Promise<FamilyCalendar> => {
         const rows = stored.filter((row) => row.calendar_id === config.id);
         const { events: remoteEvents, error } = await this.fetchRemote(config, from, to);
-        const metaByUid = new Map(rows.filter((row) => row.source === "remote").map((row) => [row.uid, row]));
+        const metaByKey = new Map(rows.filter((row) => row.source === "remote").map((row) => [row.uid, row]));
 
         const events = [
-          ...remoteEvents.map((remote) => remoteToEvent(config.id, remote, metaByUid.get(remote.uid))),
+          ...remoteEvents.map((remote) => remoteToEvent(config.id, remote, metaByKey)),
           ...rows.filter((row) => row.source === "local").map(storedToEvent)
         ]
           .map((event) => projectEventForViewer(event, viewer))

@@ -125,6 +125,17 @@ export class EventsRepository {
     return this.findById(id)!;
   }
 
+  /** Drops app metadata of a provider event: one occurrence, or the series with all its occurrence rows. */
+  public deleteRemoteMeta(calendarId: string, key: string, wholeSeries: boolean): void {
+    if (wholeSeries) {
+      this.db
+        .prepare("DELETE FROM events WHERE calendar_id = ? AND source = 'remote' AND (uid = ? OR substr(uid, 1, ?) = ?)")
+        .run(calendarId, key, key.length + 2, `${key}::`);
+    } else {
+      this.db.prepare("DELETE FROM events WHERE calendar_id = ? AND source = 'remote' AND uid = ?").run(calendarId, key);
+    }
+  }
+
   public delete(id: string): void {
     this.db.prepare("DELETE FROM events WHERE id = ?").run(id);
   }

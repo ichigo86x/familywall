@@ -12,6 +12,7 @@ import type {
   ListsResponse,
   LoginInput,
   ProviderAccount,
+  RecurrenceScope,
   RemoteCalendar,
   SetPasswordInput,
   SetupInput,
@@ -118,7 +119,8 @@ export const api = {
     request<CalendarResponse>(`calendars?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
   createEvent: async (input: CreateEventInput) => (await request<{ event: FamilyEvent }>("events", { method: "POST", json: input })).event,
   updateEvent: (id: string, input: UpdateEventInput) => request<{ id: string }>(`events/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
-  deleteEvent: (id: string) => request<void>(`events/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  deleteEvent: (id: string, scope?: RecurrenceScope) =>
+    request<void>(`events/${encodeURIComponent(id)}${scope ? `?scope=${scope}` : ""}`, { method: "DELETE" }),
 
   getDashboard: async (): Promise<DashboardData> => (await request<{ dashboard: DashboardData }>("dashboard")).dashboard,
   getLists: () => request<ListsResponse>("lists")

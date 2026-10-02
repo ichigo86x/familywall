@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
-import type { CreateEventInput, EventResponse, UpdateEventInput } from "@familywall/shared";
-import { createEventSchema, updateEventSchema } from "@familywall/shared";
+import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import type { CreateEventInput, DeleteEventQuery, EventResponse, UpdateEventInput } from "@familywall/shared";
+import { createEventSchema, deleteEventQuerySchema, updateEventSchema } from "@familywall/shared";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import type { RequestWithUser } from "../../common/types/request-with-user";
@@ -12,11 +12,11 @@ export class EventsController {
   public constructor(private readonly eventsService: EventsService) {}
 
   @Post()
-  public create(
+  public async create(
     @Req() request: RequestWithUser,
     @Body(new ZodValidationPipe(createEventSchema)) input: CreateEventInput
-  ): EventResponse {
-    return { event: this.eventsService.create(request.user, input) };
+  ): Promise<EventResponse> {
+    return { event: await this.eventsService.create(request.user, input) };
   }
 
   /** Returns only the id: provider events are re-read through GET /calendars. */
@@ -25,13 +25,16 @@ export class EventsController {
     @Req() request: RequestWithUser,
     @Param("eventId") eventId: string,
     @Body(new ZodValidationPipe(updateEventSchema)) input: UpdateEventInput
-  ): { id: string } {
+  ): Promise<{ id: string }> {
     return this.eventsService.update(request.user, eventId, input);
   }
 
   @Delete(":eventId")
   @HttpCode(HttpStatus.NO_CONTENT)
-  public delete(@Param("eventId") eventId: string): void {
-    this.eventsService.delete(eventId);
+  public delete(
+    @Param("eventId") eventId: string,
+    @Query(new ZodValidationPipe(deleteEventQuerySchema)) query: DeleteEventQuery
+  ): Promise<void> {
+    return this.eventsService.delete(eventId, query.scope);
   }
 }

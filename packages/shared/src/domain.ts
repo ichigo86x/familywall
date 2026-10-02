@@ -129,6 +129,8 @@ export interface FamilyEvent {
   tagMemberId: string | null;
   privacy: EventPrivacy;
   source: EventSource;
+  /** Occurrence of a recurring series: edits and deletes must say whether they apply to this one or the whole series. */
+  recurring: boolean;
   /** True when the viewer may only see that the slot is busy. */
   redacted: boolean;
 }

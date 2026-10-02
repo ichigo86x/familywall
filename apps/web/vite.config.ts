@@ -17,7 +17,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://localhost:3001"
+      // Override with API_PROXY_TARGET when the API runs on another port.
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:3001"
     }
   },
   build: {

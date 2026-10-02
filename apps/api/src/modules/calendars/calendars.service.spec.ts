@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import type { User } from "@familywall/shared";
-import { CalDavClient } from "../providers/caldav/caldav-client";
+import { CalDavClient, CalDavError } from "../providers/caldav/caldav-client";
+import { parseCalendarData } from "../providers/caldav/ics-parser";
 import { createTestContext } from "../../test/test-context";
 import { projectEventForViewer } from "./event-visibility";
 
-const remoteIcs = `BEGIN:VCALENDAR
+const SCHOOL_TRIP = `BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
 UID:school-trip
@@ -14,21 +15,60 @@ SUMMARY:Gita scolastica
 END:VEVENT
 END:VCALENDAR`;
 
-const range = { from: "2026-10-01T00:00:00.000Z", to: "2026-11-01T00:00:00.000Z" };
+const WEEKLY_SWIM = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:swim
+DTSTART:20261007T150000Z
+DTEND:20261007T160000Z
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Piscina
+END:VEVENT
+END:VCALENDAR`;
 
-const setup = async () => {
+const range = { from: "2026-10-01T00:00:00.000Z", to: "2026-11-01T00:00:00.000Z" };
+const CALENDAR_URL = "https://caldav.example/home/";
+
+/** In-memory CalDAV collection: resources keyed by href with etags that change on every write. */
+const fakeServer = (caldav: CalDavClient, initial: Record<string, string>) => {
+  const resources = new Map(Object.entries(initial).map(([name, ics]) => [CALENDAR_URL + name, { ics, etag: '"1"' }]));
+  let version = 1;
+  const uidOf = (ics: string) => /UID:(.+)/.exec(ics)?.[1]?.trim();
+
+  vi.spyOn(caldav, "discoverCalendars").mockResolvedValue([{ remoteUrl: CALENDAR_URL, name: "Home", color: null }]);
+  vi.spyOn(caldav, "fetchEvents").mockImplementation(async (_credentials, _url, from, to) =>
+    [...resources.values()].flatMap((resource) => parseCalendarData(resource.ics, from, to))
+  );
+  vi.spyOn(caldav, "findByUid").mockImplementation(async (_credentials, _url, uid) => {
+    const entry = [...resources.entries()].find(([, resource]) => uidOf(resource.ics) === uid);
+    return entry ? { href: entry[0], etag: entry[1].etag, ics: entry[1].ics } : null;
+  });
+  vi.spyOn(caldav, "putEvent").mockImplementation(async (_credentials, href, ics, options) => {
+    const current = resources.get(href);
+    if ((options.create && current) || (options.etag && current?.etag !== options.etag)) {
+      throw new CalDavError("conflict", "L'evento è stato modificato altrove nel frattempo. Ricarica e riprova.");
+    }
+    version += 1;
+    resources.set(href, { ics, etag: `"${version}"` });
+  });
+  vi.spyOn(caldav, "deleteEvent").mockImplementation(async (_credentials, href) => {
+    resources.delete(href);
+  });
+  return resources;
+};
+
+const setup = async (initial: Record<string, string> = {}) => {
   const caldav = new CalDavClient(async () => new Response("", { status: 207 }));
-  vi.spyOn(caldav, "discoverCalendars").mockResolvedValue([{ remoteUrl: "https://caldav.example/home/", name: "Home", color: null }]);
-  const fetchEvents = vi.spyOn(caldav, "fetchEvents");
+  const server = fakeServer(caldav, initial);
   const ctx = createTestContext(caldav);
   const admin = (
     await ctx.auth.setup({ householdName: "Casa", username: "mario", displayName: "Mario", password: "very-long-password", color: "#2563EB" })
   ).user;
   const child = await ctx.members.create({ username: "luca", displayName: "Luca", role: "Child", color: "#14B8A6", password: "password1" });
-  const kiosk = await ctx.members.create({ username: "wall", displayName: "Wall", role: "Kiosk", color: "#111111", password: "password1" });
   const account = await ctx.providers.create({ provider: "icloud", label: "Famiglia", username: "family@icloud.com", password: "abcd-efgh" });
-  const calendar = ctx.calendars.add({ accountId: account.id, remoteUrl: "https://caldav.example/home/", name: "Famiglia", color: "#3A7D6E" });
-  return { ctx, admin, child, kiosk, calendar, fetchEvents };
+  const calendar = ctx.calendars.add({ accountId: account.id, remoteUrl: CALENDAR_URL, name: "Famiglia", color: "#3A7D6E" });
+  const events = async () => (await ctx.calendars.getCalendars(admin, range)).calendars[0]!.events;
+  return { ctx, caldav, admin, child, calendar, server, events };
 };
 
 describe("CalendarsService and EventsService", () => {
@@ -40,18 +80,10 @@ describe("CalendarsService and EventsService", () => {
     expect(JSON.stringify(ctx.providers.list())).not.toContain("abcd");
   });
 
-  it("merges provider events with app metadata and local events", async () => {
-    const { ctx, admin, child, calendar, fetchEvents } = await setup();
-    fetchEvents.mockImplementation(async () => (await import("../providers/caldav/ics-parser")).parseCalendarData(remoteIcs, new Date(range.from), new Date(range.to)));
+  it("creates events on the provider and keeps app metadata locally", async () => {
+    const { ctx, admin, child, calendar, server, events } = await setup({ "trip.ics": SCHOOL_TRIP });
 
-    const initial = await ctx.calendars.getCalendars(admin, range);
-    const remoteEvent = initial.calendars[0]!.events[0]!;
-    expect(remoteEvent).toMatchObject({ title: "Gita scolastica", source: "remote", memberIds: [] });
-
-    ctx.events.update(admin, remoteEvent.id, { memberIds: [child.id], tagMemberId: child.id });
-    expect(() => ctx.events.update(admin, remoteEvent.id, { title: "Changed" })).toThrow(/non sono ancora modificabili/);
-
-    ctx.events.create(admin, {
+    const created = await ctx.events.create(admin, {
       calendarId: calendar.id,
       title: "Karate",
       startAt: "2026-10-06T16:00:00.000Z",
@@ -59,19 +91,63 @@ describe("CalendarsService and EventsService", () => {
       allDay: false,
       memberIds: [child.id],
       tagMemberId: null,
-      privacy: "shared"
+      privacy: "private"
     });
 
-    const events = (await ctx.calendars.getCalendars(admin, range)).calendars[0]!.events;
-    expect(events.map((event) => [event.title, event.source, event.memberIds])).toEqual([
-      ["Gita scolastica", "remote", [child.id]],
-      ["Karate", "local", [child.id]]
+    expect(created).toMatchObject({ source: "remote", recurring: false, privacy: "private" });
+    expect([...server.values()].some((resource) => resource.ics.includes("SUMMARY:Karate"))).toBe(true);
+    expect((await events()).map((event) => [event.title, event.memberIds, event.privacy])).toEqual([
+      ["Gita scolastica", [], "shared"],
+      ["Karate", [child.id], "private"]
     ]);
   });
 
+  it("edits single provider events and their metadata", async () => {
+    const { ctx, admin, child, server, events } = await setup({ "trip.ics": SCHOOL_TRIP });
+    const [trip] = await events();
+
+    await ctx.events.update(admin, trip!.id, { title: "Gita al museo", endAt: "2026-10-05T16:00:00.000Z", memberIds: [child.id] });
+
+    expect(server.get(CALENDAR_URL + "trip.ics")!.ics).toContain("SUMMARY:Gita al museo");
+    expect((await events())[0]).toMatchObject({ title: "Gita al museo", endAt: "2026-10-05T16:00:00.000Z", memberIds: [child.id] });
+  });
+
+  it("requires a scope for recurring occurrences and applies it", async () => {
+    const { ctx, admin, child, events } = await setup({ "swim.ics": WEEKLY_SWIM });
+    const [first, second] = await events();
+    expect(second).toMatchObject({ recurring: true });
+
+    await expect(ctx.events.update(admin, second!.id, { title: "X" })).rejects.toThrow(/questa occorrenza o per tutta la serie/);
+
+    await ctx.events.update(admin, second!.id, { scope: "occurrence", title: "Piscina (gara)", memberIds: [child.id] });
+    let current = await events();
+    expect(current.map((event) => [event.title, event.memberIds])).toEqual([
+      ["Piscina", []],
+      ["Piscina (gara)", [child.id]],
+      ["Piscina", []]
+    ]);
+
+    await ctx.events.update(admin, first!.id, { scope: "series", privacy: "wall-hidden" });
+    current = await events();
+    expect(current.map((event) => event.privacy)).toEqual(["wall-hidden", "shared", "wall-hidden"]);
+  });
+
+  it("deletes one occurrence or the whole series", async () => {
+    const { ctx, server, events } = await setup({ "swim.ics": WEEKLY_SWIM });
+    const [, second] = await events();
+
+    await ctx.events.delete(second!.id, "occurrence");
+    const remaining = await events();
+    expect(remaining).toHaveLength(2);
+
+    await ctx.events.delete(remaining[0]!.id, "series");
+    expect(await events()).toEqual([]);
+    expect(server.size).toBe(0);
+  });
+
   it("reports provider failures per calendar instead of failing the request", async () => {
-    const { ctx, admin, fetchEvents } = await setup();
-    fetchEvents.mockRejectedValue(new Error("The server rejected the credentials."));
+    const { ctx, caldav, admin } = await setup();
+    vi.mocked(caldav.fetchEvents).mockRejectedValue(new Error("The server rejected the credentials."));
 
     const result = await ctx.calendars.getCalendars(admin, range);
 
@@ -79,10 +155,18 @@ describe("CalendarsService and EventsService", () => {
     expect(ctx.calendars.listConfigs()[0]!.lastError).toBe("The server rejected the credentials.");
   });
 
+  it("surfaces concurrent provider edits as conflicts", async () => {
+    const { ctx, caldav, admin, server, events } = await setup({ "trip.ics": SCHOOL_TRIP });
+    const [trip] = await events();
+    vi.mocked(caldav.findByUid).mockResolvedValueOnce({ href: CALENDAR_URL + "trip.ics", etag: '"stale"', ics: server.get(CALENDAR_URL + "trip.ics")!.ics });
+
+    await expect(ctx.events.update(admin, trip!.id, { title: "Nuovo" })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
   it("rejects events referencing unknown members", async () => {
     const { ctx, admin, calendar } = await setup();
 
-    expect(() =>
+    await expect(
       ctx.events.create(admin, {
         calendarId: calendar.id,
         title: "X",
@@ -93,7 +177,7 @@ describe("CalendarsService and EventsService", () => {
         tagMemberId: null,
         privacy: "shared"
       })
-    ).toThrow(/membri inesistenti/);
+    ).rejects.toThrow(/membri inesistenti/);
   });
 });
 
@@ -109,6 +193,7 @@ describe("projectEventForViewer", () => {
     memberIds: ["child-in"],
     tagMemberId: "child-in",
     source: "local" as const,
+    recurring: false,
     redacted: false
   };
 

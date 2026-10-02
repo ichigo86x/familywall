@@ -37,6 +37,8 @@ npm run dev:web   # web su http://localhost:5173, /api inoltrato all'API
 
 Al primo accesso la web app chiede di creare la famiglia e l'account Admin.
 
+Se la porta 3001 è occupata: avvia l'API con `PORT=3002 npm run dev:api` e il web con `API_PROXY_TARGET=http://localhost:3002 npm run dev:web`.
+
 ```bash
 npm test           # test API
 npm run typecheck
@@ -97,6 +99,6 @@ iCloud accetta solo una **password specifica per app** (account.apple.com → Ac
 
 ## Stato attuale e prossimi passi
 
-- Gli eventi creati nell'app restano nel database di Familywall. Degli eventi iCloud si possono modificare solo membri, colore e privacy. La scrittura verso iCloud (creazione, modifica, eliminazione) è il prossimo passo.
+- Creazione, modifica ed eliminazione degli eventi vengono scritte direttamente su iCloud/CalDAV. Per gli eventi ripetuti l'app chiede se agire solo sull'evento scelto o su tutta la serie.
 - Gli eventi vengono letti dal provider a ogni apertura del calendario. È prevista una sincronizzazione periodica con cache.
 - Dashboard e liste sono ancora segnaposto.
