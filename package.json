@@ -1,0 +1,20 @@
+{
+  "name": "familywall",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "build:shared": "npm run build --workspace @familywall/shared",
+    "build:api": "npm run build --workspace @familywall/api",
+    "build:web": "npm run build --workspace @familywall/web",
+    "typecheck": "npm run typecheck --workspace @familywall/shared && npm run typecheck --workspace @familywall/api && npm run typecheck --workspace @familywall/web",
+    "dev:api": "npm --prefix apps/api run start:dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "addon:stage": "node scripts/stage-addon.mjs",
+    "test": "npm test --workspace @familywall/api"
+  }
+}

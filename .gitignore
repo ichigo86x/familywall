@@ -1,0 +1,23 @@
+node_modules/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+
+# Never commit secrets or household data
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.key
+*.pem
+
+# Staged add-on build context
+homeassistant/familywall/app/
+
+.DS_Store
+Thumbs.db

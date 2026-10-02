@@ -1,0 +1,42 @@
+import path from "node:path";
+
+export interface AppConfig {
+  nodeEnv: string;
+  port: number;
+  dataDir: string;
+  /** Built SPA served by the API in production; empty disables static serving. */
+  webDistDir: string;
+  jwtIssuer: string;
+  jwtAudience: string;
+  jwtExpiresIn: string;
+  /** Extra origins allowed by CORS. Same-origin requests never need this. */
+  corsOrigins: string[];
+}
+
+const readList = (value: string | undefined): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+export const loadAppConfig = (): AppConfig => {
+  const nodeEnv = process.env.NODE_ENV ?? "development";
+  const isDevelopment = nodeEnv !== "production";
+
+  return {
+    nodeEnv,
+    port: Number(process.env.PORT ?? 3001),
+    dataDir: path.resolve(process.env.DATA_DIR ?? "./data"),
+    webDistDir: process.env.WEB_DIST_DIR ? path.resolve(process.env.WEB_DIST_DIR) : "",
+    jwtIssuer: process.env.JWT_ISSUER ?? "familywall-api",
+    jwtAudience: process.env.JWT_AUDIENCE ?? "familywall-web",
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "30d",
+    corsOrigins: process.env.CORS_ORIGINS
+      ? readList(process.env.CORS_ORIGINS)
+      : isDevelopment
+        ? ["http://localhost:5173"]
+        : []
+  };
+};
+
+export const appConfig = loadAppConfig();

@@ -1,0 +1,922 @@
+:root {
+  --color-primary: #3A7D6E;
+  --color-accent: #E9A24D;
+  --color-surface: #F5F3EF;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-soft: #FCFBF8;
+  --color-text: #1F2937;
+  --color-muted: #6B7280;
+  --color-border: #D8D6CD;
+  --color-danger: #9F3A38;
+  --shadow-sm: 0 10px 24px rgba(31, 41, 55, 0.06);
+  --shadow-lg: 0 28px 48px rgba(31, 41, 55, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(233, 162, 77, 0.18), transparent 22%),
+    linear-gradient(180deg, #f8f5ef 0%, #f2efea 100%);
+  color: var(--color-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+}
+
+.app-shell {
+  min-height: 100vh;
+  /* Keeps content clear of the notch and home indicator in iOS standalone mode. */
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+}
+
+.app-toolbar {
+  margin: 0 auto 24px;
+  max-width: 1480px;
+  padding: 16px 20px;
+  border: 1px solid rgba(216, 214, 205, 0.7);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-toolbar__brand,
+.app-toolbar__meta,
+.identity-cell,
+.preview-switcher__buttons,
+.auth-actions,
+.panel-card__header,
+.metric-card__header,
+.media-card__meta,
+.hero-card__content,
+.routine-row,
+.state-card,
+.shell-nav__callout {
+  display: flex;
+  align-items: center;
+}
+
+.app-toolbar__brand,
+.app-toolbar__meta,
+.identity-cell,
+.preview-switcher__buttons,
+.auth-actions,
+.metric-card__header,
+.media-card__meta,
+.hero-card__content,
+.routine-row {
+  gap: 12px;
+}
+
+.app-toolbar__brand {
+  align-items: flex-start;
+}
+
+.app-toolbar__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  margin-top: 10px;
+}
+
+.app-toolbar__title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.shell-grid {
+  max-width: 1480px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.shell-nav,
+.panel-card,
+.metric-card,
+.state-card,
+.preview-switcher,
+.auth-card {
+  border-radius: 24px;
+  border: 1px solid rgba(216, 214, 205, 0.9);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--shadow-sm);
+}
+
+.shell-nav {
+  padding: 18px;
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.shell-nav__callout {
+  margin-top: 20px;
+  padding: 18px;
+  border-radius: 20px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(58, 125, 110, 0.12), rgba(233, 162, 77, 0.12));
+}
+
+.shell-nav__callout h3,
+.panel-card h3,
+.auth-card h2,
+.state-card h3,
+.media-card h4,
+.reminder-card h4,
+.routine-row h4 {
+  margin: 0;
+}
+
+.shell-nav__callout p,
+.panel-card p,
+.auth-card p,
+.state-card p,
+.metric-card p,
+.routine-row p,
+.table-subline,
+.media-card p,
+.hero-card p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  padding: 28px;
+  background: linear-gradient(135deg, rgba(58, 125, 110, 0.96), rgba(42, 90, 79, 0.92));
+  color: #ffffff;
+  box-shadow: var(--shadow-lg);
+}
+
+.hero-card h2 {
+  margin: 0 0 12px;
+  max-width: 18ch;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.05;
+}
+
+.hero-card p {
+  max-width: 60ch;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.hero-card__content {
+  position: relative;
+  z-index: 1;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.hero-card__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-mesh {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stats-grid,
+.content-grid,
+.media-grid,
+.form-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.content-grid--wide {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metric-card,
+.panel-card,
+.auth-card,
+.state-card {
+  padding: 22px;
+}
+
+.metric-card strong {
+  font-size: 2rem;
+}
+
+.panel-card__header {
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.routine-row,
+.reminder-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(216, 214, 205, 0.7);
+  background: var(--color-surface-soft);
+}
+
+.routine-row {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.routine-row__progress {
+  min-width: 180px;
+}
+
+.routine-row__progress span {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.media-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.media-card {
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--color-surface-soft);
+  border: 1px solid rgba(216, 214, 205, 0.8);
+}
+
+.media-card__image {
+  display: block;
+  width: 100%;
+  height: 168px;
+  object-fit: cover;
+}
+
+.media-card__body {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.media-card__meta {
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.identity-cell {
+  align-items: center;
+}
+
+.avatar-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.table-subline {
+  margin-top: 4px;
+  font-size: 0.86rem;
+}
+
+.preview-switcher {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  z-index: 20;
+}
+
+.preview-switcher__label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.preview-switcher__buttons {
+  flex-wrap: wrap;
+}
+
+.state-card {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  min-height: 320px;
+}
+
+.state-card__icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  background: rgba(58, 125, 110, 0.12);
+  color: var(--color-primary);
+  font-size: 28px;
+}
+
+.state-card--error .state-card__icon {
+  background: rgba(159, 58, 56, 0.12);
+  color: var(--color-danger);
+}
+
+.skeleton-grid {
+  display: grid;
+  width: 100%;
+  gap: 12px;
+}
+
+.skeleton-block {
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgba(216, 214, 205, 0.4), rgba(255, 255, 255, 0.85), rgba(216, 214, 205, 0.4));
+  background-size: 220% 100%;
+  animation: shimmer 1.3s infinite linear;
+}
+
+.auth-page {
+  min-height: 100vh;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.auth-hero {
+  padding: 42px;
+  border-radius: 32px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at top left, rgba(233, 162, 77, 0.5), transparent 26%),
+    linear-gradient(135deg, rgba(58, 125, 110, 0.95), rgba(31, 41, 55, 0.94));
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-hero h1 {
+  margin: 0 0 16px;
+  max-width: 16ch;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.06;
+}
+
+.auth-hero p {
+  max-width: 56ch;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.auth-card {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-actions {
+  justify-content: flex-end;
+}
+
+.success-note {
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.calendar-planner-layout {
+  align-items: start;
+  grid-template-columns: minmax(0, 2.2fr) minmax(320px, 1fr);
+}
+
+.member-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.calendar-planner-card,
+.calendar-detail-card {
+  display: grid;
+  gap: 18px;
+}
+
+.calendar-planner-toolbar,
+.calendar-detail-actions,
+.calendar-legend-item,
+.planner-day__header,
+.planner-event,
+.member-chip {
+  display: flex;
+}
+
+.calendar-planner-toolbar,
+.calendar-detail-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.calendar-legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.calendar-legend-item {
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+  border: 1px solid rgba(216, 214, 205, 0.8);
+}
+
+.calendar-legend-item p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.calendar-legend-swatch,
+.member-chip__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.planner-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.planner-grid--week,
+.planner-grid--biweek {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.planner-grid--month {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.planner-grid--month .planner-day {
+  min-height: 120px;
+  padding: 8px;
+  gap: 6px;
+}
+
+.planner-grid--month .planner-event {
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.planner-grid--month .planner-event span:last-child {
+  display: none;
+}
+
+.planner-day--today {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.planner-day {
+  min-height: 220px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(216, 214, 205, 0.75);
+  background: #fff;
+  display: grid;
+  gap: 12px;
+}
+
+.planner-day--muted {
+  opacity: 0.55;
+}
+
+.planner-day__header {
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+
+.planner-day__header span,
+.planner-day__empty,
+.calendar-detail-hint {
+  color: var(--color-muted);
+}
+
+.planner-day__events {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.planner-day__empty {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.planner-event {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.planner-event--selected {
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.planner-event__time {
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.planner-event strong {
+  font-size: 0.92rem;
+}
+
+.planner-event span:last-child {
+  font-size: 0.82rem;
+}
+
+.calendar-detail-form {
+  display: grid;
+  gap: 16px;
+}
+
+.calendar-detail-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.calendar-detail-row {
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-detail-row label {
+  font-weight: 700;
+}
+
+.calendar-detail-row input,
+.calendar-detail-row select {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.member-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.member-chip {
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  justify-content: flex-start;
+}
+
+.member-chip--selected {
+  box-shadow: inset 0 0 0 1px rgba(31, 41, 55, 0.08);
+}
+
+.auth-form,
+.dialog-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.color-swatch--selected {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px #fff inset;
+}
+
+.discover-row,
+.calendar-config-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.discover-row strong {
+  flex: 1;
+}
+
+.calendar-config-main input[type="color"] {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.auth-form,
+.dialog-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.inline-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.color-swatch--selected {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px #fff inset;
+}
+
+.discover-row,
+.calendar-config-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.discover-row strong {
+  flex: 1;
+}
+
+.calendar-config-main input[type="color"] {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .metric-card,
+  .panel-card,
+  .media-card,
+  .auth-card {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .metric-card:hover,
+  .panel-card:hover,
+  .media-card:hover,
+  .auth-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 38px rgba(31, 41, 55, 0.12);
+  }
+
+  .page-stack > * {
+    animation: fadeUp 220ms ease both;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (max-width: 1120px) {
+  .shell-grid,
+  .auth-page,
+  .content-grid--wide,
+  .stats-grid,
+  .form-grid,
+  .calendar-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shell-nav {
+    position: static;
+    padding: 8px;
+    overflow-x: auto;
+  }
+
+  .calendar-planner-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .app-toolbar__meta {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .hero-card {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .hero-card h2 {
+    font-size: 1.8rem;
+  }
+
+  .hero-card__content,
+  .routine-row,
+  .panel-card__header,
+  .app-toolbar,
+  .app-toolbar__meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell,
+  .auth-page {
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .planner-grid--month .planner-day {
+    min-height: 72px;
+    padding: 4px;
+  }
+
+  .planner-grid--month .planner-event strong {
+    font-size: 0.7rem;
+  }
+
+  .planner-grid--month .planner-event__time,
+  .planner-grid--month .planner-day__empty {
+    display: none;
+  }
+
+  .hero-card,
+  .auth-hero,
+  .panel-card,
+  .metric-card,
+  .auth-card {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .planner-grid--week,
+  .planner-grid--biweek {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-grid--week .planner-day,
+  .planner-grid--biweek .planner-day {
+    min-height: 0;
+  }
+}

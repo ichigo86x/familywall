@@ -1,0 +1,21 @@
+name: Familywall
+version: "0.1.0"
+slug: familywall
+description: Calendario di famiglia con calendari iCloud, ruoli e pannello a muro.
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: true
+ingress: true
+ingress_port: 3001
+panel_icon: mdi:calendar-heart
+panel_title: Familywall
+# Direct port for the external nginx reverse proxy (iOS web app, tablets, Echo Show).
+ports:
+  3001/tcp: 3001
+ports_description:
+  3001/tcp: Accesso diretto per il reverse proxy (lascia vuoto per usare solo il pannello di Home Assistant)
+options: {}
+schema: {}

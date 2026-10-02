@@ -1,0 +1,125 @@
+import type {
+  AddCalendarInput,
+  AuthSession,
+  CalendarConfig,
+  CalendarResponse,
+  CreateEventInput,
+  CreateMemberInput,
+  CreateProviderAccountInput,
+  DashboardData,
+  FamilyEvent,
+  HouseholdSettings,
+  ListsResponse,
+  LoginInput,
+  ProviderAccount,
+  RemoteCalendar,
+  SetPasswordInput,
+  SetupInput,
+  UpdateCalendarInput,
+  UpdateEventInput,
+  UpdateMemberInput,
+  UpdateSettingsInput,
+  User
+} from "@familywall/shared";
+
+const TOKEN_KEY = "familywall.auth.token";
+
+export class ApiError extends Error {
+  public constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string
+  ) {
+    super(message);
+  }
+}
+
+export const tokenStore = {
+  get: (): string | null => window.localStorage.getItem(TOKEN_KEY),
+  set: (token: string): void => window.localStorage.setItem(TOKEN_KEY, token),
+  clear: (): void => window.localStorage.removeItem(TOKEN_KEY)
+};
+
+let onUnauthorized: () => void = () => undefined;
+
+/** Lets the auth provider drop the session when any request comes back 401. */
+export const setUnauthorizedHandler = (handler: () => void): void => {
+  onUnauthorized = handler;
+};
+
+// Resolved against the page, so it works at "/" and under the Home Assistant ingress prefix.
+const apiUrl = (path: string): string => new URL(`api/${path}`, document.baseURI).toString();
+
+const request = async <T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> => {
+  const headers = new Headers(init.headers);
+  const token = tokenStore.get();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (init.json !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(apiUrl(path), {
+    ...init,
+    headers,
+    body: init.json !== undefined ? JSON.stringify(init.json) : init.body,
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: { message?: string; code?: string } } | null;
+    if (response.status === 401 && token) {
+      tokenStore.clear();
+      onUnauthorized();
+    }
+    throw new ApiError(payload?.error?.message ?? `Richiesta fallita (HTTP ${response.status})`, response.status, payload?.error?.code);
+  }
+
+  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+};
+
+const storeSession = (session: AuthSession): AuthSession => {
+  tokenStore.set(session.token);
+  return session;
+};
+
+export const api = {
+  getSetupStatus: () => request<{ needsSetup: boolean }>("auth/setup"),
+  setup: async (input: SetupInput) => storeSession(await request<AuthSession>("auth/setup", { method: "POST", json: input })),
+  login: async (input: LoginInput) => storeSession(await request<AuthSession>("auth/login", { method: "POST", json: input })),
+  me: async () => (await request<{ user: User }>("auth/me")).user,
+
+  getSettings: () => request<HouseholdSettings>("settings"),
+  updateSettings: (input: UpdateSettingsInput) => request<HouseholdSettings>("settings", { method: "PATCH", json: input }),
+
+  getMembers: async () => (await request<{ members: User[] }>("members")).members,
+  createMember: async (input: CreateMemberInput) => (await request<{ member: User }>("members", { method: "POST", json: input })).member,
+  updateMember: async (id: string, input: UpdateMemberInput) =>
+    (await request<{ member: User }>(`members/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).member,
+  setMemberPassword: (id: string, input: SetPasswordInput) =>
+    request<void>(`members/${encodeURIComponent(id)}/password`, { method: "PUT", json: input }),
+  deleteMember: (id: string) => request<void>(`members/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  getProviderAccounts: async () => (await request<{ accounts: ProviderAccount[] }>("providers/accounts")).accounts,
+  createProviderAccount: async (input: CreateProviderAccountInput) =>
+    (await request<{ account: ProviderAccount }>("providers/accounts", { method: "POST", json: input })).account,
+  deleteProviderAccount: (id: string) => request<void>(`providers/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  getCalendarConfigs: async () => (await request<{ calendars: CalendarConfig[] }>("calendars/config")).calendars,
+  discoverCalendars: async (accountId: string) =>
+    (await request<{ calendars: RemoteCalendar[] }>(`calendars/discover/${encodeURIComponent(accountId)}`)).calendars,
+  addCalendar: async (input: AddCalendarInput) => (await request<{ calendar: CalendarConfig }>("calendars", { method: "POST", json: input })).calendar,
+  updateCalendar: async (id: string, input: UpdateCalendarInput) =>
+    (await request<{ calendar: CalendarConfig }>(`calendars/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).calendar,
+  deleteCalendar: (id: string) => request<void>(`calendars/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  getCalendar: (from: string, to: string) =>
+    request<CalendarResponse>(`calendars?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  createEvent: async (input: CreateEventInput) => (await request<{ event: FamilyEvent }>("events", { method: "POST", json: input })).event,
+  updateEvent: (id: string, input: UpdateEventInput) => request<{ id: string }>(`events/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
+  deleteEvent: (id: string) => request<void>(`events/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  getDashboard: async (): Promise<DashboardData> => (await request<{ dashboard: DashboardData }>("dashboard")).dashboard,
+  getLists: () => request<ListsResponse>("lists")
+};
