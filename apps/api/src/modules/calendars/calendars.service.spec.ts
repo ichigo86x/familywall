@@ -145,6 +145,16 @@ describe("CalendarsService and EventsService", () => {
     expect(server.size).toBe(0);
   });
 
+  it("colours provider events by the member names in their title unless members were assigned", async () => {
+    const { ctx, admin, child, events } = await setup({ "trip.ics": SCHOOL_TRIP.replace("Gita scolastica", "Gita scolastica Luca e Mario") });
+
+    const [trip] = await events();
+    expect(trip).toMatchObject({ memberIds: [child.id, admin.id], membersInferred: true });
+
+    await ctx.events.update(admin, trip!.id, { memberIds: [admin.id] });
+    expect((await events())[0]).toMatchObject({ memberIds: [admin.id], membersInferred: false });
+  });
+
   it("reports provider failures per calendar instead of failing the request", async () => {
     const { ctx, caldav, admin } = await setup();
     vi.mocked(caldav.fetchEvents).mockRejectedValue(new Error("The server rejected the credentials."));
@@ -182,7 +192,7 @@ describe("CalendarsService and EventsService", () => {
 });
 
 describe("projectEventForViewer", () => {
-  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false });
+  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false, keywords: [] });
   const event = {
     id: "e1",
     calendarId: "c1",
@@ -193,6 +203,7 @@ describe("projectEventForViewer", () => {
     memberIds: ["child-in"],
     tagMemberId: "child-in",
     source: "local" as const,
+    membersInferred: false,
     recurring: false,
     redacted: false
   };

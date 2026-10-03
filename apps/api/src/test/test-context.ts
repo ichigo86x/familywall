@@ -23,7 +23,7 @@ export const createTestContext = (caldav: CalDavClient = new CalDavClient(async 
   const calendarsRepository = new CalendarsRepository(db);
   const eventsRepository = new EventsRepository(db);
   const providers = new ProvidersService(accounts, caldav);
-  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav);
+  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository);
 
   return {
     db,

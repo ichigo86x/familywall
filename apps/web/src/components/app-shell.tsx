@@ -1,16 +1,8 @@
-import { useEffect, useState } from "react";
-import { Badge, Button, Card, Tab, TabList, Toolbar } from "@fluentui/react-components";
+import { Badge, Button, Tab, TabList, Toolbar } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/components/auth/use-auth";
-import {
-  CalendarRegular,
-  ClipboardTaskRegular,
-  HomeRegular,
-  PersonCircleRegular,
-  SignOutRegular,
-  SparkleRegular
-} from "@/lib/fluent-icons";
+import { CalendarRegular, ClipboardTaskRegular, HomeRegular, PersonCircleRegular, SignOutRegular } from "@/lib/fluent-icons";
 
 export type AppRoute = "/" | "/calendar" | "/lists" | "/admin";
 
@@ -22,36 +14,23 @@ interface AppShellProps {
   summaryChip: string;
   children: React.ReactNode;
   toolbarActions?: React.ReactNode;
+  /** Slim one-line header instead of the hero card, leaving the content as much room as possible. */
+  compact?: boolean;
 }
 
 const ROLE_LABELS = { Admin: "Admin", Parent: "Genitore", Child: "Figlio", Kiosk: "Pannello" } as const;
 
-const NARROW_QUERY = "(max-width: 1120px)";
-
-/** Below the breakpoint the navigation becomes a horizontal tab bar above the content. */
-const useIsNarrow = () => {
-  const [narrow, setNarrow] = useState(() => window.matchMedia(NARROW_QUERY).matches);
-  useEffect(() => {
-    const query = window.matchMedia(NARROW_QUERY);
-    const update = () => setNarrow(query.matches);
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  return narrow;
-};
-
 const initials = (name: string) =>
   name
-    .split(/s+/)
+    .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]!.toUpperCase())
     .join("");
 
-export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions }: AppShellProps) => {
+export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
-  const isNarrow = useIsNarrow();
 
   const tabs = [
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
@@ -70,6 +49,23 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
             <h1 className="app-toolbar__title">{auth.household?.householdName ?? "Familywall"}</h1>
           </div>
         </div>
+
+        <TabList
+          className="app-toolbar__nav"
+          selectedValue={currentRoute}
+          onTabSelect={(_, data) => {
+            if (typeof data.value === "string") {
+              navigate(data.value);
+            }
+          }}
+        >
+          {tabs.map((tab) => (
+            <Tab key={tab.value} icon={tab.icon} value={tab.value}>
+              {tab.label}
+            </Tab>
+          ))}
+        </TabList>
+
         <div className="app-toolbar__meta">
           <Badge appearance="filled" color="informative">
             {summaryChip}
@@ -97,33 +93,16 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
         </div>
       </Toolbar>
 
-      <div className="shell-grid">
-        <Card className="shell-nav">
-          <TabList
-            vertical={!isNarrow}
-            selectedValue={currentRoute}
-            onTabSelect={(_, data) => {
-              if (typeof data.value === "string") {
-                navigate(data.value);
-              }
-            }}
-          >
-            {tabs.map((tab) => (
-              <Tab key={tab.value} icon={tab.icon} value={tab.value}>
-                {tab.label}
-              </Tab>
-            ))}
-          </TabList>
-          {isNarrow ? null : (
-            <Card className="shell-nav__callout">
-              <SparkleRegular fontSize={20} />
-              <h3>Wall-safe by design</h3>
-              <p>Le voci private restano nascoste mentre il display condiviso mantiene visibile il ritmo della famiglia.</p>
-            </Card>
-          )}
-        </Card>
-
-        <main className="shell-main">
+      <main className="shell-main">
+        {compact ? (
+          <section className="page-header">
+            <div>
+              <p className="eyebrow">{eyebrow}</p>
+              <h2>{title}</h2>
+            </div>
+            <div className="hero-card__actions">{toolbarActions}</div>
+          </section>
+        ) : (
           <section className="hero-card">
             <svg className="hero-mesh" aria-hidden="true" viewBox="0 0 800 400" preserveAspectRatio="none">
               <defs>
@@ -148,10 +127,10 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
               <div className="hero-card__actions">{toolbarActions}</div>
             </div>
           </section>
+        )}
 
-          <div className="page-stack">{children}</div>
-        </main>
-      </div>
+        <div className="page-stack">{children}</div>
+      </main>
     </div>
   );
 };

@@ -219,6 +219,9 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
 
       <div className="calendar-detail-row">
         <label>Membri coinvolti</label>
+        {event?.membersInferred && draft.memberIds.join() === event.memberIds.join() ? (
+          <p className="calendar-detail-hint">Riconosciuti dai nomi nel titolo. Salva per confermarli o cambiali qui.</p>
+        ) : null}
         <div className="member-chip-grid">
           {members.map((member) => {
             const selected = draft.memberIds.includes(member.id);

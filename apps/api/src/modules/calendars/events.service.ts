@@ -67,6 +67,7 @@ export class EventsService {
       tagMemberId: meta.tag_member_id,
       privacy: meta.privacy,
       source: "remote",
+      membersInferred: false,
       recurring: false,
       redacted: false
     };

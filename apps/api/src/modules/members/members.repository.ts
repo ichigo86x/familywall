@@ -12,6 +12,7 @@ export interface MemberRow {
   password_hash: string;
   token_version: number;
   disabled: number;
+  keywords: string;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface NewMember {
   role: UserRole;
   color: string;
   passwordHash: string;
+  keywords?: string[];
 }
 
 export interface MemberPatch {
@@ -29,6 +31,7 @@ export interface MemberPatch {
   role?: UserRole;
   color?: string;
   disabled?: boolean;
+  keywords?: string[];
 }
 
 export const toUser = (row: MemberRow): User => ({
@@ -37,7 +40,8 @@ export const toUser = (row: MemberRow): User => ({
   displayName: row.display_name,
   role: row.role,
   color: row.color,
-  disabled: row.disabled === 1
+  disabled: row.disabled === 1,
+  keywords: JSON.parse(row.keywords) as string[]
 });
 
 @Injectable()
@@ -82,10 +86,10 @@ export class MembersRepository {
     const id = randomUUID();
     this.db
       .prepare(
-        `INSERT INTO members (id, username, display_name, role, color, password_hash, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO members (id, username, display_name, role, color, password_hash, keywords, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, member.username, member.displayName, member.role, member.color, member.passwordHash, now, now);
+      .run(id, member.username, member.displayName, member.role, member.color, member.passwordHash, JSON.stringify(member.keywords ?? []), now, now);
     return this.findById(id)!;
   }
 
@@ -99,7 +103,7 @@ export class MembersRepository {
     this.db
       .prepare(
         `UPDATE members
-         SET display_name = ?, role = ?, color = ?, disabled = ?, token_version = token_version + ?, updated_at = ?
+         SET display_name = ?, role = ?, color = ?, disabled = ?, keywords = ?, token_version = token_version + ?, updated_at = ?
          WHERE id = ?`
       )
       .run(
@@ -107,6 +111,7 @@ export class MembersRepository {
         patch.role ?? current.role,
         patch.color ?? current.color,
         patch.disabled === undefined ? current.disabled : Number(patch.disabled),
+        patch.keywords === undefined ? current.keywords : JSON.stringify(patch.keywords),
         revokeTokens ? 1 : 0,
         nowIso(),
         id

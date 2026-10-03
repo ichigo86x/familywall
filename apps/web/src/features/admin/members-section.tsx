@@ -108,7 +108,10 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
                 </div>
               </TableCell>
               <TableCell>{member.username}</TableCell>
-              <TableCell>{ROLE_INFO[member.role].label}</TableCell>
+              <TableCell>
+                {ROLE_INFO[member.role].label}
+                {member.keywords.length > 0 ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
+              </TableCell>
               <TableCell>
                 <div className="row-actions">
                   <Button size="small" appearance="subtle" icon={<EditRegular />} aria-label="Modifica" onClick={() => setDialog({ kind: "edit", member })} />
@@ -163,8 +166,14 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     role: member?.role ?? ("Child" as UserRole),
     color: defaultColor,
     password: "",
-    disabled: member?.disabled ?? false
+    disabled: member?.disabled ?? false,
+    keywords: (member?.keywords ?? []).join(", ")
   });
+
+  const keywordList = form.keywords
+    .split(",")
+    .map((word) => word.trim())
+    .filter(Boolean);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -173,9 +182,9 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     setBusy(true);
     try {
       if (member) {
-        await api.updateMember(member.id, { displayName: form.displayName, role: form.role, color: form.color, disabled: form.disabled });
+        await api.updateMember(member.id, { displayName: form.displayName, role: form.role, color: form.color, disabled: form.disabled, keywords: keywordList });
       } else {
-        const parsed = createMemberSchema.safeParse(form);
+        const parsed = createMemberSchema.safeParse({ ...form, keywords: keywordList });
         if (!parsed.success) {
           setError(parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" · "));
           return;
@@ -230,6 +239,14 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
                 <input type="color" value={form.color} onChange={(change) => setForm({ ...form, color: change.target.value.toUpperCase() })} aria-label="Colore personalizzato" />
               </div>
             </Field>
+            {form.role !== "Kiosk" ? (
+              <Field
+                label="Altri nomi nei titoli"
+                hint={`Separati da virgola, es. soprannomi o abbreviazioni. "${form.displayName || "Il nome"}" è già riconosciuto: un evento intitolato "Karate ${form.displayName || "Luca"}" prende questo colore.`}
+              >
+                <Input placeholder="Raffa, Raffy" value={form.keywords} onChange={(_, data) => setForm({ ...form, keywords: data.value })} />
+              </Field>
+            ) : null}
             {!member ? (
               <Field label="Password iniziale" required hint="Almeno 8 caratteri. Il membro potrà cambiarla.">
                 <Input type="password" autoComplete="new-password" value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />

@@ -49,7 +49,8 @@ code {
 }
 
 .app-toolbar {
-  margin: 0 auto 24px;
+  margin: 0 auto 16px;
+  align-items: center;
   max-width: 1480px;
   padding: 16px 20px;
   border: 1px solid rgba(216, 214, 205, 0.7);
@@ -106,6 +107,12 @@ code {
 .app-toolbar__title {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.app-toolbar__nav {
+  flex: 1;
+  justify-content: center;
+  overflow-x: auto;
 }
 
 .eyebrow {
@@ -176,6 +183,8 @@ code {
 }
 
 .shell-main {
+  max-width: 1800px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -221,6 +230,75 @@ code {
   inset: 0;
   pointer-events: none;
   opacity: 0.78;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  text-transform: capitalize;
+}
+
+.page-header .eyebrow {
+  margin-bottom: 2px;
+}
+
+.calendar-toolbar,
+.calendar-toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calendar-toolbar {
+  gap: 16px;
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 0.88rem;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-chip--calendar {
+  color: var(--color-muted);
+}
+
+.legend-chip__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.legend-chip__swatch--square {
+  border-radius: 3px;
+}
+
+.legend-chip__separator {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border);
+}
+
+.event-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-width: none;
 }
 
 .page-stack {
@@ -446,9 +524,8 @@ code {
   font-weight: 600;
 }
 
-.calendar-planner-layout {
-  align-items: start;
-  grid-template-columns: minmax(0, 2.2fr) minmax(320px, 1fr);
+.calendar-planner-card {
+  padding: 14px;
 }
 
 .member-avatar {
@@ -521,7 +598,12 @@ code {
 
 .planner-grid--week,
 .planner-grid--biweek {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.planner-grid--week .planner-day {
+  min-height: calc(100vh - 300px);
 }
 
 .planner-grid--month {
@@ -540,8 +622,12 @@ code {
   border-radius: 8px;
 }
 
-.planner-grid--month .planner-event span:last-child {
-  display: none;
+.planner-grid--month .planner-event {
+  padding-left: 12px;
+}
+
+.planner-grid--month .planner-event__bar {
+  width: 4px;
 }
 
 .planner-day--today {
@@ -550,13 +636,14 @@ code {
 }
 
 .planner-day {
-  min-height: 220px;
-  padding: 14px;
+  min-height: 180px;
+  padding: 10px;
   border-radius: 18px;
   border: 1px solid rgba(216, 214, 205, 0.75);
   background: #fff;
   display: grid;
-  gap: 12px;
+  gap: 8px;
+  align-content: start;
 }
 
 .planner-day--muted {
@@ -588,15 +675,30 @@ code {
 }
 
 .planner-event {
+  position: relative;
+  overflow: hidden;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid transparent;
+  padding: 8px 10px 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(31, 41, 55, 0.08);
   cursor: pointer;
   text-align: left;
+}
+
+/* One vertical segment per member color, so mixed events show every participant. */
+.planner-event__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.planner-event__bar span {
+  flex: 1;
 }
 
 .planner-event--selected {
@@ -612,8 +714,8 @@ code {
   font-size: 0.92rem;
 }
 
-.planner-event span:last-child {
-  font-size: 0.82rem;
+.planner-event strong {
+  overflow-wrap: anywhere;
 }
 
 .calendar-detail-form {
@@ -846,19 +948,23 @@ code {
     grid-template-columns: 1fr;
   }
 
-  .shell-nav {
-    position: static;
-    padding: 8px;
-    overflow-x: auto;
+  .app-toolbar {
+    flex-wrap: wrap;
   }
 
-  .calendar-planner-layout {
-    grid-template-columns: 1fr;
+  .app-toolbar__nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
   }
 
-  .app-toolbar__meta {
-    flex-direction: row !important;
-    align-items: center !important;
+  .planner-grid--week,
+  .planner-grid--biweek {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .planner-grid--week .planner-day {
+    min-height: 180px;
   }
 
   .hero-card {
@@ -872,9 +978,7 @@ code {
 
   .hero-card__content,
   .routine-row,
-  .panel-card__header,
-  .app-toolbar,
-  .app-toolbar__meta {
+  .panel-card__header {
     flex-direction: column;
     align-items: flex-start;
   }

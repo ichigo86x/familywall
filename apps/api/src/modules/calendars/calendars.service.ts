@@ -18,6 +18,8 @@ import { ProvidersService } from "../providers/providers.service";
 import { CalendarsRepository } from "./calendars.repository";
 import { encodeRemoteEventId, remoteMetaKey } from "./event-ids";
 import { projectEventForViewer } from "./event-visibility";
+import { buildMemberMatcher } from "./member-matcher";
+import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -34,6 +36,7 @@ export const storedToEvent = (row: StoredEvent): FamilyEvent => ({
   tagMemberId: row.tag_member_id,
   privacy: row.privacy,
   source: "local",
+  membersInferred: false,
   recurring: false,
   redacted: false
 });
@@ -55,9 +58,19 @@ const remoteToEvent = (calendarId: string, remote: RemoteEvent, metaByKey: Map<s
     tagMemberId: meta?.tag_member_id ?? null,
     privacy: meta?.privacy ?? "shared",
     source: "remote",
+    membersInferred: false,
     recurring: remote.occurrenceKey !== "",
     redacted: false
   };
+};
+
+/** Events without members assigned in the app get the members named in their title (before privacy is applied). */
+const withInferredMembers = (event: FamilyEvent, matchMembers: (title: string) => string[]): FamilyEvent => {
+  if (event.memberIds.length > 0) {
+    return event;
+  }
+  const memberIds = matchMembers(event.title);
+  return memberIds.length > 0 ? { ...event, memberIds, membersInferred: true } : event;
 };
 
 @Injectable()
@@ -69,7 +82,8 @@ export class CalendarsService {
     private readonly events: EventsRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly providers: ProvidersService,
-    private readonly caldav: CalDavClient
+    private readonly caldav: CalDavClient,
+    private readonly members: MembersRepository
   ) {}
 
   public async getCalendars(viewer: User, range: CalendarRangeInput): Promise<CalendarResponse> {
@@ -80,6 +94,7 @@ export class CalendarsService {
     }
 
     const configs = this.calendars.list({ enabledOnly: true });
+    const matchMembers = buildMemberMatcher(this.members.list());
     const stored = this.events.listForCalendars(configs.map((config) => config.id), from.toISOString(), to.toISOString());
 
     const calendars = await Promise.all(
@@ -92,6 +107,7 @@ export class CalendarsService {
           ...remoteEvents.map((remote) => remoteToEvent(config.id, remote, metaByKey)),
           ...rows.filter((row) => row.source === "local").map(storedToEvent)
         ]
+          .map((event) => withInferredMembers(event, matchMembers))
           .map((event) => projectEventForViewer(event, viewer))
           .filter((event): event is FamilyEvent => event !== null)
           .sort((left, right) => left.startAt.localeCompare(right.startAt));

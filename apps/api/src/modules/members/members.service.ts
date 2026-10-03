@@ -24,6 +24,7 @@ export class MembersService {
         displayName: input.displayName,
         role: input.role,
         color: input.color,
+        keywords: input.keywords,
         passwordHash: await hashPassword(input.password)
       })
     );

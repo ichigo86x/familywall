@@ -28,6 +28,8 @@ export interface User {
   role: UserRole;
   color: string;
   disabled: boolean;
+  /** Extra words that identify the member in event titles (the display name always counts). */
+  keywords: string[];
 }
 
 export interface AuthSession {
@@ -129,6 +131,8 @@ export interface FamilyEvent {
   tagMemberId: string | null;
   privacy: EventPrivacy;
   source: EventSource;
+  /** True when memberIds were guessed from names in the title rather than assigned in the app. */
+  membersInferred: boolean;
   /** Occurrence of a recurring series: edits and deletes must say whether they apply to this one or the whole series. */
   recurring: boolean;
   /** True when the viewer may only see that the slot is busy. */

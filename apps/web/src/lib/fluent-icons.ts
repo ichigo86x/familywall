@@ -9,6 +9,7 @@ export {
   CalendarRegular,
   ClipboardTaskRegular,
   DeleteRegular,
+  DismissRegular,
   EditRegular,
   EyeRegular,
   HomeRegular,

@@ -10,6 +10,7 @@ const displayName = z.string().trim().min(1).max(60);
 const password = z.string().min(8).max(128);
 const isoDateTime = z.string().datetime({ offset: true });
 const roleSchema = z.enum(["Admin", "Parent", "Child", "Kiosk"]);
+const keywords = z.array(z.string().trim().min(2).max(30)).max(10);
 
 export const setupSchema = z.object({
   householdName: z.string().trim().min(2).max(80),
@@ -33,17 +34,20 @@ export const createMemberSchema = z.object({
   displayName,
   role: roleSchema,
   color: hexColor,
-  password
+  password,
+  keywords: keywords.default([])
 });
 
-export type CreateMemberInput = z.infer<typeof createMemberSchema>;
+/** Input shape: keywords may be omitted and default to none. */
+export type CreateMemberInput = z.input<typeof createMemberSchema>;
 
 export const updateMemberSchema = z
   .object({
     displayName: displayName.optional(),
     role: roleSchema.optional(),
     color: hexColor.optional(),
-    disabled: z.boolean().optional()
+    disabled: z.boolean().optional(),
+    keywords: keywords.optional()
   })
   .strict();
 

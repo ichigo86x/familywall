@@ -75,5 +75,9 @@ export const migrations: string[] = [
     member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
     PRIMARY KEY (event_id, member_id)
   );
+  `,
+  // Extra words (nicknames, abbreviations) that identify a member in event titles; JSON array.
+  `
+  ALTER TABLE members ADD COLUMN keywords TEXT NOT NULL DEFAULT '[]';
   `
 ];
