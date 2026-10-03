@@ -3,7 +3,7 @@ import type { CreateMemberInput, SetPasswordInput, UpdateMemberInput, User } fro
 import { hasPermission } from "@familywall/shared";
 import { hashPassword, verifyPassword } from "../../common/crypto/password";
 import { AppException } from "../../common/errors/app-exception";
-import { MembersRepository, toUser } from "./members.repository";
+import { MembersRepository, NO_PASSWORD, toUser } from "./members.repository";
 
 @Injectable()
 export class MembersService {
@@ -25,7 +25,7 @@ export class MembersService {
         role: input.role,
         color: input.color,
         keywords: input.keywords,
-        passwordHash: await hashPassword(input.password)
+        passwordHash: input.loginEnabled !== false && input.password ? await hashPassword(input.password) : NO_PASSWORD
       })
     );
   }
@@ -43,6 +43,11 @@ export class MembersService {
 
     if (actor.id === memberId && input.disabled === true) {
       throw AppException.conflict("Non puoi disattivare il tuo account.");
+    }
+
+    const tagOnly = input.loginEnabled === false || current.password_hash === NO_PASSWORD;
+    if (tagOnly && (input.role ?? current.role) !== "Child") {
+      throw AppException.conflict("Solo i figli possono essere senza accesso: imposta prima una password.");
     }
 
     return toUser(this.members.update(memberId, input));

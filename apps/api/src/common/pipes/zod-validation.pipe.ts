@@ -10,7 +10,8 @@ export class ZodValidationPipe<TOutput> implements PipeTransform<unknown, TOutpu
     const result = this.schema.safeParse(value);
 
     if (!result.success) {
-      throw AppException.validation("Dati non validi.", {
+      const fields = result.error.issues.map((issue) => `${issue.path.join(".") || "richiesta"}: ${issue.message}`);
+      throw AppException.validation(`Dati non validi (${fields.slice(0, 3).join("; ")}).`, {
         issues: result.error.flatten()
       });
     }

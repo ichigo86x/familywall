@@ -29,14 +29,25 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
-export const createMemberSchema = z.object({
-  username,
-  displayName,
-  role: roleSchema,
-  color: hexColor,
-  password,
-  keywords: keywords.default([])
-});
+export const createMemberSchema = z
+  .object({
+    username,
+    displayName,
+    role: roleSchema,
+    color: hexColor,
+    password: password.optional(),
+    keywords: keywords.default([]),
+    /** false = tag-only member (children only): no password, never signs in. */
+    loginEnabled: z.boolean().default(true)
+  })
+  .superRefine((input, context) => {
+    if (input.loginEnabled && !input.password) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["password"], message: "Password obbligatoria" });
+    }
+    if (!input.loginEnabled && input.role !== "Child") {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ["loginEnabled"], message: "Solo i figli possono essere senza accesso" });
+    }
+  });
 
 /** Input shape: keywords may be omitted and default to none. */
 export type CreateMemberInput = z.input<typeof createMemberSchema>;
@@ -47,7 +58,9 @@ export const updateMemberSchema = z
     role: roleSchema.optional(),
     color: hexColor.optional(),
     disabled: z.boolean().optional(),
-    keywords: keywords.optional()
+    keywords: keywords.optional(),
+    /** Only false is accepted: it removes the password. Setting a password enables sign-in again. */
+    loginEnabled: z.literal(false).optional()
   })
   .strict();
 

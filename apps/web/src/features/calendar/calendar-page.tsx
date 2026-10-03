@@ -50,7 +50,7 @@ const eventBackground = (colors: string[]): string =>
 export const CalendarPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("events:write");
-  const [plannerMode, setPlannerMode] = useState<PlannerMode>("week");
+  const [plannerMode, setPlannerMode] = useState<PlannerMode>("biweek");
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);

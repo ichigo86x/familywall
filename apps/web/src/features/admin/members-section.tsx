@@ -110,6 +110,7 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
               <TableCell>{member.username}</TableCell>
               <TableCell>
                 {ROLE_INFO[member.role].label}
+                {member.canLogin === false ? <div className="table-subline">solo etichetta, nessun accesso</div> : null}
                 {member.keywords?.length ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
               </TableCell>
               <TableCell>
@@ -167,8 +168,13 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     color: defaultColor,
     password: "",
     disabled: member?.disabled ?? false,
-    keywords: (member?.keywords ?? []).join(", ")
+    keywords: (member?.keywords ?? []).join(", "),
+    tagOnly: member ? member.canLogin === false : false
   });
+  const wasTagOnly = member?.canLogin === false;
+  const tagOnly = form.role === "Child" && form.tagOnly;
+  /** A password is needed for new members that sign in, and to give access back to a tag-only member. */
+  const needsPassword = !tagOnly && (!member || wasTagOnly);
 
   const keywordList = form.keywords
     .split(",")
@@ -182,9 +188,31 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     setBusy(true);
     try {
       if (member) {
-        await api.updateMember(member.id, { displayName: form.displayName, role: form.role, color: form.color, disabled: form.disabled, keywords: keywordList });
+        if (needsPassword && form.password.length < 8) {
+          setError("Imposta una password di almeno 8 caratteri per dare l'accesso.");
+          return;
+        }
+        if (needsPassword) {
+          await api.setMemberPassword(member.id, { password: form.password });
+        }
+        await api.updateMember(member.id, {
+          displayName: form.displayName,
+          role: form.role,
+          color: form.color,
+          disabled: form.disabled,
+          keywords: keywordList,
+          ...(tagOnly && !wasTagOnly ? { loginEnabled: false as const } : {})
+        });
       } else {
-        const parsed = createMemberSchema.safeParse({ ...form, keywords: keywordList });
+        const parsed = createMemberSchema.safeParse({
+          username: form.username,
+          displayName: form.displayName,
+          role: form.role,
+          color: form.color,
+          keywords: keywordList,
+          loginEnabled: !tagOnly,
+          password: tagOnly ? undefined : form.password
+        });
         if (!parsed.success) {
           setError(parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" · "));
           return;
@@ -247,13 +275,25 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
                 <Input placeholder="Raffa, Raffy" value={form.keywords} onChange={(_, data) => setForm({ ...form, keywords: data.value })} />
               </Field>
             ) : null}
-            {!member ? (
-              <Field label="Password iniziale" required hint="Almeno 8 caratteri. Il membro potrà cambiarla.">
+            {form.role === "Child" ? (
+              <Switch
+                label="Solo etichetta: nessuna password, non accede all'app"
+                checked={form.tagOnly}
+                onChange={(_, data) => setForm({ ...form, tagOnly: data.checked })}
+              />
+            ) : null}
+            {needsPassword ? (
+              <Field
+                label={member ? "Password per l'accesso" : "Password iniziale"}
+                required
+                hint="Almeno 8 caratteri. Il membro potrà cambiarla."
+              >
                 <Input type="password" autoComplete="new-password" value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />
               </Field>
-            ) : (
+            ) : null}
+            {member ? (
               <Switch label="Account disattivato" checked={form.disabled} onChange={(_, data) => setForm({ ...form, disabled: data.checked })} />
-            )}
+            ) : null}
             {error ? <p className="form-error">{error}</p> : null}
           </DialogContent>
           <DialogActions>

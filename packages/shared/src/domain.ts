@@ -30,6 +30,8 @@ export interface User {
   disabled: boolean;
   /** Extra words that identify the member in event titles (the display name always counts). */
   keywords: string[];
+  /** False for tag-only members: they appear on events but have no password and cannot sign in. */
+  canLogin: boolean;
 }
 
 export interface AuthSession {

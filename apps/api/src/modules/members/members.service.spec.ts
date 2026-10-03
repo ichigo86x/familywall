@@ -39,6 +39,23 @@ describe("MembersService", () => {
     await expect(ctx.members.setPassword(admin, child.id, { password: "password3" })).resolves.toBeUndefined();
   });
 
+  it("supports tag-only children that cannot sign in", async () => {
+    const { ctx, admin } = await setup();
+    const tag = await ctx.members.create({ username: "nonno", displayName: "Nonno", role: "Child", color: "#65A30D", loginEnabled: false });
+
+    expect(tag.canLogin).toBe(false);
+    await expect(ctx.auth.login({ username: "nonno", password: "" }, "127.0.0.1")).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    expect(() => ctx.members.update(admin, tag.id, { role: "Parent" })).toThrow(/Solo i figli/);
+
+    await ctx.members.setPassword(admin, tag.id, { password: "password1" });
+    expect(ctx.members.list().find((member) => member.id === tag.id)?.canLogin).toBe(true);
+    await expect(ctx.auth.login({ username: "nonno", password: "password1" }, "127.0.0.1")).resolves.toBeDefined();
+
+    const child = await ctx.members.create({ username: "luca", displayName: "Luca", role: "Child", color: "#F97316", password: "password1" });
+    expect(ctx.members.update(admin, child.id, { loginEnabled: false }).canLogin).toBe(false);
+    await expect(ctx.auth.login({ username: "luca", password: "password1" }, "127.0.0.1")).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
   it("never exposes password hashes", async () => {
     const { ctx } = await setup();
 

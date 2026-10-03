@@ -49,6 +49,9 @@ export class EventsService {
       const ics = buildEventIcs(uid, input.title, times);
       await this.caldav.putEvent(this.credentials(calendar.accountId), eventResourceUrl(calendar.remoteUrl, uid), ics, { create: true });
     } catch (error) {
+      if (error instanceof CalDavError && error.kind === "conflict") {
+        throw AppException.conflict("Sul calendario esiste già un evento con lo stesso identificativo. Riprova.");
+      }
       throw providerError(error);
     }
 

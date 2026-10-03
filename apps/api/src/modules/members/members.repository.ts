@@ -32,7 +32,12 @@ export interface MemberPatch {
   color?: string;
   disabled?: boolean;
   keywords?: string[];
+  /** Removes the password: the member becomes tag-only. */
+  loginEnabled?: false;
 }
+
+/** Tag-only members store an empty hash, which never verifies. */
+export const NO_PASSWORD = "";
 
 export const toUser = (row: MemberRow): User => ({
   id: row.id,
@@ -41,7 +46,8 @@ export const toUser = (row: MemberRow): User => ({
   role: row.role,
   color: row.color,
   disabled: row.disabled === 1,
-  keywords: JSON.parse(row.keywords) as string[]
+  keywords: JSON.parse(row.keywords) as string[],
+  canLogin: row.password_hash !== NO_PASSWORD
 });
 
 @Injectable()
@@ -98,12 +104,13 @@ export class MembersRepository {
     const current = this.findById(id)!;
     const revokeTokens =
       (patch.role !== undefined && patch.role !== current.role) ||
-      (patch.disabled !== undefined && patch.disabled !== (current.disabled === 1));
+      (patch.disabled !== undefined && patch.disabled !== (current.disabled === 1)) ||
+      patch.loginEnabled === false;
 
     this.db
       .prepare(
         `UPDATE members
-         SET display_name = ?, role = ?, color = ?, disabled = ?, keywords = ?, token_version = token_version + ?, updated_at = ?
+         SET display_name = ?, role = ?, color = ?, disabled = ?, keywords = ?, password_hash = ?, token_version = token_version + ?, updated_at = ?
          WHERE id = ?`
       )
       .run(
@@ -112,6 +119,7 @@ export class MembersRepository {
         patch.color ?? current.color,
         patch.disabled === undefined ? current.disabled : Number(patch.disabled),
         patch.keywords === undefined ? current.keywords : JSON.stringify(patch.keywords),
+        patch.loginEnabled === false ? NO_PASSWORD : current.password_hash,
         revokeTokens ? 1 : 0,
         nowIso(),
         id

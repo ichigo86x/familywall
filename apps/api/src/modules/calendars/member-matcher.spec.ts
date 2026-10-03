@@ -9,7 +9,8 @@ const member = (id: string, displayName: string, keywords: string[] = [], role: 
   role,
   color: "#000000",
   disabled: false,
-  keywords
+  keywords,
+  canLogin: true
 });
 
 const match = buildMemberMatcher([

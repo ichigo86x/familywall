@@ -20,6 +20,10 @@ Calendario di famiglia multi-utente: calendari iCloud (e CalDAV) condivisi, ruol
 | Figlio | legge | — | — |
 | Pannello (kiosk) | legge, senza eventi "nascosti sul wall" | — | — |
 
+Un Figlio può essere **solo etichetta**: non ha password e non accede all'app, ma il suo nome e colore servono per etichettare gli eventi. Impostando una password dal pannello Admin riceve di nuovo l'accesso.
+
+I membri di un evento vengono riconosciuti dal titolo (nome o "altri nomi") ogni volta che il calendario viene caricato, senza modificare l'evento sul provider. Se assegni i membri a mano, vale la scelta manuale.
+
 Privacy degli eventi:
 - **Condiviso**: visibile a tutti.
 - **Privato**: i dettagli sono visibili solo ad Admin, Genitori e membri coinvolti. Gli altri vedono "Occupato".

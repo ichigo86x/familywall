@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { CalDavClient, CalDavError, ICLOUD_CALDAV_URL } from "./caldav-client";
+import { CalDavClient, CalDavError, ICLOUD_CALDAV_URL, eventResourceUrl } from "./caldav-client";
 
 const credentials = { serverUrl: ICLOUD_CALDAV_URL, username: "family@icloud.com", password: "abcd-efgh-ijkl-mnop" };
 
@@ -69,5 +69,15 @@ describe("CalDavClient", () => {
     expect(events).toEqual([
       { uid: "a1", occurrenceKey: "", title: "Scuola & sport", startAt: "2026-10-05T07:00:00.000Z", endAt: "2026-10-05T08:00:00.000Z", allDay: false }
     ]);
+  });
+});
+
+describe("eventResourceUrl", () => {
+  it("gives every event its own resource name", () => {
+    const first = eventResourceUrl("https://cal.example/home/fam/", "2f1c9a3e-1111-4a2b-9c3d-aaaaaaaaaaaa@familywall");
+    const second = eventResourceUrl("https://cal.example/home/fam", "7b8d0e4f-2222-4c5d-8e6f-bbbbbbbbbbbb@familywall");
+
+    expect(first).toBe("https://cal.example/home/fam/2f1c9a3e-1111-4a2b-9c3d-aaaaaaaaaaaa%40familywall.ics");
+    expect(second).not.toBe(first);
   });
 });

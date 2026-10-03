@@ -48,7 +48,7 @@ const escapeXmlText = (value: string): string =>
 
 /** URL for a new event resource inside a calendar collection. */
 export const eventResourceUrl = (calendarUrl: string, uid: string): string =>
-  new URL(`${encodeURIComponent(uid.replace(/[^w@.-]/g, "_"))}.ics`, calendarUrl.endsWith("/") ? calendarUrl : `${calendarUrl}/`).toString();
+  new URL(`${encodeURIComponent(uid.replace(/[^\w@.-]/g, "_"))}.ics`, calendarUrl.endsWith("/") ? calendarUrl : `${calendarUrl}/`).toString();
 
 const formatUtc = (value: Date): string => value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
