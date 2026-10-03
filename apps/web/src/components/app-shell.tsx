@@ -40,7 +40,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   ];
 
   return (
-    <div className="app-shell">
+    <div className={compact ? "app-shell app-shell--fit" : "app-shell"}>
       <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
         <div className="app-toolbar__brand">
           <span className="app-toolbar__dot" />
@@ -60,7 +60,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
           }}
         >
           {tabs.map((tab) => (
-            <Tab key={tab.value} icon={tab.icon} value={tab.value}>
+            <Tab key={tab.value} icon={tab.icon} value={tab.value} aria-label={tab.label}>
               {tab.label}
             </Tab>
           ))}

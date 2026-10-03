@@ -183,7 +183,7 @@ code {
 }
 
 .shell-main {
-  max-width: 1800px;
+  max-width: 1480px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -602,9 +602,6 @@ code {
   gap: 8px;
 }
 
-.planner-grid--week .planner-day {
-  min-height: calc(100vh - 300px);
-}
 
 .planner-grid--month {
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -667,6 +664,8 @@ code {
   display: grid;
   gap: 8px;
   align-content: start;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .planner-day__empty {
@@ -906,6 +905,57 @@ code {
   }
 }
 
+
+/*
+ * Calendar page: the planner fills exactly the screen below the header, so every
+ * day is visible without scrolling the page (wall panels, tablets). Busy days
+ * scroll inside their own cell. Phones fall back to a normal scrolling list.
+ */
+.app-shell--fit {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell--fit .app-toolbar {
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.app-shell--fit .shell-main {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  gap: 12px;
+}
+
+.app-shell--fit .page-stack {
+  flex: 1;
+  min-height: 0;
+}
+
+.app-shell--fit .calendar-planner-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-shell--fit .planner-grid {
+  flex: 1;
+  min-height: 0;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.app-shell--fit .planner-day,
+.app-shell--fit .planner-grid--month .planner-day {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .metric-card,
   .panel-card,
@@ -958,13 +1008,9 @@ code {
     justify-content: flex-start;
   }
 
-  .planner-grid--week,
-  .planner-grid--biweek {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-
-  .planner-grid--week .planner-day {
-    min-height: 180px;
+  .planner-grid--week .planner-event,
+  .planner-grid--biweek .planner-event {
+    font-size: 0.8rem;
   }
 
   .hero-card {
@@ -1022,5 +1068,60 @@ code {
   .planner-grid--week .planner-day,
   .planner-grid--biweek .planner-day {
     min-height: 0;
+  }
+
+  /* Phones: icon-only tabs and a compact header so the planner starts high on screen. */
+  .app-toolbar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .app-toolbar__brand .eyebrow,
+  .app-toolbar__meta .fui-Badge,
+  .app-toolbar__nav .fui-Tab__content {
+    display: none;
+  }
+
+  .app-toolbar__title {
+    font-size: 1.15rem;
+  }
+
+  .app-toolbar__dot {
+    margin-top: 7px;
+  }
+
+  .app-toolbar__nav {
+    justify-content: space-around;
+  }
+
+  .page-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .calendar-toolbar,
+  .calendar-toolbar__group {
+    gap: 6px;
+  }
+
+  .calendar-toolbar .fui-Button {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  /* Phones: days stack in one scrolling column. */
+  .app-shell--fit {
+    height: auto;
+  }
+
+  .app-shell--fit .planner-grid {
+    grid-auto-rows: auto;
+  }
+
+  .app-shell--fit .planner-grid--month {
+    grid-auto-rows: minmax(72px, auto);
+  }
+
+  .app-shell--fit .planner-day {
+    overflow: visible;
   }
 }

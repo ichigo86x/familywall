@@ -110,7 +110,7 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
               <TableCell>{member.username}</TableCell>
               <TableCell>
                 {ROLE_INFO[member.role].label}
-                {member.keywords.length > 0 ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
+                {member.keywords?.length ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
               </TableCell>
               <TableCell>
                 <div className="row-actions">
