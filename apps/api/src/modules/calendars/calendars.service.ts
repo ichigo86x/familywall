@@ -14,6 +14,7 @@ import { READ_ONLY_PROVIDERS } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient } from "../providers/caldav/caldav-client";
 import { CookidooClient } from "../providers/cookidoo/cookidoo-client";
+import { GoogleClient, parseGoogleSecret } from "../providers/google/google-client";
 import type { RemoteEvent } from "../providers/caldav/ics-parser";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { ProvidersService } from "../providers/providers.service";
@@ -86,7 +87,8 @@ export class CalendarsService {
     private readonly providers: ProvidersService,
     private readonly caldav: CalDavClient,
     private readonly members: MembersRepository,
-    private readonly cookidoo: CookidooClient
+    private readonly cookidoo: CookidooClient,
+    private readonly google: GoogleClient
   ) {}
 
   public async getCalendars(viewer: User, range: CalendarRangeInput): Promise<CalendarResponse> {
@@ -174,7 +176,9 @@ export class CalendarsService {
       const events =
         config.provider === "cookidoo"
           ? await this.cookidoo.fetchMealPlan(credentials, from, to)
-          : await this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
+          : config.provider === "google"
+            ? await this.google.fetchEvents(parseGoogleSecret(credentials.password), config.remoteUrl, from, to)
+            : await this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
       this.calendars.recordSync(config.id, null);
       return { events, error: null };
     } catch (error) {

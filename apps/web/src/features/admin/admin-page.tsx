@@ -8,15 +8,17 @@ import { useAuth } from "@/components/auth/use-auth";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { MembersSection } from "./members-section";
 import { ProvidersSection } from "./providers-section";
+import { TaskListsSection } from "./task-lists-section";
 
 const loadAdminData = async () => {
-  const [members, accounts, calendars, settings] = await Promise.all([
+  const [members, accounts, calendars, settings, taskLists] = await Promise.all([
     api.getMembers(),
     api.getProviderAccounts(),
     api.getCalendarConfigs(),
-    api.getSettings()
+    api.getSettings(),
+    api.getTaskListConfigs()
   ]);
-  return { members, accounts, calendars, settings };
+  return { members, accounts, calendars, settings, taskLists };
 };
 
 export const AdminPage = () => {
@@ -39,6 +41,7 @@ export const AdminPage = () => {
           <HouseholdCard householdName={admin.data.settings.householdName} onSaved={admin.reload} />
           <MembersSection members={admin.data.members} onChanged={admin.reload} />
           <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
+          <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
         </>
       ) : null}
     </AppShell>

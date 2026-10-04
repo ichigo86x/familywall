@@ -98,7 +98,7 @@ const wallTime = (iso: string, timeZone: string, zone: ICAL.Timezone): ICAL.Time
 const compact = (date: Date): string => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
 /** RRULE text; UNTIL covers the whole chosen day (DATE for all-day events, UTC end of the local day otherwise). */
-const rruleText = (rule: RecurrenceRule, allDay: boolean, timeZone: string): string => {
+export const rruleText = (rule: RecurrenceRule, allDay: boolean, timeZone: string): string => {
   const parts = [`FREQ=${rule.frequency.toUpperCase()}`, `INTERVAL=${rule.interval}`];
   if (rule.frequency === "weekly" && rule.weekdays.length > 0) {
     parts.push(`BYDAY=${rule.weekdays.join(",")}`);

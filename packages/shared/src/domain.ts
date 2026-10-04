@@ -7,12 +7,14 @@ export type Permission =
   | "events:write"
   | "members:manage"
   | "providers:manage"
-  | "settings:manage";
+  | "settings:manage"
+  /** Add, tick and remove list items and family notes. */
+  | "lists:write";
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  Admin: ["calendar:read", "events:write", "members:manage", "providers:manage", "settings:manage"],
-  Parent: ["calendar:read", "events:write"],
-  Child: ["calendar:read"],
+  Admin: ["calendar:read", "events:write", "members:manage", "providers:manage", "settings:manage", "lists:write"],
+  Parent: ["calendar:read", "events:write", "lists:write"],
+  Child: ["calendar:read", "lists:write"],
   Kiosk: ["calendar:read"]
 };
 
@@ -62,7 +64,7 @@ export interface HouseholdSettings {
   wallModeEnabled: boolean;
 }
 
-export type CalendarProvider = "icloud" | "caldav" | "cookidoo";
+export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google";
 
 /** Providers Familywall can only read from (no event writes). */
 export const READ_ONLY_PROVIDERS: readonly CalendarProvider[] = ["cookidoo"];
@@ -210,26 +212,77 @@ export interface DashboardResponse {
   dashboard: DashboardData;
 }
 
-export interface FamilyList {
+/** A provider task list (Google Tasks) chosen by the Admin. */
+export interface TaskListConfig {
   id: string;
-  title: string;
-  description: string;
-  itemCount: number;
-  coverImageUrl: string;
+  accountId: string;
+  accountLabel: string;
+  remoteId: string;
+  name: string;
+  color: string;
+  enabled: boolean;
 }
 
-export interface ListTask {
+export interface TaskListConfigsResponse {
+  lists: TaskListConfig[];
+}
+
+export interface TaskListConfigResponse {
+  list: TaskListConfig;
+}
+
+export interface RemoteTaskList {
+  remoteId: string;
+  name: string;
+  alreadyAdded: boolean;
+}
+
+export interface RemoteTaskListsResponse {
+  lists: RemoteTaskList[];
+}
+
+export interface TaskItem {
   id: string;
-  task: string;
-  ownerName: string;
-  ownerAvatarUrl: string;
-  due: string;
-  status: "Open" | "Pending" | "In progress";
+  title: string;
+  notes: string | null;
+  completed: boolean;
+  completedAt: string | null;
+  due: string | null;
+}
+
+export interface FamilyTaskList {
+  id: string;
+  name: string;
+  color: string;
+  lastError: string | null;
+  tasks: TaskItem[];
 }
 
 export interface ListsResponse {
-  lists: FamilyList[];
-  items: ListTask[];
+  lists: FamilyTaskList[];
+}
+
+export interface FamilyNote {
+  id: string;
+  title: string;
+  body: string;
+  color: string;
+  pinned: boolean;
+  createdBy: string | null;
+  updatedAt: string;
+}
+
+export interface NotesResponse {
+  notes: FamilyNote[];
+}
+
+export interface NoteResponse {
+  note: FamilyNote;
+}
+
+export interface GoogleAuthStartResponse {
+  state: string;
+  authUrl: string;
 }
 
 export interface HealthResponse {

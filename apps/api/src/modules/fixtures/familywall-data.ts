@@ -1,6 +1,6 @@
-import type { DashboardData, FamilyList, ListTask } from "@familywall/shared";
+import type { DashboardData } from "@familywall/shared";
 
-/** Placeholder content until dashboard and lists get their own persistence. */
+/** Placeholder content until the dashboard gets its own persistence. */
 export const dashboardData: DashboardData = {
   householdName: "",
   focusDateLabel: "",
@@ -13,7 +13,3 @@ export const dashboardData: DashboardData = {
   routines: [],
   reminders: []
 };
-
-export const familyLists: FamilyList[] = [];
-
-export const listTasks: ListTask[] = [];

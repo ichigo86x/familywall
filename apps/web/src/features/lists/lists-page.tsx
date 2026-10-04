@@ -1,110 +1,166 @@
-import { Badge, Button, Card, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from "@fluentui/react-components";
+import { useEffect, useState } from "react";
+import { Button, Card, MessageBar, MessageBarBody } from "@fluentui/react-components";
+import type { FamilyTaskList, TaskItem } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
+import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { AddRegular, ClipboardTaskRegular } from "@/lib/fluent-icons";
+import { AddRegular, ArrowClockwiseRegular, DismissRegular } from "@/lib/fluent-icons";
+
+/** Lists change from phones too: refresh periodically like the calendar. */
+const AUTO_REFRESH_MS = 2 * 60 * 1000;
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
 export const ListsPage = () => {
+  const auth = useAuth();
+  const canWrite = auth.can("lists:write");
   const lists = useAsyncResource(() => api.getLists(), []);
 
-  return (
-    <>
-      <AppShell
-        currentRoute="/lists"
-        eyebrow="Shared lists"
-        title="Shopping, school, and household tasks in one calm surface"
-        subtitle="Cards stay generous for wall and tablet use, while the task table keeps ownership and due windows obvious."
-        summaryChip="3 active list groups"
-        toolbarActions={
-          <Button appearance="primary" icon={<AddRegular />} onClick={lists.reload}>
-            Refresh lists
-          </Button>
-        }
-      >
-        {lists.status === "loading" ? (
-          <LoadingState title="Loading lists" message="Checking shopping, school prep, and home routines." />
-        ) : lists.status === "error" ? (
-          <ErrorState
-            title="Lists could not sync"
-            message={lists.error.message}
-            actionLabel="Retry lists"
-            onAction={lists.reload}
-          />
-        ) : lists.data.lists.length === 0 && lists.data.items.length === 0 ? (
-          <EmptyState
-            title="Liste in arrivo"
-            message="Spesa, compiti e promemoria condivisi arriveranno nelle prossime versioni."
-            actionLabel="Ricarica"
-            onAction={lists.reload}
-          />
-        ) : (
-          <section className="content-grid content-grid--wide">
-            <Card className="panel-card">
-              <div className="panel-card__header">
-                <div>
-                  <p className="eyebrow">Card list</p>
-                  <h3>Active family boards</h3>
-                </div>
-                <Badge appearance="filled" color="brand">
-                  Tablet friendly
-                </Badge>
-              </div>
-              <div className="media-grid">
-                {lists.data.lists.map((list) => (
-                  <article key={list.id} className="media-card">
-                    <img src={list.coverImageUrl} alt={list.title} className="media-card__image" />
-                    <div className="media-card__body">
-                      <div className="media-card__meta">
-                        <Badge appearance="filled">{list.itemCount} items</Badge>
-                        <span>{list.title}</span>
-                      </div>
-                      <h4>{list.title}</h4>
-                      <p>{list.description}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </Card>
+  useEffect(() => {
+    const timer = window.setInterval(lists.reload, AUTO_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [lists.reload]);
 
-            <Card className="panel-card">
-              <div className="panel-card__header">
-                <div>
-                  <p className="eyebrow">Task table</p>
-                  <h3>Approved sample tasks</h3>
-                </div>
-                <Button appearance="subtle" icon={<ClipboardTaskRegular />}>Open bulk view</Button>
-              </div>
-              <Table aria-label="Shared list items table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHeaderCell>Task</TableHeaderCell>
-                    <TableHeaderCell>Owner</TableHeaderCell>
-                    <TableHeaderCell>Due</TableHeaderCell>
-                    <TableHeaderCell>Status</TableHeaderCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lists.data.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.task}</TableCell>
-                      <TableCell>
-                        <div className="identity-cell">
-                          <img src={item.ownerAvatarUrl} alt={item.ownerName} className="avatar-thumb" />
-                          <span>{item.ownerName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.due}</TableCell>
-                      <TableCell>{item.status}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </section>
-        )}
-      </AppShell>
-    </>
+  const openCount = (lists.data?.lists ?? []).reduce((total, list) => total + list.tasks.filter((task) => !task.completed).length, 0);
+
+  return (
+    <AppShell
+      compact
+      currentRoute="/lists"
+      eyebrow="Liste"
+      title="Liste della famiglia"
+      subtitle=""
+      summaryChip={`${openCount} da fare`}
+      toolbarActions={
+        <Button appearance="secondary" icon={<ArrowClockwiseRegular />} onClick={lists.reload}>
+          Aggiorna
+        </Button>
+      }
+    >
+      {lists.status === "loading" && !lists.data ? (
+        <LoadingState title="Caricamento liste" message="Lettura delle liste da Google." />
+      ) : lists.status === "error" ? (
+        <ErrorState title="Liste non disponibili" message={lists.error.message} actionLabel="Riprova" onAction={lists.reload} />
+      ) : (lists.data?.lists.length ?? 0) === 0 ? (
+        <EmptyState
+          title="Nessuna lista"
+          message={auth.can("providers:manage") ? 'Collega un account Google e usa "Scegli liste" nella sezione Admin.' : "Chiedi all'amministratore di aggiungere le liste."}
+          actionLabel="Ricarica"
+          onAction={lists.reload}
+        />
+      ) : (
+        <div className="task-lists-grid">
+          {lists.data!.lists.map((list) => (
+            <TaskListCard key={list.id} list={list} canWrite={canWrite} onChanged={lists.reload} />
+          ))}
+        </div>
+      )}
+    </AppShell>
+  );
+};
+
+/** Optimistic updates keep ticking fast on the wall panel; the list is re-read afterwards. */
+const TaskListCard = ({ list, canWrite, onChanged }: { list: FamilyTaskList; canWrite: boolean; onChanged: () => void }) => {
+  const [tasks, setTasks] = useState<TaskItem[]>(list.tasks);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setTasks(list.tasks), [list.tasks]);
+
+  const act = async (optimistic: (current: TaskItem[]) => TaskItem[], action: () => Promise<unknown>) => {
+    setError(null);
+    setTasks(optimistic);
+    try {
+      await action();
+    } catch (caught) {
+      setError(errorText(caught));
+    }
+    onChanged();
+  };
+
+  const add = () => {
+    const title = draft.trim();
+    if (!title) {
+      return;
+    }
+    setDraft("");
+    void act(
+      (current) => [{ id: `pending-${Date.now()}`, title, notes: null, completed: false, completedAt: null, due: null }, ...current],
+      () => api.createTask(list.id, title)
+    );
+  };
+
+  const open = tasks.filter((task) => !task.completed);
+  const done = tasks.filter((task) => task.completed);
+
+  return (
+    <Card className="panel-card task-list-card" style={{ borderTopColor: list.color }}>
+      <div className="task-list-card__header">
+        <span className="legend-chip__swatch" style={{ background: list.color }} />
+        <h3>{list.name}</h3>
+        <span className="calendar-detail-hint">{open.length}</span>
+      </div>
+
+      {list.lastError ? (
+        <MessageBar intent="warning">
+          <MessageBarBody>{list.lastError}</MessageBarBody>
+        </MessageBar>
+      ) : null}
+
+      {canWrite ? (
+        <form
+          className="task-add"
+          onSubmit={(event) => {
+            event.preventDefault();
+            add();
+          }}
+        >
+          <input value={draft} placeholder="Aggiungi..." aria-label={`Aggiungi a ${list.name}`} onChange={(change) => setDraft(change.target.value)} />
+          <Button type="submit" appearance="primary" icon={<AddRegular />} aria-label="Aggiungi" disabled={!draft.trim()} />
+        </form>
+      ) : null}
+
+      <ul className="task-items">
+        {[...open, ...done].map((task) => (
+          <li key={task.id} className={`task-item ${task.completed ? "task-item--done" : ""}`.trim()}>
+            <label>
+              <input
+                type="checkbox"
+                checked={task.completed}
+                disabled={!canWrite || task.id.startsWith("pending-")}
+                onChange={(change) => {
+                  const completed = change.target.checked;
+                  void act(
+                    (current) => current.map((item) => (item.id === task.id ? { ...item, completed } : item)),
+                    () => api.updateTask(list.id, task.id, { completed })
+                  );
+                }}
+              />
+              <span>{task.title}</span>
+            </label>
+            {canWrite && !task.id.startsWith("pending-") ? (
+              <Button
+                size="small"
+                appearance="subtle"
+                icon={<DismissRegular />}
+                aria-label={`Elimina ${task.title}`}
+                onClick={() =>
+                  void act(
+                    (current) => current.filter((item) => item.id !== task.id),
+                    () => api.deleteTask(list.id, task.id)
+                  )
+                }
+              />
+            ) : null}
+          </li>
+        ))}
+        {tasks.length === 0 ? <li className="calendar-detail-hint">Lista vuota.</li> : null}
+      </ul>
+
+      {error ? <p className="form-error">{error}</p> : null}
+    </Card>
   );
 };

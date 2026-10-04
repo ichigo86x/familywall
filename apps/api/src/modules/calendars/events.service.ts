@@ -4,7 +4,8 @@ import type { CreateEventInput, FamilyEvent, RecurrenceScope, UpdateEventInput, 
 import { AppException } from "../../common/errors/app-exception";
 import { MembersRepository } from "../members/members.repository";
 import { CalDavClient, CalDavError, eventResourceUrl, type CalDavCredentials } from "../providers/caldav/caldav-client";
-import { applyEventDelete, applyEventEdit, buildEventIcs, newEventUid } from "../providers/caldav/ics-editor";
+import { applyEventDelete, applyEventEdit, buildEventIcs, newEventUid, rruleText } from "../providers/caldav/ics-editor";
+import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "../providers/google/google-client";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 import { CalendarsService } from "./calendars.service";
@@ -39,19 +40,31 @@ export class EventsService {
     private readonly members: MembersRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly caldav: CalDavClient,
-    private readonly settings: SettingsRepository
+    private readonly settings: SettingsRepository,
+    private readonly google: GoogleClient
   ) {}
 
   public async create(actor: User, input: CreateEventInput): Promise<FamilyEvent> {
     const calendar = this.requireWritableCalendar(input.calendarId);
     this.assertMembersExist(input.memberIds, input.tagMemberId);
 
-    const uid = newEventUid();
+    let uid = newEventUid();
     const times = { startAt: input.startAt, endAt: input.endAt, allDay: input.allDay };
+    const timeZone = this.settings.get().timezone;
     try {
-      const recurrence = input.recurrence ? { rule: input.recurrence, timeZone: this.settings.get().timezone } : undefined;
-      const ics = buildEventIcs(uid, input.title, times, recurrence);
-      await this.caldav.putEvent(this.credentials(calendar.accountId), eventResourceUrl(calendar.remoteUrl, uid), ics, { create: true });
+      if (calendar.provider === "google") {
+        // Google assigns the event id, which then plays the role of the uid.
+        uid = await this.google.createEvent(this.googleSecret(calendar.accountId), calendar.remoteUrl, {
+          title: input.title,
+          times,
+          rrule: input.recurrence ? rruleText(input.recurrence, times.allDay, timeZone) : null,
+          timeZone
+        });
+      } else {
+        const recurrence = input.recurrence ? { rule: input.recurrence, timeZone } : undefined;
+        const ics = buildEventIcs(uid, input.title, times, recurrence);
+        await this.caldav.putEvent(this.credentials(calendar.accountId), eventResourceUrl(calendar.remoteUrl, uid), ics, { create: true });
+      }
     } catch (error) {
       if (error instanceof CalDavError && error.kind === "conflict") {
         throw AppException.conflict("Sul calendario esiste già un evento con lo stesso identificativo. Riprova.");
@@ -97,14 +110,25 @@ export class EventsService {
         throw AppException.validation("La fine deve essere dopo l'inizio.");
       }
 
-      const credentials = this.credentials(calendar.accountId);
       try {
-        const resource = await this.caldav.findByUid(credentials, calendar.remoteUrl, remote.uid);
-        if (!resource) {
-          throw AppException.notFound("L'evento non esiste più sul calendario.");
+        if (calendar.provider === "google") {
+          await this.google.updateEvent(
+            this.googleSecret(calendar.accountId),
+            calendar.remoteUrl,
+            remote,
+            scope,
+            { title, startAt, endAt, allDay },
+            this.settings.get().timezone
+          );
+        } else {
+          const credentials = this.credentials(calendar.accountId);
+          const resource = await this.caldav.findByUid(credentials, calendar.remoteUrl, remote.uid);
+          if (!resource) {
+            throw AppException.notFound("L'evento non esiste più sul calendario.");
+          }
+          const ics = applyEventEdit(resource.ics, remote.uid, remote.occurrenceKey, scope, { title, startAt, endAt, allDay });
+          await this.caldav.putEvent(credentials, resource.href, ics, { etag: resource.etag });
         }
-        const ics = applyEventEdit(resource.ics, remote.uid, remote.occurrenceKey, scope, { title, startAt, endAt, allDay });
-        await this.caldav.putEvent(credentials, resource.href, ics, { etag: resource.etag });
       } catch (error) {
         throw providerError(error);
       }
@@ -134,10 +158,13 @@ export class EventsService {
 
     const calendar = this.requireWritableCalendar(remote.calendarId);
     const scope = this.requireScope(remote, requestedScope);
-    const credentials = this.credentials(calendar.accountId);
 
     try {
-      const resource = await this.caldav.findByUid(credentials, calendar.remoteUrl, remote.uid);
+      const credentials = this.credentials(calendar.accountId);
+      const resource =
+        calendar.provider === "google"
+          ? (await this.google.deleteEvent(this.googleSecret(calendar.accountId), calendar.remoteUrl, remote, scope), null)
+          : await this.caldav.findByUid(credentials, calendar.remoteUrl, remote.uid);
       if (resource) {
         const ics = applyEventDelete(resource.ics, remote.uid, remote.occurrenceKey, scope);
         if (ics === null) {
@@ -180,6 +207,10 @@ export class EventsService {
 
     const { scope: _scope, ...fields } = input;
     return this.events.update(eventId, fields).id;
+  }
+
+  private googleSecret(accountId: string): GoogleSecret {
+    return parseGoogleSecret(this.credentials(accountId).password);
   }
 
   private credentials(accountId: string): CalDavCredentials {

@@ -97,5 +97,47 @@ export const migrations: string[] = [
   INSERT INTO provider_accounts_new SELECT id, provider, label, username, secret_enc, server_url, status, last_error, last_checked_at, created_at FROM provider_accounts;
   DROP TABLE provider_accounts;
   ALTER TABLE provider_accounts_new RENAME TO provider_accounts;
+  `,
+  // Google accounts (OAuth), Google Tasks lists chosen by the Admin, and the family notes board.
+  `
+  CREATE TABLE provider_accounts_new (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL CHECK (provider IN ('icloud', 'caldav', 'cookidoo', 'google')),
+    label TEXT NOT NULL,
+    username TEXT NOT NULL,
+    secret_enc TEXT NOT NULL,
+    server_url TEXT,
+    status TEXT NOT NULL DEFAULT 'unknown',
+    last_error TEXT,
+    last_checked_at TEXT,
+    created_at TEXT NOT NULL
+  );
+  INSERT INTO provider_accounts_new SELECT id, provider, label, username, secret_enc, server_url, status, last_error, last_checked_at, created_at FROM provider_accounts;
+  DROP TABLE provider_accounts;
+  ALTER TABLE provider_accounts_new RENAME TO provider_accounts;
+
+  CREATE TABLE task_lists (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL REFERENCES provider_accounts(id) ON DELETE CASCADE,
+    remote_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE (account_id, remote_id)
+  );
+
+  CREATE TABLE notes (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    color TEXT NOT NULL,
+    pinned INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT REFERENCES members(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
   `
 ];

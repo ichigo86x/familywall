@@ -122,6 +122,7 @@ export const CalendarPage = () => {
   return (
     <AppShell
       compact
+      fit
       currentRoute="/calendar"
       eyebrow="Calendario"
       title={plannerTitle(plannerMode, anchorDate)}

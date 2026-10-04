@@ -33,6 +33,19 @@ Privacy degli eventi:
 
 Dalla sezione Admin si può collegare un account Cookidoo con email e password: il piano "La mia settimana" compare come calendario in sola lettura, con un evento di tutto il giorno per ogni ricetta pianificata (vengono lette le settimane da 5 prima a 9 dopo oggi). Cookidoo non ha API pubbliche: l'accesso usa lo stesso flusso dell'app mobile (OAuth2 con PKCE, come la libreria `cookidoo-api` usata da Home Assistant) e può smettere di funzionare se Vorwerk lo cambia.
 
+## Google (calendari e liste)
+
+Familywall usa le API ufficiali Google Calendar e Google Tasks con un client OAuth del tuo progetto Google Cloud (va bene anche un progetto già usato per Home Assistant):
+
+1. In Google Cloud Console → API e servizi → Libreria abilita **Google Calendar API** e **Google Tasks API**.
+2. In Credenziali usa un client OAuth esistente o creane uno:
+   - **Applicazione web**: aggiungi come URI di reindirizzamento autorizzato l'indirizzo con cui apri Familywall seguito da `api/providers/google/callback` (es. `https://familywall.example.com/api/providers/google/callback`, oppure `http://localhost:5173/api/providers/google/callback` in sviluppo).
+   - **App desktop**: usa come URI `http://127.0.0.1`; dopo il consenso la pagina finale non si apre, copiane l'indirizzo e incollalo in Familywall.
+3. La schermata di consenso OAuth deve essere **In produzione** (anche non verificata): in modalità "Test" Google fa scadere l'accesso dopo 7 giorni.
+4. In Familywall: Admin → Collega account → Google, inserisci Client ID, Client secret e URI, poi "Apri Google". Dopo il collegamento usa "Scegli calendari" e "Scegli liste".
+
+Client secret e refresh token sono salvati cifrati come le altre credenziali. Le liste (spesa, compiti...) restano su Google Tasks: si possono gestire anche dall'app Google Tasks dello stesso account. Le note della bacheca sono salvate solo in Familywall.
+
 ## Sviluppo locale
 
 Serve Node.js 24 o superiore (per `node:sqlite`).

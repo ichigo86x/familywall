@@ -243,7 +243,7 @@ code {
 .page-header h2 {
   margin: 0;
   font-size: 1.6rem;
-  text-transform: capitalize;
+  overflow-wrap: anywhere;
 }
 
 .page-header .eyebrow {
@@ -1250,4 +1250,149 @@ code {
 .meal-list__icon svg {
   width: 26px;
   height: 26px;
+}
+
+/* Lists (Google Tasks) */
+.task-lists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.task-list-card {
+  display: grid;
+  gap: 12px;
+  border-top: 6px solid;
+  min-width: 0;
+}
+
+.task-list-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.task-list-card__header h3 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.task-add {
+  display: flex;
+  gap: 8px;
+}
+
+.task-add input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font: inherit;
+}
+
+.task-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(216, 214, 205, 0.6);
+}
+
+.task-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+}
+
+.task-item input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+.task-item span {
+  overflow-wrap: anywhere;
+}
+
+.task-item--done span {
+  text-decoration: line-through;
+  color: var(--color-muted);
+}
+
+/* Notes board */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.note-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 16px 16px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+}
+
+button.note-card {
+  cursor: pointer;
+}
+
+.note-card h3 {
+  margin: 0;
+  padding-right: 20px;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.note-card p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 16em;
+  overflow: hidden;
+}
+
+.note-card footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.note-card__pin {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* Planner titles come from toLocaleDateString in lowercase ("28 set - 4 ott"). */
+.app-shell--fit .page-header h2 {
+  text-transform: capitalize;
 }

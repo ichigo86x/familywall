@@ -1,11 +1,22 @@
 import { Injectable } from "@nestjs/common";
-import type { CreateProviderAccountInput, ProviderAccount, RemoteCalendar } from "@familywall/shared";
+import { createHash, randomBytes } from "node:crypto";
+import type {
+  CreateProviderAccountInput,
+  GoogleAuthCompleteInput,
+  GoogleAuthStartInput,
+  GoogleAuthStartResponse,
+  ProviderAccount,
+  RemoteCalendar
+} from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient, CalDavError, ICLOUD_CALDAV_URL, type CalDavCredentials } from "./caldav/caldav-client";
 import { CookidooClient, DEFAULT_COOKIDOO_URL, parseCookidooSite } from "./cookidoo/cookidoo-client";
+import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "./google/google-client";
 import { ProviderAccountsRepository } from "./provider-accounts.repository";
 
 const COOKIDOO_COLOR = "#36A936";
+/** An authorisation started in the Admin page must be completed within this time. */
+const GOOGLE_AUTH_TTL_MS = 15 * 60 * 1000;
 
 /** The meal plan is the only "calendar" of a Cookidoo account. */
 export const cookidooCalendarUrl = (serverUrl: string): string => {
@@ -13,19 +24,30 @@ export const cookidooCalendarUrl = (serverUrl: string): string => {
   return `${site.origin}/planning/${site.language}/my-week`;
 };
 
-const toAppException = (error: unknown): AppException => {
+export const toAppException = (error: unknown): AppException => {
+  if (error instanceof AppException) {
+    return error;
+  }
   if (error instanceof CalDavError) {
     return error.kind === "auth" ? AppException.validation(error.message) : AppException.providerError(error.message);
   }
   return AppException.providerError("Server del calendario non raggiungibile.");
 };
 
+interface PendingGoogleAuth extends GoogleAuthStartInput {
+  codeVerifier: string;
+  createdAt: number;
+}
+
 @Injectable()
 export class ProvidersService {
+  private readonly pendingGoogle = new Map<string, PendingGoogleAuth>();
+
   public constructor(
     private readonly accounts: ProviderAccountsRepository,
     private readonly caldav: CalDavClient,
-    private readonly cookidoo: CookidooClient
+    private readonly cookidoo: CookidooClient,
+    private readonly google: GoogleClient
   ) {}
 
   public list(): ProviderAccount[] {
@@ -59,6 +81,67 @@ export class ProvidersService {
     });
   }
 
+  /** Step 1 of the Google OAuth flow: returns the consent page URL (PKCE + state). */
+  public startGoogleAuth(input: GoogleAuthStartInput): GoogleAuthStartResponse {
+    this.dropExpiredGoogleAuths();
+    const state = randomBytes(18).toString("base64url");
+    const codeVerifier = randomBytes(48).toString("base64url");
+    const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+    this.pendingGoogle.set(state, { ...input, codeVerifier, createdAt: Date.now() });
+    return { state, authUrl: this.google.authUrl({ clientId: input.clientId, redirectUri: input.redirectUri, state, codeChallenge }) };
+  }
+
+  /**
+   * Step 2: the code comes from the redirected address, pasted by the Admin
+   * (loopback/desktop clients) or received on the callback route.
+   */
+  public async completeGoogleAuth(input: GoogleAuthCompleteInput): Promise<ProviderAccount> {
+    this.dropExpiredGoogleAuths();
+    let params: URLSearchParams;
+    try {
+      params = new URL(input.redirectedUrl).searchParams;
+    } catch {
+      params = new URLSearchParams(input.redirectedUrl.replace(/^[^?]*\?/, ""));
+    }
+
+    const state = params.get("state") ?? input.state;
+    const pending = this.pendingGoogle.get(state);
+    if (!pending || state !== input.state) {
+      throw AppException.validation('Collegamento Google scaduto o non riconosciuto: ricomincia dal pulsante "Apri Google".');
+    }
+    const error = params.get("error");
+    if (error) {
+      throw AppException.validation(error === "access_denied" ? "Accesso negato nella pagina di Google." : `Google ha risposto: ${error}.`);
+    }
+    const code = params.get("code");
+    if (!code) {
+      throw AppException.validation("L'indirizzo incollato non contiene il codice di Google (parametro code).");
+    }
+
+    try {
+      const { refreshToken, email } = await this.google.exchangeCode({
+        clientId: pending.clientId,
+        clientSecret: pending.clientSecret,
+        redirectUri: pending.redirectUri,
+        code,
+        codeVerifier: pending.codeVerifier
+      });
+      const secret: GoogleSecret = { clientId: pending.clientId, clientSecret: pending.clientSecret, refreshToken };
+      // Fails early when the Calendar API is not enabled in the client's Google Cloud project.
+      await this.google.listCalendars(secret);
+      this.pendingGoogle.delete(state);
+      return this.accounts.insert({
+        provider: "google",
+        label: pending.label,
+        username: email ?? pending.label,
+        password: JSON.stringify(secret),
+        serverUrl: null
+      });
+    } catch (caught) {
+      throw toAppException(caught);
+    }
+  }
+
   public async discover(accountId: string, addedRemoteUrls: Set<string>): Promise<RemoteCalendar[]> {
     const credentials = this.accounts.credentials(accountId);
     if (!credentials) {
@@ -66,9 +149,20 @@ export class ProvidersService {
     }
 
     try {
-      const calendars = this.accounts.findById(accountId)?.provider === "cookidoo" ? await this.discoverCookidoo(credentials) : await this.caldav.discoverCalendars(credentials);
+      const provider = this.accounts.findById(accountId)?.provider;
+      const calendars =
+        provider === "cookidoo"
+          ? await this.discoverCookidoo(credentials)
+          : provider === "google"
+            ? await this.google.listCalendars(parseGoogleSecret(credentials.password))
+            : await this.caldav.discoverCalendars(credentials);
       this.accounts.recordCheck(accountId, null);
-      return calendars.map((calendar) => ({ ...calendar, alreadyAdded: addedRemoteUrls.has(calendar.remoteUrl) }));
+      return calendars.map((calendar) => ({
+        remoteUrl: calendar.remoteUrl,
+        name: calendar.name,
+        color: calendar.color,
+        alreadyAdded: addedRemoteUrls.has(calendar.remoteUrl)
+      }));
     } catch (error) {
       const appError = toAppException(error);
       this.accounts.recordCheck(accountId, error instanceof Error ? error.message : "Unknown error");
@@ -76,15 +170,24 @@ export class ProvidersService {
     }
   }
 
-  private async discoverCookidoo(credentials: CalDavCredentials) {
-    await this.cookidoo.verify(credentials);
-    return [{ remoteUrl: cookidooCalendarUrl(credentials.serverUrl), name: "Piano pasti Cookidoo", color: COOKIDOO_COLOR }];
-  }
-
   public delete(accountId: string): void {
     if (!this.accounts.findById(accountId)) {
       throw AppException.notFound("Account non trovato.");
     }
     this.accounts.delete(accountId);
+  }
+
+  private async discoverCookidoo(credentials: CalDavCredentials) {
+    await this.cookidoo.verify(credentials);
+    return [{ remoteUrl: cookidooCalendarUrl(credentials.serverUrl), name: "Piano pasti Cookidoo", color: COOKIDOO_COLOR }];
+  }
+
+  private dropExpiredGoogleAuths(): void {
+    const now = Date.now();
+    for (const [state, pending] of this.pendingGoogle) {
+      if (now - pending.createdAt > GOOGLE_AUTH_TTL_MS) {
+        this.pendingGoogle.delete(state);
+      }
+    }
   }
 }

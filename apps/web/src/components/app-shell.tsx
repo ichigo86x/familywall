@@ -2,9 +2,9 @@ import { Badge, Button, Tab, TabList, Toolbar } from "@fluentui/react-components
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/components/auth/use-auth";
-import { CalendarRegular, ClipboardTaskRegular, HomeRegular, PersonCircleRegular, SignOutRegular } from "@/lib/fluent-icons";
+import { CalendarRegular, ClipboardTaskRegular, HomeRegular, NoteRegular, PersonCircleRegular, SignOutRegular } from "@/lib/fluent-icons";
 
-export type AppRoute = "/" | "/calendar" | "/lists" | "/admin";
+export type AppRoute = "/" | "/calendar" | "/lists" | "/notes" | "/admin";
 
 interface AppShellProps {
   currentRoute: AppRoute;
@@ -16,6 +16,8 @@ interface AppShellProps {
   toolbarActions?: React.ReactNode;
   /** Slim one-line header instead of the hero card, leaving the content as much room as possible. */
   compact?: boolean;
+  /** Fill exactly the screen below the header (calendar planner); other pages scroll normally. */
+  fit?: boolean;
 }
 
 const ROLE_LABELS = { Admin: "Admin", Parent: "Genitore", Child: "Figlio", Kiosk: "Pannello" } as const;
@@ -28,7 +30,7 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("");
 
-export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false }: AppShellProps) => {
+export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, fit = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
 
@@ -36,11 +38,12 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
     { value: "/calendar", label: "Calendario", icon: <CalendarRegular /> },
     { value: "/lists", label: "Liste", icon: <ClipboardTaskRegular /> },
+    { value: "/notes", label: "Note", icon: <NoteRegular /> },
     ...(auth.can("members:manage") ? [{ value: "/admin", label: "Admin", icon: <PersonCircleRegular /> }] : [])
   ];
 
   return (
-    <div className={compact ? "app-shell app-shell--fit" : "app-shell"}>
+    <div className={fit ? "app-shell app-shell--fit" : "app-shell"}>
       <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
         <div className="app-toolbar__brand">
           <span className="app-toolbar__dot" />

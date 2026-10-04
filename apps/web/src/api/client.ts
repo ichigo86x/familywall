@@ -1,5 +1,16 @@
 import type {
   AddCalendarInput,
+  AddTaskListInput,
+  FamilyNote,
+  GoogleAuthCompleteInput,
+  GoogleAuthStartInput,
+  GoogleAuthStartResponse,
+  NoteInput,
+  RemoteTaskList,
+  TaskListConfig,
+  UpdateNoteInput,
+  UpdateTaskInput,
+  UpdateTaskListInput,
   AuthSession,
   CalendarConfig,
   CalendarResponse,
@@ -123,5 +134,29 @@ export const api = {
     request<void>(`events/${encodeURIComponent(id)}${scope ? `?scope=${scope}` : ""}`, { method: "DELETE" }),
 
   getDashboard: async (): Promise<DashboardData> => (await request<{ dashboard: DashboardData }>("dashboard")).dashboard,
-  getLists: () => request<ListsResponse>("lists")
+  getLists: () => request<ListsResponse>("lists"),
+  createTask: (listId: string, title: string) =>
+    request<{ id: string }>(`lists/${encodeURIComponent(listId)}/tasks`, { method: "POST", json: { title } }),
+  updateTask: (listId: string, taskId: string, input: UpdateTaskInput) =>
+    request<void>(`lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`, { method: "PATCH", json: input }),
+  deleteTask: (listId: string, taskId: string) =>
+    request<void>(`lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`, { method: "DELETE" }),
+
+  getTaskListConfigs: async () => (await request<{ lists: TaskListConfig[] }>("lists/config")).lists,
+  discoverTaskLists: async (accountId: string) =>
+    (await request<{ lists: RemoteTaskList[] }>(`lists/discover/${encodeURIComponent(accountId)}`)).lists,
+  addTaskList: async (input: AddTaskListInput) => (await request<{ list: TaskListConfig }>("lists/config", { method: "POST", json: input })).list,
+  updateTaskList: async (id: string, input: UpdateTaskListInput) =>
+    (await request<{ list: TaskListConfig }>(`lists/config/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).list,
+  deleteTaskList: (id: string) => request<void>(`lists/config/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  startGoogleAuth: (input: GoogleAuthStartInput) => request<GoogleAuthStartResponse>("providers/google/start", { method: "POST", json: input }),
+  completeGoogleAuth: async (input: GoogleAuthCompleteInput) =>
+    (await request<{ account: ProviderAccount }>("providers/google/complete", { method: "POST", json: input })).account,
+
+  getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,
+  createNote: async (input: NoteInput) => (await request<{ note: FamilyNote }>("notes", { method: "POST", json: input })).note,
+  updateNote: async (id: string, input: UpdateNoteInput) =>
+    (await request<{ note: FamilyNote }>(`notes/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).note,
+  deleteNote: (id: string) => request<void>(`notes/${encodeURIComponent(id)}`, { method: "DELETE" })
 };

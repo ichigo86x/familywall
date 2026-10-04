@@ -21,9 +21,11 @@ import {
 import type { CalendarConfig, CalendarProvider, ProviderAccount, RemoteCalendar } from "@familywall/shared";
 
 import { api } from "@/api/client";
-import { AddRegular, CalendarRegular, DeleteRegular } from "@/lib/fluent-icons";
+import { AddRegular, CalendarRegular, ClipboardTaskRegular, DeleteRegular } from "@/lib/fluent-icons";
+import { GoogleConnect } from "./google-connect";
+import { DiscoverListsDialog } from "./task-lists-section";
 
-const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo" };
+const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google" };
 
 /** Localized Cookidoo sites (country and language come from the URL). */
 const COOKIDOO_SITES = [
@@ -52,6 +54,7 @@ interface ProvidersSectionProps {
 export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSectionProps) => {
   const [addingAccount, setAddingAccount] = useState(false);
   const [discoverAccount, setDiscoverAccount] = useState<ProviderAccount | null>(null);
+  const [listsAccount, setListsAccount] = useState<ProviderAccount | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const run = async (action: () => Promise<unknown>) => {
@@ -112,6 +115,9 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
                 </div>
                 <div className="row-actions">
                   <Button icon={<CalendarRegular />} onClick={() => setDiscoverAccount(account)}>Scegli calendari</Button>
+                  {account.provider === "google" ? (
+                    <Button icon={<ClipboardTaskRegular />} onClick={() => setListsAccount(account)}>Scegli liste</Button>
+                  ) : null}
                   <Button appearance="subtle" icon={<DeleteRegular />} aria-label="Scollega" onClick={() => removeAccount(account)} />
                 </div>
               </article>
@@ -140,11 +146,23 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
 
       {addingAccount ? (
         <AddAccountDialog
-          onClose={() => setAddingAccount(false)}
+          onClose={() => {
+            setAddingAccount(false);
+            onChanged();
+          }}
           onCreated={(account) => {
             setAddingAccount(false);
             onChanged();
             setDiscoverAccount(account);
+          }}
+        />
+      ) : null}
+      {listsAccount ? (
+        <DiscoverListsDialog
+          account={listsAccount}
+          onClose={() => {
+            setListsAccount(null);
+            onChanged();
           }}
         />
       ) : null}
@@ -220,6 +238,9 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
+    if (form.provider === "google") {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -248,9 +269,12 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
               <Radio value="icloud" label="iCloud" />
               <Radio value="caldav" label="Altro server CalDAV" />
               <Radio value="cookidoo" label="Cookidoo (Bimby)" />
+              <Radio value="google" label="Google" />
             </RadioGroup>
 
-            {form.provider === "icloud" ? (
+            {form.provider === "google" ? <GoogleConnect onLinked={onCreated} onDone={onClose} /> : null}
+
+            {form.provider === "google" ? null : form.provider === "icloud" ? (
               <MessageBar intent="info">
                 <MessageBarBody>
                   iCloud richiede una <strong>password specifica per app</strong>, non la password dell'Apple ID: generala su
@@ -281,22 +305,28 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
               </Field>
             )}
 
-            <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
-              <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
-            </Field>
-            <Field label={form.provider === "icloud" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
-              <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
-            </Field>
-            <Field label={form.provider === "icloud" ? "Password specifica per app" : "Password"} required>
-              <Input type="password" autoComplete="off" placeholder={form.provider === "icloud" ? "xxxx-xxxx-xxxx-xxxx" : ""} value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />
-            </Field>
+            {form.provider === "google" ? null : (
+              <>
+                <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
+                  <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
+                </Field>
+                <Field label={form.provider === "icloud" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
+                  <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
+                </Field>
+                <Field label={form.provider === "icloud" ? "Password specifica per app" : "Password"} required>
+                  <Input type="password" autoComplete="off" placeholder={form.provider === "icloud" ? "xxxx-xxxx-xxxx-xxxx" : ""} value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />
+                </Field>
+                  </>
+            )}
             {error ? <p className="form-error">{error}</p> : null}
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" onClick={onClose}>Annulla</Button>
+            {form.provider === "google" ? null : (
             <Button appearance="primary" disabled={busy || !form.username || !form.password} onClick={() => void submit()}>
               {busy ? "Verifica in corso..." : "Verifica e collega"}
             </Button>
+            )}
           </DialogActions>
         </DialogBody>
       </DialogSurface>

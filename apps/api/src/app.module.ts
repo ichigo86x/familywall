@@ -9,6 +9,7 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ListsModule } from "./modules/lists/lists.module";
 import { MembersModule } from "./modules/members/members.module";
+import { NotesModule } from "./modules/notes/notes.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 
@@ -22,6 +23,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
     CalendarsModule,
     DashboardModule,
     ListsModule,
+    NotesModule,
     HealthModule
   ],
   providers: [

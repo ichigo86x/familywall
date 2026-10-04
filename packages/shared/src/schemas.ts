@@ -203,3 +203,75 @@ export const deleteEventQuerySchema = z.object({
 });
 
 export type DeleteEventQuery = z.infer<typeof deleteEventQuerySchema>;
+
+export const googleAuthStartSchema = z.object({
+  label: z.string().trim().min(1).max(80),
+  clientId: z.string().trim().min(10).max(300),
+  clientSecret: z.string().trim().min(5).max(300),
+  /** Must be registered on the OAuth client (or a loopback address for desktop clients). */
+  redirectUri: z.string().trim().url()
+});
+
+export type GoogleAuthStartInput = z.infer<typeof googleAuthStartSchema>;
+
+export const googleAuthCompleteSchema = z.object({
+  state: z.string().min(8).max(200),
+  /** The address Google redirected to (contains ?code=...), pasted by the Admin. */
+  redirectedUrl: z.string().trim().min(10).max(4000)
+});
+
+export type GoogleAuthCompleteInput = z.infer<typeof googleAuthCompleteSchema>;
+
+export const addTaskListSchema = z.object({
+  accountId: z.string().min(1),
+  remoteId: z.string().min(1).max(300),
+  name: z.string().trim().min(1).max(80),
+  color: hexColor
+});
+
+export type AddTaskListInput = z.infer<typeof addTaskListSchema>;
+
+export const updateTaskListSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    color: hexColor.optional(),
+    enabled: z.boolean().optional()
+  })
+  .strict();
+
+export type UpdateTaskListInput = z.infer<typeof updateTaskListSchema>;
+
+export const createTaskSchema = z.object({
+  title: z.string().trim().min(1).max(500)
+});
+
+export type CreateTaskInput = z.infer<typeof createTaskSchema>;
+
+export const updateTaskSchema = z
+  .object({
+    title: z.string().trim().min(1).max(500).optional(),
+    completed: z.boolean().optional()
+  })
+  .strict();
+
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+
+export const noteSchema = z.object({
+  title: z.string().trim().max(120).default(""),
+  body: z.string().max(5000).default(""),
+  color: hexColor.default("#FFF4B8"),
+  pinned: z.boolean().default(false)
+});
+
+export type NoteInput = z.input<typeof noteSchema>;
+
+export const updateNoteSchema = z
+  .object({
+    title: z.string().trim().max(120).optional(),
+    body: z.string().max(5000).optional(),
+    color: hexColor.optional(),
+    pinned: z.boolean().optional()
+  })
+  .strict();
+
+export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
