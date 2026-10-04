@@ -91,7 +91,8 @@ describe("CalendarsService and EventsService", () => {
       allDay: false,
       memberIds: [child.id],
       tagMemberId: null,
-      privacy: "private"
+      privacy: "private",
+      recurrence: null
     });
 
     expect(created).toMatchObject({ source: "remote", recurring: false, privacy: "private" });
@@ -185,7 +186,8 @@ describe("CalendarsService and EventsService", () => {
         allDay: false,
         memberIds: ["ghost"],
         tagMemberId: null,
-        privacy: "shared"
+        privacy: "shared",
+        recurrence: null
       })
     ).rejects.toThrow(/membri inesistenti/);
   });

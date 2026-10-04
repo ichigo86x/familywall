@@ -71,6 +71,53 @@ describe("buildEventIcs", () => {
   });
 });
 
+describe("buildEventIcs with recurrence", () => {
+  const weekly = { frequency: "weekly" as const, interval: 1, weekdays: [] };
+
+  it("keeps the local time across the daylight saving change", () => {
+    // Monday 19 Oct 2026 18:00 Rome (CEST = UTC+2); summer time ends on 25 Oct.
+    const ics = buildEventIcs(
+      "karate@familywall",
+      "Karate",
+      { startAt: "2026-10-19T16:00:00.000Z", endAt: "2026-10-19T17:00:00.000Z", allDay: false },
+      { rule: { ...weekly, count: 3 }, timeZone: "Europe/Rome" }
+    );
+
+    expect(ics).toContain("DTSTART;TZID=Europe/Rome:20261019T180000");
+    expect(ics).toContain("BEGIN:VTIMEZONE");
+    expect(ics).toContain("RRULE:FREQ=WEEKLY;COUNT=3");
+    const starts = parseCalendarData(ics, new Date("2026-10-01T00:00:00Z"), new Date("2026-12-01T00:00:00Z")).map((event) => event.startAt);
+    // 18:00 local every week: 16:00Z in summer time, 17:00Z after the change.
+    expect(starts).toEqual(["2026-10-19T16:00:00.000Z", "2026-10-26T17:00:00.000Z", "2026-11-02T17:00:00.000Z"]);
+  });
+
+  it("writes weekdays, interval and an inclusive end day", () => {
+    const ics = buildEventIcs(
+      "swim@familywall",
+      "Piscina",
+      { startAt: "2026-10-05T15:00:00.000Z", endAt: "2026-10-05T16:00:00.000Z", allDay: false },
+      { rule: { ...weekly, interval: 2, weekdays: ["MO", "TH"], until: "2026-10-22" }, timeZone: "Europe/Rome" }
+    );
+
+    const starts = read(ics).map(([start]) => start);
+    expect(starts).toEqual(["2026-10-05T15:00:00.000Z", "2026-10-08T15:00:00.000Z", "2026-10-19T15:00:00.000Z", "2026-10-22T15:00:00.000Z"]);
+  });
+
+  it("repeats all-day events by date", () => {
+    const ics = buildEventIcs(
+      "bday@familywall",
+      "Compleanno Sofia",
+      { startAt: "2026-10-15T00:00:00.000Z", endAt: "2026-10-16T00:00:00.000Z", allDay: true },
+      { rule: { frequency: "yearly", interval: 1, weekdays: [] }, timeZone: "Europe/Rome" }
+    );
+
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261015");
+    expect(ics).toContain("RRULE:FREQ=YEARLY");
+    const starts = parseCalendarData(ics, new Date("2026-01-01T00:00:00Z"), new Date("2029-01-01T00:00:00Z")).map((event) => event.startAt);
+    expect(starts).toEqual(["2026-10-15T00:00:00.000Z", "2027-10-15T00:00:00.000Z", "2028-10-15T00:00:00.000Z"]);
+  });
+});
+
 describe("applyEventEdit", () => {
   it("updates a single event in place, keeping its timezone and replacing DURATION", () => {
     const ics = applyEventEdit(SINGLE, "dentist", "", "series", {

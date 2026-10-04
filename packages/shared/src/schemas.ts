@@ -137,6 +137,29 @@ export const recurrenceScopeSchema = z.enum(["occurrence", "series"]);
 
 export type RecurrenceScope = z.infer<typeof recurrenceScopeSchema>;
 
+export const weekdaySchema = z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"]);
+
+export type Weekday = z.infer<typeof weekdaySchema>;
+
+/** Repetition of a new event; written to the provider as an RRULE. */
+export const recurrenceRuleSchema = z
+  .object({
+    frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
+    interval: z.number().int().min(1).max(99).default(1),
+    /** Weekly only; empty = same weekday as the start. */
+    weekdays: z.array(weekdaySchema).max(7).default([]),
+    /** Last day (YYYY-MM-DD, inclusive). */
+    until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    count: z.number().int().min(1).max(999).optional()
+  })
+  .refine((rule) => !(rule.until && rule.count), {
+    message: "Usa una data di fine oppure un numero di ripetizioni, non entrambi",
+    path: ["count"]
+  });
+
+export type RecurrenceRule = z.infer<typeof recurrenceRuleSchema>;
+export type RecurrenceRuleInput = z.input<typeof recurrenceRuleSchema>;
+
 export const createEventSchema = z
   .object({
     calendarId: z.string().min(1),
@@ -146,7 +169,8 @@ export const createEventSchema = z
     allDay: z.boolean().default(false),
     memberIds: z.array(z.string().min(1)).max(20).default([]),
     tagMemberId: z.string().min(1).nullable().default(null),
-    privacy: privacySchema.default("shared")
+    privacy: privacySchema.default("shared"),
+    recurrence: recurrenceRuleSchema.nullable().default(null)
   })
   .refine((value) => new Date(value.endAt) > new Date(value.startAt), {
     message: "endAt must be after startAt",

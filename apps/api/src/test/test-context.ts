@@ -37,6 +37,6 @@ export const createTestContext = (caldav: CalDavClient = new CalDavClient(async 
     auth: new AuthService(db, randomBytes(32), membersRepository, settings),
     providers,
     calendars,
-    events: new EventsService(eventsRepository, calendars, membersRepository, accounts, caldav)
+    events: new EventsService(eventsRepository, calendars, membersRepository, accounts, caldav, settings)
   };
 };

@@ -737,8 +737,59 @@ code {
   font-weight: 700;
 }
 
+/* Grid children default to min-width:auto: long options or date inputs would push the dialog sideways. */
+.calendar-detail-form,
+.calendar-detail-form > *,
+.calendar-detail-row,
+.calendar-detail-grid > * {
+  min-width: 0;
+}
+
+.event-dialog .fui-DialogBody,
+.event-dialog .fui-DialogContent {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.event-dialog .fui-DialogTitle {
+  overflow-wrap: anywhere;
+}
+
+.repeat-box {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(58, 125, 110, 0.06);
+}
+
+.weekday-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weekday-chip {
+  min-width: 44px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.weekday-chip--selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
 .calendar-detail-row input,
 .calendar-detail-row select {
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
   padding: 0.7rem 0.8rem;
   border-radius: 10px;
@@ -747,12 +798,14 @@ code {
 }
 
 .member-chip-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .member-chip {
+  max-width: 100%;
+  min-width: 0;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;

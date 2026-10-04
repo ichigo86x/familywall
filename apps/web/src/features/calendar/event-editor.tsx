@@ -11,7 +11,7 @@ import {
   MessageBar,
   MessageBarBody
 } from "@fluentui/react-components";
-import type { EventPrivacy, FamilyEvent, RecurrenceScope, UpdateEventInput, User } from "@familywall/shared";
+import type { EventPrivacy, FamilyEvent, RecurrenceRule, RecurrenceScope, UpdateEventInput, User, Weekday } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { DeleteRegular } from "@/lib/fluent-icons";
@@ -49,6 +49,63 @@ const PRIVACY_LABELS: Record<EventPrivacy, string> = {
   "wall-hidden": "Nascosto sul pannello a muro"
 };
 
+type RepeatFrequency = "none" | RecurrenceRule["frequency"];
+
+interface RepeatDraft {
+  frequency: RepeatFrequency;
+  interval: number;
+  weekdays: Weekday[];
+  end: "never" | "until" | "count";
+  until: string;
+  count: number;
+}
+
+const REPEAT_LABELS: Record<RepeatFrequency, string> = {
+  none: "Non si ripete",
+  daily: "Ogni giorno",
+  weekly: "Ogni settimana",
+  monthly: "Ogni mese",
+  yearly: "Ogni anno"
+};
+
+const INTERVAL_UNITS: Record<RecurrenceRule["frequency"], string> = {
+  daily: "giorni",
+  weekly: "settimane",
+  monthly: "mesi",
+  yearly: "anni"
+};
+
+/** Monday first, as on Italian calendars. */
+const WEEKDAYS: Array<{ code: Weekday; label: string }> = [
+  { code: "MO", label: "Lun" },
+  { code: "TU", label: "Mar" },
+  { code: "WE", label: "Mer" },
+  { code: "TH", label: "Gio" },
+  { code: "FR", label: "Ven" },
+  { code: "SA", label: "Sab" },
+  { code: "SU", label: "Dom" }
+];
+
+const weekdayOf = (inputValue: string): Weekday => {
+  const day = new Date(inputValue.length === 10 ? `${inputValue}T12:00` : inputValue).getDay();
+  return WEEKDAYS[(day + 6) % 7]!.code;
+};
+
+const NO_REPEAT: RepeatDraft = { frequency: "none", interval: 1, weekdays: [], end: "never", until: "", count: 10 };
+
+const recurrenceFromDraft = (repeat: RepeatDraft): RecurrenceRule | null => {
+  if (repeat.frequency === "none") {
+    return null;
+  }
+  return {
+    frequency: repeat.frequency,
+    interval: Math.max(1, Math.min(99, Math.round(repeat.interval) || 1)),
+    weekdays: repeat.frequency === "weekly" ? WEEKDAYS.map((day) => day.code).filter((code) => repeat.weekdays.includes(code)) : [],
+    ...(repeat.end === "until" && repeat.until ? { until: repeat.until } : {}),
+    ...(repeat.end === "count" ? { count: Math.max(1, Math.min(999, Math.round(repeat.count) || 1)) } : {})
+  };
+};
+
 const draftFromEvent = (event: FamilyEvent): Draft => {
   const { start, end } = eventBounds(event);
   return {
@@ -77,6 +134,8 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
   const [feedback, setFeedback] = useState<{ intent: "success" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [pendingScope, setPendingScope] = useState<"save" | "delete" | null>(null);
+  const [repeat, setRepeat] = useState<RepeatDraft>(NO_REPEAT);
+  const updateRepeat = (patch: Partial<RepeatDraft>) => setRepeat((current) => ({ ...current, ...patch }));
 
   if (event && (readOnly || event.redacted)) {
     return (
@@ -139,12 +198,18 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
       return;
     }
 
+    const recurrence = event ? null : recurrenceFromDraft(repeat);
+    if (repeat.frequency !== "none" && repeat.end === "until" && (!repeat.until || repeat.until < draft.start.slice(0, 10))) {
+      setFeedback({ intent: "error", text: "La data di fine ripetizione deve essere dopo l'inizio." });
+      return;
+    }
+
     setBusy(true);
     setFeedback(null);
     try {
       const metadata = { memberIds: draft.memberIds, tagMemberId: draft.tagMemberId, privacy: draft.privacy };
       if (!event) {
-        const created = await api.createEvent({ calendarId: draft.calendarId, title: draft.title.trim(), allDay: draft.allDay, ...times, ...metadata });
+        const created = await api.createEvent({ calendarId: draft.calendarId, title: draft.title.trim(), allDay: draft.allDay, ...times, ...metadata, recurrence });
         onSaved(created.id);
         return;
       }
@@ -216,6 +281,92 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
           <input id="event-end" type={draft.allDay ? "date" : "datetime-local"} value={draft.end} onChange={(change) => update("end", change.target.value)} />
         </div>
       </div>
+
+      {!event ? (
+        <div className="calendar-detail-row">
+          <label htmlFor="event-repeat">Ripetizione</label>
+          <select
+            id="event-repeat"
+            value={repeat.frequency}
+            onChange={(change) => {
+              const frequency = change.target.value as RepeatFrequency;
+              updateRepeat({ frequency, weekdays: frequency === "weekly" ? [weekdayOf(draft.start)] : [] });
+            }}
+          >
+            {(Object.keys(REPEAT_LABELS) as RepeatFrequency[]).map((frequency) => (
+              <option key={frequency} value={frequency}>{REPEAT_LABELS[frequency]}</option>
+            ))}
+          </select>
+          {repeat.frequency !== "none" ? (
+            <div className="repeat-box">
+              <div className="calendar-detail-grid">
+                <div className="calendar-detail-row">
+                  <label htmlFor="event-interval">Ogni quanti {INTERVAL_UNITS[repeat.frequency]}</label>
+                  <input
+                    id="event-interval"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={99}
+                    value={repeat.interval}
+                    onChange={(change) => updateRepeat({ interval: Number(change.target.value) })}
+                  />
+                </div>
+                <div className="calendar-detail-row">
+                  <label htmlFor="event-repeat-end">Fine</label>
+                  <select id="event-repeat-end" value={repeat.end} onChange={(change) => updateRepeat({ end: change.target.value as RepeatDraft["end"] })}>
+                    <option value="never">Mai</option>
+                    <option value="until">Il giorno...</option>
+                    <option value="count">Dopo un numero di volte</option>
+                  </select>
+                </div>
+              </div>
+              {repeat.end === "until" ? (
+                <div className="calendar-detail-row">
+                  <label htmlFor="event-until">Ultimo giorno</label>
+                  <input id="event-until" type="date" value={repeat.until} min={draft.start.slice(0, 10)} onChange={(change) => updateRepeat({ until: change.target.value })} />
+                </div>
+              ) : null}
+              {repeat.end === "count" ? (
+                <div className="calendar-detail-row">
+                  <label htmlFor="event-count">Numero di volte</label>
+                  <input
+                    id="event-count"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={999}
+                    value={repeat.count}
+                    onChange={(change) => updateRepeat({ count: Number(change.target.value) })}
+                  />
+                </div>
+              ) : null}
+              {repeat.frequency === "weekly" ? (
+                <div className="weekday-picker" role="group" aria-label="Giorni della settimana">
+                  {WEEKDAYS.map((day) => {
+                    const selected = repeat.weekdays.includes(day.code);
+                    return (
+                      <button
+                        key={day.code}
+                        type="button"
+                        className={`weekday-chip ${selected ? "weekday-chip--selected" : ""}`.trim()}
+                        aria-pressed={selected}
+                        onClick={() =>
+                          updateRepeat({
+                            weekdays: selected ? repeat.weekdays.filter((code) => code !== day.code) : [...repeat.weekdays, day.code]
+                          })
+                        }
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="calendar-detail-row">
         <label>Membri coinvolti</label>

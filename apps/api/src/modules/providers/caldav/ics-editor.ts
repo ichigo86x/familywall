@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import ICAL from "ical.js";
+import type { RecurrenceRule } from "@familywall/shared";
+import { buildVTimezone, zoneOffsetMinutes } from "./vtimezone";
 
 export type RecurrenceScope = "occurrence" | "series";
 
@@ -70,7 +72,53 @@ const findException = (root: ICAL.Component, uid: string, occurrenceKey: string)
 const occurrenceTime = (master: ICAL.Event, occurrenceKey: string): ICAL.Time =>
   toIcalTime(occurrenceKey, master.startDate.isDate, master.startDate.zone);
 
-export const buildEventIcs = (uid: string, title: string, times: EventTimes): string => {
+export interface NewEventRecurrence {
+  rule: RecurrenceRule;
+  /** IANA zone of the household: a weekly 18:00 stays 18:00 across daylight saving changes. */
+  timeZone: string;
+}
+
+/** Wall-clock time of an instant in the given zone, attached to the matching VTIMEZONE. */
+const wallTime = (iso: string, timeZone: string, zone: ICAL.Timezone): ICAL.Time => {
+  const instant = new Date(iso);
+  const local = new Date(instant.getTime() + zoneOffsetMinutes(timeZone, instant) * 60_000);
+  return ICAL.Time.fromData(
+    {
+      year: local.getUTCFullYear(),
+      month: local.getUTCMonth() + 1,
+      day: local.getUTCDate(),
+      hour: local.getUTCHours(),
+      minute: local.getUTCMinutes(),
+      second: local.getUTCSeconds()
+    },
+    zone
+  );
+};
+
+const compact = (date: Date): string => date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+
+/** RRULE text; UNTIL covers the whole chosen day (DATE for all-day events, UTC end of the local day otherwise). */
+const rruleText = (rule: RecurrenceRule, allDay: boolean, timeZone: string): string => {
+  const parts = [`FREQ=${rule.frequency.toUpperCase()}`, `INTERVAL=${rule.interval}`];
+  if (rule.frequency === "weekly" && rule.weekdays.length > 0) {
+    parts.push(`BYDAY=${rule.weekdays.join(",")}`);
+  }
+  if (rule.count) {
+    parts.push(`COUNT=${rule.count}`);
+  } else if (rule.until) {
+    if (allDay) {
+      parts.push(`UNTIL=${rule.until.replace(/-/g, "")}`);
+    } else {
+      const [year, month, day] = rule.until.split("-").map(Number) as [number, number, number];
+      const wallEnd = Date.UTC(year, month - 1, day, 23, 59, 59);
+      const offset = zoneOffsetMinutes(timeZone, new Date(wallEnd - zoneOffsetMinutes(timeZone, new Date(wallEnd)) * 60_000));
+      parts.push(`UNTIL=${compact(new Date(wallEnd - offset * 60_000))}`);
+    }
+  }
+  return parts.join(";");
+};
+
+export const buildEventIcs = (uid: string, title: string, times: EventTimes, recurrence?: NewEventRecurrence): string => {
   const root = new ICAL.Component("vcalendar");
   root.updatePropertyWithValue("version", "2.0");
   root.updatePropertyWithValue("prodid", PRODID);
@@ -79,7 +127,18 @@ export const buildEventIcs = (uid: string, title: string, times: EventTimes): st
   const event = new ICAL.Event(vevent);
   event.uid = uid;
   event.summary = title;
-  setTimes(event, times);
+  if (recurrence && !times.allDay) {
+    const vtimezone = buildVTimezone(recurrence.timeZone);
+    root.addSubcomponent(vtimezone);
+    const zone = new ICAL.Timezone({ component: vtimezone, tzid: recurrence.timeZone });
+    event.startDate = wallTime(times.startAt, recurrence.timeZone, zone);
+    event.endDate = wallTime(times.endAt, recurrence.timeZone, zone);
+  } else {
+    setTimes(event, times);
+  }
+  if (recurrence) {
+    vevent.updatePropertyWithValue("rrule", ICAL.Recur.fromString(rruleText(recurrence.rule, times.allDay, recurrence.timeZone)));
+  }
   vevent.updatePropertyWithValue("created", ICAL.Time.fromJSDate(new Date(), true));
   touch(vevent);
   root.addSubcomponent(vevent);

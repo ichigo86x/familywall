@@ -5,6 +5,7 @@ import { MembersRepository } from "../members/members.repository";
 import { CalDavClient, CalDavError, eventResourceUrl, type CalDavCredentials } from "../providers/caldav/caldav-client";
 import { applyEventDelete, applyEventEdit, buildEventIcs, newEventUid } from "../providers/caldav/ics-editor";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
+import { SettingsRepository } from "../settings/settings.repository";
 import { CalendarsService } from "./calendars.service";
 import { decodeRemoteEventId, encodeRemoteEventId, remoteMetaKey, type RemoteEventRef } from "./event-ids";
 import { EventsRepository } from "./events.repository";
@@ -36,7 +37,8 @@ export class EventsService {
     private readonly calendars: CalendarsService,
     private readonly members: MembersRepository,
     private readonly accounts: ProviderAccountsRepository,
-    private readonly caldav: CalDavClient
+    private readonly caldav: CalDavClient,
+    private readonly settings: SettingsRepository
   ) {}
 
   public async create(actor: User, input: CreateEventInput): Promise<FamilyEvent> {
@@ -46,7 +48,8 @@ export class EventsService {
     const uid = newEventUid();
     const times = { startAt: input.startAt, endAt: input.endAt, allDay: input.allDay };
     try {
-      const ics = buildEventIcs(uid, input.title, times);
+      const recurrence = input.recurrence ? { rule: input.recurrence, timeZone: this.settings.get().timezone } : undefined;
+      const ics = buildEventIcs(uid, input.title, times, recurrence);
       await this.caldav.putEvent(this.credentials(calendar.accountId), eventResourceUrl(calendar.remoteUrl, uid), ics, { create: true });
     } catch (error) {
       if (error instanceof CalDavError && error.kind === "conflict") {
@@ -71,7 +74,7 @@ export class EventsService {
       privacy: meta.privacy,
       source: "remote",
       membersInferred: false,
-      recurring: false,
+      recurring: Boolean(input.recurrence),
       redacted: false
     };
   }
