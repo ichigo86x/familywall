@@ -254,6 +254,8 @@ export interface FamilyTaskList {
   id: string;
   name: string;
   color: string;
+  /** "reminders": family lists on the built-in CalDAV server, synced with iOS Reminders. */
+  source: "google" | "reminders";
   lastError: string | null;
   tasks: TaskItem[];
 }

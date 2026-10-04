@@ -11,6 +11,9 @@ export interface AppConfig {
   jwtExpiresIn: string;
   /** Extra origins allowed by CORS. Same-origin requests never need this. */
   corsOrigins: string[];
+  /** Built-in CalDAV server (Radicale) for iOS Reminders; disabled when empty. */
+  radicaleCommand: string;
+  radicalePort: number;
 }
 
 const readList = (value: string | undefined): string[] =>
@@ -35,7 +38,10 @@ export const loadAppConfig = (): AppConfig => {
       ? readList(process.env.CORS_ORIGINS)
       : isDevelopment
         ? ["http://localhost:5173"]
-        : []
+        : [],
+    // e.g. "python3 -m radicale" in the add-on; set RADICALE_COMMAND="" to disable.
+    radicaleCommand: process.env.RADICALE_COMMAND ?? "python3 -m radicale",
+    radicalePort: Number(process.env.RADICALE_PORT ?? 5232)
   };
 };
 

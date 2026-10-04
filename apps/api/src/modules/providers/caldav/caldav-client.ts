@@ -43,7 +43,7 @@ const CALENDARS_BODY = `<?xml version="1.0" encoding="UTF-8"?>
   <d:prop><d:displayname/><d:resourcetype/><c:supported-calendar-component-set/><a:calendar-color/></d:prop>
 </d:propfind>`;
 
-const escapeXmlText = (value: string): string =>
+export const escapeXmlText = (value: string): string =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** URL for a new event resource inside a calendar collection. */
@@ -52,7 +52,7 @@ export const eventResourceUrl = (calendarUrl: string, uid: string): string =>
 
 const formatUtc = (value: Date): string => value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
-const unescapeXml = (value: string): string =>
+export const unescapeXml = (value: string): string =>
   value
     .replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1")
     .replace(/&lt;/g, "<")
@@ -62,7 +62,7 @@ const unescapeXml = (value: string): string =>
     .replace(/&#13;/g, "\r")
     .replace(/&amp;/g, "&");
 
-const tagContent = (xml: string, tagName: string): string | null => {
+export const tagContent = (xml: string, tagName: string): string | null => {
   const match = xml.match(new RegExp(`<(?:[\\w-]+:)?${tagName}\\b[^>]*>([\\s\\S]*?)<\\/(?:[\\w-]+:)?${tagName}>`, "i"));
   return match?.[1]?.trim() ?? null;
 };
@@ -72,7 +72,7 @@ const hrefInside = (xml: string, tagName: string): string | null => {
   return content ? tagContent(content, "href") : null;
 };
 
-const responseBlocks = (xml: string): string[] =>
+export const responseBlocks = (xml: string): string[] =>
   xml.match(/<(?:[\w-]+:)?response\b[\s\S]*?<\/(?:[\w-]+:)?response>/gi) ?? [];
 
 /**

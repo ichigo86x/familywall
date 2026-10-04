@@ -9,6 +9,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppExceptionFilter } from "./common/errors/app-exception.filter";
 import { appConfig } from "./config/app-config";
 import { AppModule } from "./app.module";
+import { DAV_PATH, DavGatewayService } from "./modules/dav/dav-gateway.service";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -20,6 +21,19 @@ async function bootstrap(): Promise<void> {
   app.disable("x-powered-by");
   app.setGlobalPrefix("api");
   app.useGlobalFilters(new AppExceptionFilter());
+
+  // CalDAV for iOS Reminders: authenticated here, served by the local Radicale.
+  // Registered before static files and the SPA fallback, outside the /api prefix.
+  const dav = app.get(DavGatewayService);
+  app.use((request: Request, response: Response, next: NextFunction) => {
+    const davRequest = request.path === DAV_PATH || request.path.startsWith(DAV_PATH + "/") || request.path.startsWith("/.well-known/caldav");
+    if (davRequest) {
+      void dav.handle(request, response);
+      return;
+    }
+    next();
+  });
+  app.enableShutdownHooks();
 
   const logger = new Logger("Bootstrap");
   const indexHtml = appConfig.webDistDir ? path.join(appConfig.webDistDir, "index.html") : "";

@@ -1689,3 +1689,26 @@ button.note-card {
     column-gap: 4px;
   }
 }
+
+.list-source {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  color: var(--color-muted);
+}
+
+.reminders-setup__body {
+  display: grid;
+  gap: 10px;
+}
+
+.reminders-setup__body p,
+.reminders-setup__body ul {
+  margin: 0;
+}
+
+.reminders-setup__body code {
+  overflow-wrap: anywhere;
+}

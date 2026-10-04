@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { AddRegular, ArrowClockwiseRegular, DismissRegular } from "@/lib/fluent-icons";
+import { RemindersSetup } from "./reminders-setup";
 
 /** Lists change from phones too: refresh periodically like the calendar. */
 const AUTO_REFRESH_MS = 2 * 60 * 1000;
@@ -52,11 +53,14 @@ export const ListsPage = () => {
           onAction={lists.reload}
         />
       ) : (
+        <>
+        {canWrite ? <RemindersSetup /> : null}
         <div className="task-lists-grid">
           {lists.data!.lists.map((list) => (
             <TaskListCard key={list.id} list={list} canWrite={canWrite} onChanged={lists.reload} />
           ))}
         </div>
+        </>
       )}
     </AppShell>
   );
@@ -101,6 +105,7 @@ const TaskListCard = ({ list, canWrite, onChanged }: { list: FamilyTaskList; can
       <div className="task-list-card__header">
         <span className="legend-chip__swatch" style={{ background: list.color }} />
         <h3>{list.name}</h3>
+        <span className={`list-source list-source--${list.source}`}>{list.source === "reminders" ? "Promemoria" : "Google"}</span>
         <span className="calendar-detail-hint">{open.length}</span>
       </div>
 

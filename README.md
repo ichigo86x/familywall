@@ -46,6 +46,15 @@ Familywall usa le API ufficiali Google Calendar e Google Tasks con un client OAu
 
 Client secret e refresh token sono salvati cifrati come le altre credenziali. Le liste (spesa, compiti...) restano su Google Tasks: si possono gestire anche dall'app Google Tasks dello stesso account. Le note della bacheca sono salvate solo in Familywall.
 
+## Liste nei Promemoria di iPhone (CalDAV)
+
+Familywall include un server CalDAV (Radicale) per le liste di famiglia: ogni membro (Admin, Genitore, Figlio) le vede nell'app Promemoria dell'iPhone con il proprio utente e la propria password di Familywall. Tutti condividono le stesse liste; alla prima partenza viene creata la lista "Spesa".
+
+- Su iPhone: Familywall → Liste → "Le liste nei Promemoria" → "Installa su questo iPhone" (serve l'indirizzo esterno https), oppure a mano in Impostazioni → Promemoria → Account → Aggiungi account → Altro → Account CalDAV, con server `<indirizzo>/dav/famiglia/`.
+- iOS richiede HTTPS con certificato valido: usa l'indirizzo pubblicato tramite nginx. Se nginx pubblica Familywall in un sotto-percorso, imposta l'header `X-Forwarded-Prefix`.
+- Radicale ascolta solo su `127.0.0.1` e si fida dell'utente indicato da Familywall: non esporre mai la sua porta (`RADICALE_PORT`, default 5232).
+- I dati stanno in `data/radicale`. Nell'add-on Radicale è già installato; in sviluppo: `pip install radicale` e `RADICALE_COMMAND="python -m radicale"` (vuoto per disattivarlo).
+
 ## Sviluppo locale
 
 Serve Node.js 24 o superiore (per `node:sqlite`).

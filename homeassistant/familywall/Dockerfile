@@ -15,6 +15,13 @@ ENV NODE_ENV=production \
     WEB_DIST_DIR=/app/web
 WORKDIR /app
 
+# Radicale: the CalDAV server behind /dav that syncs the family lists with iOS Reminders.
+# It listens on localhost only; Familywall authenticates members in front of it.
+RUN apk add --no-cache python3 \
+  && python3 -m venv /opt/radicale \
+  && /opt/radicale/bin/pip install --no-cache-dir "radicale==3.8.1"
+ENV RADICALE_COMMAND="/opt/radicale/bin/python -m radicale"
+
 # Every workspace manifest is needed for `npm ci`, but only the API's runtime dependencies are installed.
 COPY --from=build /src/package.json /src/package-lock.json ./
 COPY --from=build /src/apps/api/package.json apps/api/

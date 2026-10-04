@@ -154,6 +154,9 @@ export const api = {
   completeGoogleAuth: async (input: GoogleAuthCompleteInput) =>
     (await request<{ account: ProviderAccount }>("providers/google/complete", { method: "POST", json: input })).account,
 
+  getDavInfo: () => request<{ enabled: boolean; path: string; username: string }>("dav/info"),
+  createDavProfileLink: () => request<{ token: string }>("dav/profile-link", { method: "POST" }),
+
   getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,
   createNote: async (input: NoteInput) => (await request<{ note: FamilyNote }>("notes", { method: "POST", json: input })).note,
   updateNote: async (id: string, input: UpdateNoteInput) =>
