@@ -205,7 +205,8 @@ export const CalendarPage = () => {
                               <span key={color} style={{ background: color }} />
                             ))}
                           </span>
-                          <span className="planner-event__time">{timeLabel(event)}</span>
+                          {/* All-day events sit at the top of the day with just their title. */}
+                          {event.allDay ? null : <span className="planner-event__time">{timeLabel(event)}</span>}
                           <strong>{event.title}</strong>
                         </button>
                       );
