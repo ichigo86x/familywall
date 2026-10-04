@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { READ_ONLY_PROVIDERS } from "@familywall/shared";
 import type { CreateEventInput, FamilyEvent, RecurrenceScope, UpdateEventInput, User } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { MembersRepository } from "../members/members.repository";
@@ -195,6 +196,9 @@ export class EventsService {
 
   private requireWritableCalendar(calendarId: string) {
     const calendar = this.calendars.requireCalendar(calendarId);
+    if (READ_ONLY_PROVIDERS.includes(calendar.provider)) {
+      throw AppException.forbidden("Questo calendario è in sola lettura.");
+    }
     if (!calendar.enabled) {
       throw AppException.conflict("Il calendario è disattivato.");
     }

@@ -70,7 +70,9 @@ export const CalendarPage = () => {
   const memberList = useMemo(() => (members.data ?? []).filter((member) => member.role !== "Kiosk" && !member.disabled), [members.data]);
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
   const calendars = calendar.data?.calendars ?? [];
-  const calendarOptions: CalendarOption[] = calendars.map((entry) => ({ id: entry.id, name: entry.name }));
+  // Read-only calendars (e.g. the Cookidoo meal plan) cannot receive new events.
+  const calendarOptions: CalendarOption[] = calendars.filter((entry) => !entry.readOnly).map((entry) => ({ id: entry.id, name: entry.name }));
+  const readOnlyCalendarIds = useMemo(() => new Set(calendars.filter((entry) => entry.readOnly).map((entry) => entry.id)), [calendars]);
 
   const events = useMemo<PlannerEvent[]>(
     () =>
@@ -129,7 +131,7 @@ export const CalendarPage = () => {
                 setSelectedEventId(null);
                 setCreating(true);
               }}
-              disabled={calendars.length === 0}
+              disabled={calendarOptions.length === 0}
             >
               Nuovo evento
             </Button>
@@ -239,7 +241,7 @@ export const CalendarPage = () => {
                   calendars={calendarOptions}
                   members={memberList}
                   membersById={membersById}
-                  readOnly={!canWrite}
+                  readOnly={!canWrite || (selectedEvent !== null && readOnlyCalendarIds.has(selectedEvent.calendarId))}
                   onSaved={afterSave}
                 />
               ) : null}

@@ -23,7 +23,22 @@ import type { CalendarConfig, CalendarProvider, ProviderAccount, RemoteCalendar 
 import { api } from "@/api/client";
 import { AddRegular, CalendarRegular, DeleteRegular } from "@/lib/fluent-icons";
 
-const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV" };
+const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo" };
+
+/** Localized Cookidoo sites (country and language come from the URL). */
+const COOKIDOO_SITES = [
+  { url: "https://cookidoo.it/foundation/it-IT", label: "Italia" },
+  { url: "https://cookidoo.ch/foundation/it-CH", label: "Svizzera (italiano)" },
+  { url: "https://cookidoo.ch/foundation/de-CH", label: "Svizzera (tedesco)" },
+  { url: "https://cookidoo.ch/foundation/fr-CH", label: "Svizzera (francese)" },
+  { url: "https://cookidoo.de/foundation/de-DE", label: "Germania" },
+  { url: "https://cookidoo.at/foundation/de-AT", label: "Austria" },
+  { url: "https://cookidoo.fr/foundation/fr-FR", label: "Francia" },
+  { url: "https://cookidoo.es/foundation/es-ES", label: "Spagna" },
+  { url: "https://cookidoo.pt/foundation/pt-PT", label: "Portogallo" },
+  { url: "https://cookidoo.co.uk/foundation/en-GB", label: "Regno Unito" },
+  { url: "https://cookidoo.thermomix.com/foundation/en-US", label: "Stati Uniti" }
+];
 const DEFAULT_COLOR = "#3A7D6E";
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
@@ -193,7 +208,14 @@ const CalendarRow = ({
 };
 
 const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreated: (account: ProviderAccount) => void }) => {
-  const [form, setForm] = useState({ provider: "icloud" as CalendarProvider, label: "", username: "", password: "", serverUrl: "" });
+  const [form, setForm] = useState({
+    provider: "icloud" as CalendarProvider,
+    label: "",
+    username: "",
+    password: "",
+    serverUrl: "",
+    cookidooSite: COOKIDOO_SITES[0]!.url
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -206,7 +228,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
         label: form.label.trim() || form.username.trim(),
         username: form.username.trim(),
         password: form.password,
-        serverUrl: form.provider === "caldav" ? form.serverUrl.trim() : undefined
+        serverUrl: form.provider === "caldav" ? form.serverUrl.trim() : form.provider === "cookidoo" ? form.cookidooSite : undefined
       });
       onCreated(account);
     } catch (caught) {
@@ -225,6 +247,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
             <RadioGroup layout="horizontal" value={form.provider} onChange={(_, data) => setForm({ ...form, provider: data.value as CalendarProvider })}>
               <Radio value="icloud" label="iCloud" />
               <Radio value="caldav" label="Altro server CalDAV" />
+              <Radio value="cookidoo" label="Cookidoo (Bimby)" />
             </RadioGroup>
 
             {form.provider === "icloud" ? (
@@ -235,6 +258,23 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
                   condividere i calendari (permesso "può modificare").
                 </MessageBarBody>
               </MessageBar>
+            ) : form.provider === "cookidoo" ? (
+              <>
+                <MessageBar intent="info">
+                  <MessageBarBody>
+                    Mostra in sola lettura il piano settimanale ("La mia settimana") di Cookidoo: ogni ricetta pianificata diventa un evento di tutto
+                    il giorno. Usa email e password dell'account Cookidoo; l'accesso usa le stesse API non ufficiali dell'app Cookidoo, quindi
+                    potrebbe smettere di funzionare se Vorwerk le cambia.
+                  </MessageBarBody>
+                </MessageBar>
+                <Field label="Paese dell'account Cookidoo" required>
+                  <select className="native-select" value={form.cookidooSite} onChange={(change) => setForm({ ...form, cookidooSite: change.target.value })}>
+                    {COOKIDOO_SITES.map((site) => (
+                      <option key={site.url} value={site.url}>{site.label}</option>
+                    ))}
+                  </select>
+                </Field>
+              </>
             ) : (
               <Field label="URL server CalDAV" required hint="Es. https://cloud.example.com/remote.php/dav">
                 <Input value={form.serverUrl} onChange={(_, data) => setForm({ ...form, serverUrl: data.value })} />
@@ -244,7 +284,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
             <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
               <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
             </Field>
-            <Field label={form.provider === "icloud" ? "Apple ID (email)" : "Utente"} required>
+            <Field label={form.provider === "icloud" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
               <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
             </Field>
             <Field label={form.provider === "icloud" ? "Password specifica per app" : "Password"} required>

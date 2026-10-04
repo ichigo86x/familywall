@@ -29,6 +29,10 @@ Privacy degli eventi:
 - **Privato**: i dettagli sono visibili solo ad Admin, Genitori e membri coinvolti. Gli altri vedono "Occupato".
 - **Nascosto sul pannello**: non compare sul pannello a muro.
 
+## Cookidoo (Bimby)
+
+Dalla sezione Admin si può collegare un account Cookidoo con email e password: il piano "La mia settimana" compare come calendario in sola lettura, con un evento di tutto il giorno per ogni ricetta pianificata (vengono lette le settimane da 5 prima a 9 dopo oggi). Cookidoo non ha API pubbliche: l'accesso usa lo stesso flusso dell'app mobile (OAuth2 con PKCE, come la libreria `cookidoo-api` usata da Home Assistant) e può smettere di funzionare se Vorwerk lo cambia.
+
 ## Sviluppo locale
 
 Serve Node.js 24 o superiore (per `node:sqlite`).

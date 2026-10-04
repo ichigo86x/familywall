@@ -79,5 +79,23 @@ export const migrations: string[] = [
   // Extra words (nicknames, abbreviations) that identify a member in event titles; JSON array.
   `
   ALTER TABLE members ADD COLUMN keywords TEXT NOT NULL DEFAULT '[]';
+  `,
+  // Cookidoo (Thermomix/Bimby) meal plan accounts: SQLite cannot alter a CHECK, so the table is rebuilt.
+  `
+  CREATE TABLE provider_accounts_new (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL CHECK (provider IN ('icloud', 'caldav', 'cookidoo')),
+    label TEXT NOT NULL,
+    username TEXT NOT NULL,
+    secret_enc TEXT NOT NULL,
+    server_url TEXT,
+    status TEXT NOT NULL DEFAULT 'unknown',
+    last_error TEXT,
+    last_checked_at TEXT,
+    created_at TEXT NOT NULL
+  );
+  INSERT INTO provider_accounts_new SELECT id, provider, label, username, secret_enc, server_url, status, last_error, last_checked_at, created_at FROM provider_accounts;
+  DROP TABLE provider_accounts;
+  ALTER TABLE provider_accounts_new RENAME TO provider_accounts;
   `
 ];

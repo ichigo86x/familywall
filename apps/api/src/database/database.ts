@@ -22,11 +22,26 @@ export const openDatabase = (filePath: string): Database => {
 const migrate = (db: Database): void => {
   const { user_version: current } = db.prepare("PRAGMA user_version").get() as { user_version: number };
 
-  for (let index = current; index < migrations.length; index += 1) {
-    transaction(db, () => {
-      db.exec(migrations[index]!);
-      db.exec(`PRAGMA user_version = ${index + 1}`);
-    });
+  if (current >= migrations.length) {
+    return;
+  }
+
+  // Table rebuilds must not cascade deletes into child tables: foreign keys are
+  // switched off while migrating (it cannot change inside a transaction) and
+  // checked once at the end, as the SQLite docs recommend.
+  db.exec("PRAGMA foreign_keys = OFF");
+  try {
+    for (let index = current; index < migrations.length; index += 1) {
+      transaction(db, () => {
+        db.exec(migrations[index]!);
+        db.exec(`PRAGMA user_version = ${index + 1}`);
+      });
+    }
+    if (db.prepare("PRAGMA foreign_key_check").all().length > 0) {
+      throw new Error("Database migration left broken foreign keys.");
+    }
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON");
   }
 };
 

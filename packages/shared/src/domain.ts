@@ -62,7 +62,10 @@ export interface HouseholdSettings {
   wallModeEnabled: boolean;
 }
 
-export type CalendarProvider = "icloud" | "caldav";
+export type CalendarProvider = "icloud" | "caldav" | "cookidoo";
+
+/** Providers Familywall can only read from (no event writes). */
+export const READ_ONLY_PROVIDERS: readonly CalendarProvider[] = ["cookidoo"];
 
 export type ConnectionStatus = "ok" | "error" | "unknown";
 
@@ -145,6 +148,8 @@ export interface FamilyCalendar {
   id: string;
   name: string;
   color: string;
+  /** Events cannot be created or changed here (e.g. Cookidoo meal plan). */
+  readOnly: boolean;
   lastError: string | null;
   events: FamilyEvent[];
 }

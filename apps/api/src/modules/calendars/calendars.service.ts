@@ -10,8 +10,10 @@ import type {
   UpdateCalendarInput,
   User
 } from "@familywall/shared";
+import { READ_ONLY_PROVIDERS } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient } from "../providers/caldav/caldav-client";
+import { CookidooClient } from "../providers/cookidoo/cookidoo-client";
 import type { RemoteEvent } from "../providers/caldav/ics-parser";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { ProvidersService } from "../providers/providers.service";
@@ -83,7 +85,8 @@ export class CalendarsService {
     private readonly accounts: ProviderAccountsRepository,
     private readonly providers: ProvidersService,
     private readonly caldav: CalDavClient,
-    private readonly members: MembersRepository
+    private readonly members: MembersRepository,
+    private readonly cookidoo: CookidooClient
   ) {}
 
   public async getCalendars(viewer: User, range: CalendarRangeInput): Promise<CalendarResponse> {
@@ -112,7 +115,7 @@ export class CalendarsService {
           .filter((event): event is FamilyEvent => event !== null)
           .sort((left, right) => left.startAt.localeCompare(right.startAt));
 
-        return { id: config.id, name: config.name, color: config.color, lastError: error, events };
+        return { id: config.id, name: config.name, color: config.color, readOnly: READ_ONLY_PROVIDERS.includes(config.provider), lastError: error, events };
       })
     );
 
@@ -164,7 +167,10 @@ export class CalendarsService {
         return { events: [], error: "Account del calendario mancante." };
       }
 
-      const events = await this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
+      const events =
+        config.provider === "cookidoo"
+          ? await this.cookidoo.fetchMealPlan(credentials, from, to)
+          : await this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
       this.calendars.recordSync(config.id, null);
       return { events, error: null };
     } catch (error) {
