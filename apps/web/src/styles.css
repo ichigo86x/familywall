@@ -1187,3 +1187,67 @@ code {
   background: #fff;
   font: inherit;
 }
+
+.planner-day__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.meal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.planner-grid--month .meal-button {
+  width: 22px;
+  height: 22px;
+}
+
+.planner-grid--month .meal-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.meal-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.meal-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid;
+  border-left-width: 6px;
+  background: #fff;
+}
+
+.meal-list__item > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.meal-list__icon {
+  display: inline-flex;
+}
+
+.meal-list__icon svg {
+  width: 26px;
+  height: 26px;
+}

@@ -150,6 +150,8 @@ export interface FamilyCalendar {
   color: string;
   /** Events cannot be created or changed here (e.g. Cookidoo meal plan). */
   readOnly: boolean;
+  /** "meals": planned recipes, shown as a chef hat on the day instead of event cards. */
+  kind: "events" | "meals";
   lastError: string | null;
   events: FamilyEvent[];
 }

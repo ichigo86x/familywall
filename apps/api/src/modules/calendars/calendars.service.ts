@@ -115,7 +115,11 @@ export class CalendarsService {
           .filter((event): event is FamilyEvent => event !== null)
           .sort((left, right) => left.startAt.localeCompare(right.startAt));
 
-        return { id: config.id, name: config.name, color: config.color, readOnly: READ_ONLY_PROVIDERS.includes(config.provider), lastError: error, events };
+        return { id: config.id, name: config.name, color: config.color, readOnly: READ_ONLY_PROVIDERS.includes(config.provider),
+          kind: config.provider === "cookidoo" ? "meals" : "events",
+          lastError: error,
+          events
+        };
       })
     );
 

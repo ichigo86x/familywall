@@ -47,6 +47,14 @@ const eventColors = (event: PlannerEvent, membersById: Map<string, User>): strin
 const eventBackground = (colors: string[]): string =>
   colors.length === 1 ? `${colors[0]}22` : `linear-gradient(90deg, ${colors.map((color) => `${color}2E`).join(", ")})`;
 
+/** Chef hat (no Fluent equivalent); takes the current text color. */
+const ChefHatIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+    <path d="M7 14.5c-2.5-.4-4-2.3-4-4.4C3 7.6 5 5.7 7.4 5.9 8.2 4 10 2.8 12 2.8s3.8 1.2 4.6 3.1c2.4-.2 4.4 1.7 4.4 4.2 0 2.1-1.5 4-4 4.4V20H7z" fill="currentColor" fillOpacity="0.22" />
+    <path d="M7 17h10" />
+  </svg>
+);
+
 export const CalendarPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("events:write");
@@ -74,9 +82,17 @@ export const CalendarPage = () => {
   const calendarOptions: CalendarOption[] = calendars.filter((entry) => !entry.readOnly).map((entry) => ({ id: entry.id, name: entry.name }));
   const readOnlyCalendarIds = useMemo(() => new Set(calendars.filter((entry) => entry.readOnly).map((entry) => entry.id)), [calendars]);
 
+  const toPlannerEvents = (kind: "events" | "meals") =>
+    calendars
+      .filter((entry) => (entry.kind ?? "events") === kind)
+      .flatMap((entry) => entry.events.map((event) => ({ ...event, calendarColor: entry.color, calendarName: entry.name })));
+  // Meal plans (Cookidoo) are not drawn as events: a chef hat on the day opens them.
+  const meals = useMemo<PlannerEvent[]>(() => toPlannerEvents("meals"), [calendars]);
+  const [mealsDay, setMealsDay] = useState<Date | null>(null);
   const events = useMemo<PlannerEvent[]>(
     () =>
       calendars
+        .filter((entry) => (entry.kind ?? "events") === "events")
         .flatMap((entry) => entry.events.map((event) => ({ ...event, calendarColor: entry.color, calendarName: entry.name })))
         .sort((left, right) => Number(right.allDay) - Number(left.allDay) || left.startAt.localeCompare(right.startAt)),
     [calendars]
@@ -179,12 +195,28 @@ export const CalendarPage = () => {
           <div className={`planner-grid planner-grid--${plannerMode}`}>
             {days.map((day) => {
               const dayEvents = events.filter((event) => occursOnDay(event, day));
+              const dayMeals = meals.filter((meal) => occursOnDay(meal, day));
+              const mealColor = dayMeals[0]?.calendarColor;
               const isMuted = plannerMode === "month" && day.getMonth() !== anchorDate.getMonth();
               const isToday = dayKey(day) === dayKey(new Date());
               return (
                 <div key={dayKey(day)} className={["planner-day", isMuted ? "planner-day--muted" : "", isToday ? "planner-day--today" : ""].join(" ").trim()}>
                   <div className="planner-day__header">
-                    <strong>{day.toLocaleDateString("it-IT", { weekday: plannerMode === "month" ? "short" : "long" })}</strong>
+                    <span className="planner-day__title">
+                      <strong>{day.toLocaleDateString("it-IT", { weekday: plannerMode === "month" ? "short" : "long" })}</strong>
+                      {mealColor ? (
+                        <button
+                          type="button"
+                          className="meal-button"
+                          style={{ color: mealColor, borderColor: `${mealColor}66`, background: `${mealColor}14` }}
+                          onClick={() => setMealsDay(day)}
+                          aria-label={`Pasti di ${day.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}`}
+                          title={dayMeals.map((meal) => meal.title).join(", ")}
+                        >
+                          <ChefHatIcon />
+                        </button>
+                      ) : null}
+                    </span>
                     <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>
                   </div>
                   <div className="planner-day__events">
@@ -220,6 +252,41 @@ export const CalendarPage = () => {
           </div>
         </Card>
       )}
+
+      <Dialog open={mealsDay !== null} onOpenChange={(_, data) => (!data.open ? setMealsDay(null) : undefined)}>
+        <DialogSurface className="event-dialog meals-dialog">
+          <DialogBody>
+            <DialogTitle
+              action={
+                <DialogTrigger action="close">
+                  <Button appearance="subtle" aria-label="Chiudi" icon={<DismissRegular />} />
+                </DialogTrigger>
+              }
+            >
+              Pasti di {mealsDay?.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}
+            </DialogTitle>
+            <DialogContent>
+              {mealsDay ? (
+                <ul className="meal-list">
+                  {meals
+                    .filter((meal) => occursOnDay(meal, mealsDay))
+                    .map((meal) => (
+                      <li key={meal.id} className="meal-list__item" style={{ borderColor: meal.calendarColor }}>
+                        <span className="meal-list__icon" style={{ color: meal.calendarColor }}>
+                          <ChefHatIcon />
+                        </span>
+                        <span>
+                          <strong>{meal.title}</strong>
+                          <span className="calendar-detail-hint">{meal.calendarName}</span>
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              ) : null}
+            </DialogContent>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={(_, data) => (!data.open ? closeDialog() : undefined)}>
         <DialogSurface className="event-dialog">
