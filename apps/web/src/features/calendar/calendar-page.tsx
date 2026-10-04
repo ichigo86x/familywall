@@ -20,7 +20,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular, DismissRegular } from "@/lib/fluent-icons";
 import { EventEditor, type CalendarOption } from "./event-editor";
-import { addDays, dayKey, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode } from "./calendar-time";
+import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode } from "./calendar-time";
 
 /** Wall panels stay open for days: refresh periodically so provider changes show up. */
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -69,6 +69,14 @@ export const CalendarPage = () => {
 
   const calendar = useAsyncResource(() => api.getCalendar(rangeFrom, rangeTo), [rangeFrom, rangeTo]);
   const members = useAsyncResource(() => api.getMembers(), []);
+
+  // Phones show days in one column: start from today instead of the past days above it.
+  const hasData = Boolean(calendar.data);
+  useEffect(() => {
+    if (hasData && window.matchMedia("(max-width: 700px)").matches) {
+      document.querySelector(".planner-day--today")?.scrollIntoView({ block: "start" });
+    }
+  }, [hasData, plannerMode]);
 
   useEffect(() => {
     const timer = window.setInterval(calendar.reload, AUTO_REFRESH_MS);
@@ -199,12 +207,21 @@ export const CalendarPage = () => {
               const dayMeals = meals.filter((meal) => occursOnDay(meal, day));
               const mealColor = dayMeals[0]?.calendarColor;
               const isMuted = plannerMode === "month" && day.getMonth() !== anchorDate.getMonth();
-              const isToday = dayKey(day) === dayKey(new Date());
+              const todayKey = dayKey(new Date());
+              const isToday = dayKey(day) === todayKey;
+              // Past days and finished events fade out; today stands out.
+              const isPast = dayKey(day) < todayKey;
               return (
-                <div key={dayKey(day)} className={["planner-day", isMuted ? "planner-day--muted" : "", isToday ? "planner-day--today" : ""].join(" ").trim()}>
+                <div key={dayKey(day)} className={["planner-day", isMuted ? "planner-day--muted" : "", isToday ? "planner-day--today" : "", isPast ? "planner-day--past" : ""].join(" ").trim()}>
                   <div className="planner-day__header">
                     <span className="planner-day__title">
-                      <strong>{day.toLocaleDateString("it-IT", { weekday: plannerMode === "month" ? "short" : "long" })}</strong>
+                      <strong>
+                        {/* Long names on wide screens, short ones on tablets and in the month view. */}
+                        <span className={plannerMode === "month" ? "weekday-short" : "weekday-long"}>
+                          {day.toLocaleDateString("it-IT", { weekday: plannerMode === "month" ? "short" : "long" })}
+                        </span>
+                        {plannerMode === "month" ? null : <span className="weekday-short">{day.toLocaleDateString("it-IT", { weekday: "short" })}</span>}
+                      </strong>
                       {mealColor ? (
                         <button
                           type="button"
@@ -218,7 +235,7 @@ export const CalendarPage = () => {
                         </button>
                       ) : null}
                     </span>
-                    <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>
+                    {isToday ? <span className="today-pill">Oggi</span> : <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>}
                   </div>
                   <div className="planner-day__events">
                     {dayEvents.map((event) => {
@@ -227,7 +244,7 @@ export const CalendarPage = () => {
                         <button
                           key={event.id}
                           type="button"
-                          className={`planner-event ${selectedEventId === event.id ? "planner-event--selected" : ""}`.trim()}
+                          className={["planner-event", selectedEventId === event.id ? "planner-event--selected" : "", isToday && eventBounds(event).end.getTime() <= Date.now() ? "planner-event--past" : ""].join(" ").trim()}
                           onClick={() => {
                             setCreating(false);
                             setSelectedEventId(event.id);

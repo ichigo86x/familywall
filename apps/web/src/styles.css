@@ -10,6 +10,40 @@
   --color-danger: #9F3A38;
   --shadow-sm: 0 10px 24px rgba(31, 41, 55, 0.06);
   --shadow-lg: 0 28px 48px rgba(31, 41, 55, 0.14);
+  --page-bg-start: #f8f5ef;
+  --page-bg-end: #f2efea;
+  --page-glow: rgba(233, 162, 77, 0.18);
+  --glass: rgba(255, 255, 255, 0.82);
+  --line: rgba(216, 214, 205, 0.75);
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --event-border: rgba(31, 41, 55, 0.08);
+  --today-bg: rgba(58, 125, 110, 0.08);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-primary: #4FA893;
+  --color-accent: #E9A24D;
+  --color-surface: #12161A;
+  --color-surface-raised: #1B2127;
+  --color-surface-soft: #20272E;
+  --color-text: #E6E8EB;
+  --color-muted: #9AA3AE;
+  --color-border: #313A43;
+  --color-danger: #E07A77;
+  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 28px 48px rgba(0, 0, 0, 0.5);
+  --page-bg-start: #101418;
+  --page-bg-end: #151a1f;
+  --page-glow: rgba(233, 162, 77, 0.08);
+  --glass: rgba(27, 33, 39, 0.86);
+  --line: rgba(70, 80, 92, 0.7);
+  --input-bg: #20272E;
+  --input-border: #3A444E;
+  --event-border: rgba(255, 255, 255, 0.08);
+  --today-bg: rgba(79, 168, 147, 0.14);
+  color-scheme: dark;
 }
 
 * {
@@ -21,16 +55,19 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(233, 162, 77, 0.18), transparent 22%),
-    linear-gradient(180deg, #f8f5ef 0%, #f2efea 100%);
+    radial-gradient(circle at top left, var(--page-glow), transparent 22%),
+    linear-gradient(180deg, var(--page-bg-start) 0%, var(--page-bg-end) 100%);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
+  color: inherit;
 }
 
 a {
@@ -53,9 +90,9 @@ code {
   align-items: center;
   max-width: 1480px;
   padding: 16px 20px;
-  border: 1px solid rgba(216, 214, 205, 0.7);
+  border: 1px solid var(--line);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--glass);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-sm);
@@ -139,8 +176,8 @@ code {
 .preview-switcher,
 .auth-card {
   border-radius: 24px;
-  border: 1px solid rgba(216, 214, 205, 0.9);
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--line);
+  background: var(--glass);
   box-shadow: var(--shadow-sm);
 }
 
@@ -350,7 +387,7 @@ code {
 .reminder-card {
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid rgba(216, 214, 205, 0.7);
+  border: 1px solid var(--line);
   background: var(--color-surface-soft);
 }
 
@@ -378,7 +415,7 @@ code {
   overflow: hidden;
   border-radius: 22px;
   background: var(--color-surface-soft);
-  border: 1px solid rgba(216, 214, 205, 0.8);
+  border: 1px solid var(--line);
 }
 
 .media-card__image {
@@ -574,7 +611,7 @@ code {
   padding: 12px 14px;
   border-radius: 16px;
   background: var(--color-surface-soft);
-  border: 1px solid rgba(216, 214, 205, 0.8);
+  border: 1px solid var(--line);
 }
 
 .calendar-legend-item p {
@@ -627,17 +664,12 @@ code {
   width: 4px;
 }
 
-.planner-day--today {
-  border-color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-
 .planner-day {
   min-height: 180px;
   padding: 10px;
   border-radius: 18px;
-  border: 1px solid rgba(216, 214, 205, 0.75);
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
   display: grid;
   gap: 8px;
   align-content: start;
@@ -682,7 +714,7 @@ code {
   width: 100%;
   padding: 8px 10px 8px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(31, 41, 55, 0.08);
+  border: 1px solid var(--event-border);
   cursor: pointer;
   text-align: left;
 }
@@ -773,8 +805,8 @@ code {
   min-width: 44px;
   padding: 8px 10px;
   border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
   font: inherit;
   cursor: pointer;
 }
@@ -793,8 +825,8 @@ code {
   width: 100%;
   padding: 0.7rem 0.8rem;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
 }
 
 .member-chip-grid {
@@ -810,7 +842,7 @@ code {
   gap: 8px;
   padding: 10px 12px;
   border-radius: 14px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border);
   cursor: pointer;
   justify-content: flex-start;
 }
@@ -862,7 +894,7 @@ code {
 
 .color-swatch--selected {
   border-color: var(--color-text);
-  box-shadow: 0 0 0 2px #fff inset;
+  box-shadow: 0 0 0 2px var(--color-surface-raised) inset;
 }
 
 .discover-row,
@@ -927,7 +959,7 @@ code {
 
 .color-swatch--selected {
   border-color: var(--color-text);
-  box-shadow: 0 0 0 2px #fff inset;
+  box-shadow: 0 0 0 2px var(--color-surface-raised) inset;
 }
 
 .discover-row,
@@ -1083,7 +1115,7 @@ code {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 700px) {
   .app-shell,
   .auth-page {
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom))
@@ -1183,8 +1215,8 @@ code {
   max-width: 100%;
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
   font: inherit;
 }
 
@@ -1234,7 +1266,7 @@ code {
   border-radius: 14px;
   border: 1px solid;
   border-left-width: 6px;
-  background: #fff;
+  background: var(--input-bg);
 }
 
 .meal-list__item > span:last-child {
@@ -1290,7 +1322,7 @@ code {
   min-width: 0;
   padding: 0.65rem 0.8rem;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--input-border);
   font: inherit;
 }
 
@@ -1308,7 +1340,7 @@ code {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 4px;
-  border-bottom: 1px solid rgba(216, 214, 205, 0.6);
+  border-bottom: 1px solid var(--line);
 }
 
 .task-item label {
@@ -1395,4 +1427,265 @@ button.note-card {
 /* Planner titles come from toLocaleDateString in lowercase ("28 set - 4 ott"). */
 .app-shell--fit .page-header h2 {
   text-transform: capitalize;
+}
+
+/* Sticky notes keep dark text on their pastel colors in both themes. */
+.note-card {
+  color: #1f2933;
+}
+
+:root[data-theme="dark"] .note-card {
+  filter: saturate(0.85) brightness(0.92);
+}
+
+:root[data-theme="dark"] .hero-card {
+  background: linear-gradient(135deg, rgba(40, 95, 83, 0.95), rgba(25, 52, 46, 0.95));
+}
+
+/* Header: brand vertically centered with the tabs. */
+.app-toolbar__brand {
+  align-items: center;
+  min-width: 0;
+}
+
+.app-toolbar__brand .eyebrow {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+.app-toolbar__title {
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-toolbar__dot {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.app-toolbar__meta {
+  flex-shrink: 0;
+}
+
+.theme-toggle {
+  min-width: 0;
+}
+
+/* Today and the past in the planner. */
+.planner-day--today {
+  border: 2px solid var(--color-primary);
+  background: linear-gradient(var(--today-bg), var(--today-bg)), var(--input-bg);
+  box-shadow: 0 6px 18px rgba(58, 125, 110, 0.22);
+}
+
+.planner-day--today .planner-day__header strong {
+  color: var(--color-primary);
+}
+
+.today-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.planner-grid--month .today-pill {
+  padding: 0 6px;
+  font-size: 0.65rem;
+}
+
+.planner-day--past {
+  opacity: 0.5;
+}
+
+.planner-day--past:hover,
+.planner-day--past:focus-within {
+  opacity: 0.85;
+}
+
+.planner-event--past {
+  opacity: 0.45;
+}
+
+/* Wall panels (Echo Show 15 landscape, big TVs): larger text for reading from a distance. */
+@media (min-width: 1500px) and (min-height: 800px) {
+  .planner-event strong {
+    font-size: 1.02rem;
+  }
+
+  .planner-day__header {
+    font-size: 1.05rem;
+  }
+
+  .app-toolbar__title {
+    font-size: 1.7rem;
+  }
+}
+
+/* Tablets (iPad portrait/landscape, Echo Show 15 portrait): one-row header with icon tabs. */
+@media (min-width: 701px) and (max-width: 1120px) {
+  .app-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .app-toolbar__nav {
+    order: 0;
+    flex-basis: auto;
+    justify-content: center;
+  }
+
+  .app-toolbar__nav .fui-Tab__content {
+    display: none;
+  }
+
+  .app-toolbar__meta .fui-Badge {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .theme-toggle .fui-Button__content,
+  .logout-button .fui-Button__content {
+    display: none;
+  }
+
+  .today-pill {
+    font-size: 0.68rem;
+  }
+}
+
+/* Icon-only tabs must not keep the hidden label width Fluent reserves for the bold state. */
+.app-toolbar__nav .fui-Tab__content--reserved-space {
+  display: none;
+}
+
+.app-toolbar__brand-text {
+  min-width: 0;
+}
+
+.weekday-short {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .app-toolbar__brand {
+    flex-shrink: 1;
+  }
+
+  .app-toolbar__title {
+    font-size: 1.2rem;
+  }
+
+  .button-label {
+    display: none;
+  }
+
+  .app-toolbar__meta {
+    gap: 6px;
+  }
+
+  /* Seven narrow columns: short weekday names, date below, tighter cards. */
+  .planner-grid--week .weekday-long,
+  .planner-grid--biweek .weekday-long {
+    display: none;
+  }
+
+  .planner-grid--week .weekday-short,
+  .planner-grid--biweek .weekday-short {
+    display: inline;
+    text-transform: capitalize;
+  }
+
+  .planner-day {
+    padding: 8px 6px;
+    border-radius: 14px;
+  }
+
+  .planner-event {
+    padding: 6px 6px 6px 12px;
+  }
+
+  .planner-event__bar {
+    width: 4px;
+  }
+
+  .planner-event__time {
+    font-size: 0.72rem;
+  }
+
+  .planner-event strong {
+    font-size: 0.86rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Phones: brand and actions on one row, icon tabs on the second. */
+  .app-toolbar__brand {
+    flex: 1;
+  }
+
+  .app-toolbar__meta {
+    order: 2;
+  }
+
+  .app-toolbar__nav {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: space-between;
+  }
+
+  .planner-grid--week .weekday-long,
+  .planner-grid--biweek .weekday-long {
+    display: inline;
+  }
+
+  .planner-grid--week .weekday-short,
+  .planner-grid--biweek .weekday-short {
+    display: none;
+  }
+
+  .planner-event strong {
+    font-size: 1rem;
+  }
+}
+
+.planner-day__header .today-pill {
+  color: #fff;
+}
+
+@media (max-width: 1120px) {
+  .app-toolbar__meta .fui-Button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .app-toolbar__brand {
+    flex: 1 1 auto;
+  }
+
+  .app-toolbar__nav {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-toolbar__nav {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 1120px) {
+  .planner-day__header {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    column-gap: 4px;
+  }
 }

@@ -1,4 +1,4 @@
-import { BrandVariants, createLightTheme } from "@fluentui/react-components";
+import { BrandVariants, createDarkTheme, createLightTheme } from "@fluentui/react-components";
 
 const brandRamp: BrandVariants = {
   10: "#071712",
@@ -33,3 +33,17 @@ appTheme.colorCompoundBrandStroke = "#3A7D6E";
 appTheme.colorPaletteYellowBackground3 = "#FFF2DD";
 appTheme.fontFamilyBase = "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 appTheme.fontFamilyMonospace = "'Cascadia Code', 'SFMono-Regular', Consolas, monospace";
+/** Dark variant: neutral surfaces aligned with the [data-theme="dark"] CSS tokens. */
+export const appDarkTheme = createDarkTheme(brandRamp);
+
+appDarkTheme.colorNeutralBackground1 = "#1B2127";
+appDarkTheme.colorNeutralBackground2 = "#20272E";
+appDarkTheme.colorNeutralBackground3 = "#12161A";
+appDarkTheme.colorNeutralForeground1 = "#E6E8EB";
+appDarkTheme.colorNeutralForeground2 = "#9AA3AE";
+appDarkTheme.colorNeutralStroke1 = "#3A444E";
+appDarkTheme.colorBrandBackground = "#3A7D6E";
+appDarkTheme.colorBrandForeground1 = "#6FC2AE";
+appDarkTheme.colorCompoundBrandStroke = "#6FC2AE";
+appDarkTheme.fontFamilyBase = appTheme.fontFamilyBase;
+appDarkTheme.fontFamilyMonospace = appTheme.fontFamilyMonospace;

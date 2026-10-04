@@ -23,5 +23,7 @@ export {
   SettingsRegular,
   SignOutRegular,
   SparkleRegular,
-  WeatherSunnyRegular
+  WeatherMoonRegular,
+  WeatherSunnyRegular,
+  DarkThemeRegular
 } from "@fluentui/react-icons";

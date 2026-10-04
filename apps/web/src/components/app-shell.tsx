@@ -2,7 +2,24 @@ import { Badge, Button, Tab, TabList, Toolbar } from "@fluentui/react-components
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/components/auth/use-auth";
-import { CalendarRegular, ClipboardTaskRegular, HomeRegular, NoteRegular, PersonCircleRegular, SignOutRegular } from "@/lib/fluent-icons";
+import {
+  CalendarRegular,
+  ClipboardTaskRegular,
+  DarkThemeRegular,
+  HomeRegular,
+  NoteRegular,
+  PersonCircleRegular,
+  SignOutRegular,
+  WeatherMoonRegular,
+  WeatherSunnyRegular
+} from "@/lib/fluent-icons";
+import { useThemePreference, type ThemePreference } from "@/theme/theme-preference";
+
+const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactElement }> = {
+  auto: { label: "Auto", icon: <DarkThemeRegular /> },
+  light: { label: "Chiaro", icon: <WeatherSunnyRegular /> },
+  dark: { label: "Scuro", icon: <WeatherMoonRegular /> }
+};
 
 export type AppRoute = "/" | "/calendar" | "/lists" | "/notes" | "/admin";
 
@@ -33,6 +50,7 @@ const initials = (name: string) =>
 export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, fit = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
+  const theme = useThemePreference();
 
   const tabs = [
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
@@ -47,8 +65,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
       <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
         <div className="app-toolbar__brand">
           <span className="app-toolbar__dot" />
-          <div>
-            <p className="eyebrow">Family wall</p>
+          <div className="app-toolbar__brand-text">
             <h1 className="app-toolbar__title">{auth.household?.householdName ?? "Familywall"}</h1>
           </div>
         </div>
@@ -85,13 +102,24 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
           ) : null}
           <Button
             appearance="subtle"
+            className="theme-toggle"
+            icon={THEME_OPTIONS[theme.preference].icon}
+            onClick={theme.cycle}
+            title={`Tema: ${THEME_OPTIONS[theme.preference].label} (tocca per cambiare)`}
+            aria-label={`Tema ${THEME_OPTIONS[theme.preference].label}`}
+          >
+            <span className="button-label">{THEME_OPTIONS[theme.preference].label}</span>
+          </Button>
+          <Button
+            appearance="subtle"
+            className="logout-button"
             icon={<SignOutRegular />}
             onClick={() => {
               auth.logout();
               navigate("/login");
             }}
           >
-            Esci
+            <span className="button-label">Esci</span>
           </Button>
         </div>
       </Toolbar>

@@ -6,6 +6,15 @@
     <title>Familywall</title>
     <meta name="description" content="Calendario e organizzazione della famiglia." />
     <meta name="theme-color" content="#3A7D6E" />
+    <!-- Applies the saved/device theme before the first paint (no light flash on dark panels). -->
+    <script>
+      (function () {
+        var pref = "auto";
+        try { pref = localStorage.getItem("familywall.theme") || "auto"; } catch (e) {}
+        var dark = pref === "dark" || (pref !== "light" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      })();
+    </script>
 
     <!-- Installable web app (iOS "Aggiungi a Home", Android, tablets). Paths stay relative for HA ingress. -->
     <link rel="manifest" href="./manifest.webmanifest" />
