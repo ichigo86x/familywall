@@ -7,12 +7,12 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
   Field
 } from "@fluentui/react-components";
 import { isoWeek, scheduleForDay, type ScheduleEntry, type ScheduleEntryInput, type ScheduleKind, type User, type WeekParity } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { ErrorState, LoadingState } from "@/components/page-states";
@@ -217,7 +217,7 @@ const ScheduleDialog = ({ entry, members, onClose, onSaved }: { entry: ScheduleE
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface className="event-dialog">
         <DialogBody>
-          <DialogTitle>{entry ? "Modifica turno" : "Nuovo turno"}</DialogTitle>
+          <CloseableDialogTitle>{entry ? "Modifica turno" : "Nuovo turno"}</CloseableDialogTitle>
           <DialogContent className="calendar-detail-form">
             <div className="calendar-detail-row">
               <label htmlFor="schedule-kind">Tipo</label>

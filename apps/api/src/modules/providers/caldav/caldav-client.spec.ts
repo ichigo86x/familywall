@@ -58,6 +58,33 @@ describe("CalDavClient", () => {
     expect((error as CalDavError).message).not.toContain(credentials.password);
   });
 
+  it("finds an event resource even when the server refuses UID filters (iCloud 412)", async () => {
+    const ics = "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:abc-123\nSUMMARY:Dentista\nEND:VEVENT\nEND:VCALENDAR";
+    const calendarUrl = "https://p01-caldav.icloud.com/123/calendars/home/";
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      if (init.method === "GET") {
+        return new Response("", { status: 404 });
+      }
+      if (String(init.body).includes("prop-filter")) {
+        return new Response("", { status: 412 });
+      }
+      return multistatus(`<d:response><d:href>/123/calendars/home/other.ics</d:href><d:propstat><d:prop><d:getetag>&quot;9&quot;</d:getetag><c:calendar-data>${ics}</c:calendar-data></d:prop></d:propstat></d:response>`);
+    });
+    const client = new CalDavClient(fetchImpl);
+
+    expect(await client.findByUid(credentials, calendarUrl, "abc-123")).toEqual({ href: calendarUrl + "other.ics", etag: '"9"', ics });
+    expect(await client.findByUid(credentials, calendarUrl, "missing")).toBeNull();
+  });
+
+  it("reads the resource named after the uid directly, with its etag", async () => {
+    const ics = "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:abc-123\nEND:VEVENT\nEND:VCALENDAR";
+    const fetchImpl = vi.fn(async () => new Response(ics, { status: 200, headers: { ETag: '"5"' } }));
+    const client = new CalDavClient(fetchImpl);
+
+    expect(await client.findByUid(credentials, "https://cal.example/home/", "abc-123")).toEqual({ href: "https://cal.example/home/abc-123.ics", etag: '"5"', ics });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
   it("parses calendar-data returned by a calendar-query", async () => {
     const ics = "BEGIN:VCALENDAR&#13;\nVERSION:2.0&#13;\nBEGIN:VEVENT&#13;\nUID:a1&#13;\nDTSTART:20261005T070000Z&#13;\nDTEND:20261005T080000Z&#13;\nSUMMARY:Scuola &amp; sport&#13;\nEND:VEVENT&#13;\nEND:VCALENDAR";
     const client = new CalDavClient(

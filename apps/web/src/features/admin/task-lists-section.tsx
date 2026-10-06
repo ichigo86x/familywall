@@ -7,7 +7,6 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
   Input,
   MessageBar,
   MessageBarBody,
@@ -17,6 +16,7 @@ import {
 import type { ProviderAccount, RemoteTaskList, TaskListConfig } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { DeleteRegular } from "@/lib/fluent-icons";
 
 const LIST_COLORS = ["#F97316", "#2563EB", "#14B8A6", "#DB2777", "#8B5CF6", "#65A30D"];
@@ -143,7 +143,7 @@ export const DiscoverListsDialog = ({ account, onClose }: { account: ProviderAcc
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Liste di {account.label}</DialogTitle>
+          <CloseableDialogTitle>Liste di {account.label}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             {state.status === "loading" ? <Spinner label="Lettura delle liste da Google..." /> : null}
             {state.status === "error" ? <p className="form-error">{state.error}</p> : null}

@@ -7,7 +7,8 @@ import type { RequestWithUser } from "../../common/types/request-with-user";
 import { DAV_PATH, DavGatewayService } from "./dav-gateway.service";
 import { DAV_FAMILY_USER } from "./radicale-process";
 
-const LINK_TTL_MS = 5 * 60 * 1000;
+/** Long enough to tap "Consenti" in Safari and open Impostazioni. */
+const LINK_TTL_MS = 10 * 60 * 1000;
 
 const escapeXml = (value: string): string =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -51,7 +52,9 @@ const caldavProfile = (input: { host: string; port: number; ssl: boolean; princi
 
 /**
  * Helps members add the family lists to iOS Reminders. The profile is downloaded through
- * a short-lived one-time link, because Safari must open it by plain navigation (no token header).
+ * a short-lived link, because Safari must open it by plain navigation (no token header).
+ * The link works several times until it expires: Safari downloads the profile again after
+ * "Consenti", and the profile holds no password (iOS asks for it).
  */
 @Controller("dav")
 export class DavController {
@@ -99,8 +102,6 @@ export class DavController {
       response.status(410).type("text/plain").send("Link scaduto: generane uno nuovo da Familywall.");
       return;
     }
-    this.links.delete(token);
-
     let host: string;
     let port: number;
     let ssl: boolean;

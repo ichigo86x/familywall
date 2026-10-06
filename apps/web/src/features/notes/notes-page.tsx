@@ -6,7 +6,6 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
   Field,
   Input,
   Switch,
@@ -15,6 +14,7 @@ import {
 import type { FamilyNote, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
@@ -129,7 +129,7 @@ const NoteDialog = ({ note, onClose, onSaved }: { note: FamilyNote | null; onClo
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface className="event-dialog">
         <DialogBody>
-          <DialogTitle>{note ? "Modifica nota" : "Nuova nota"}</DialogTitle>
+          <CloseableDialogTitle>{note ? "Modifica nota" : "Nuova nota"}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             <Field label="Titolo">
               <Input value={form.title} onChange={(_, data) => setForm({ ...form, title: data.value })} />

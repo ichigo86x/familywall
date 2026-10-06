@@ -8,7 +8,6 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
   Dropdown,
   Field,
   Input,
@@ -26,6 +25,7 @@ import {
 import { createMemberSchema, type User, type UserRole } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { useAuth } from "@/components/auth/use-auth";
 import { DeleteRegular, EditRegular, KeyRegular, PersonAddRegular } from "@/lib/fluent-icons";
 
@@ -88,7 +88,7 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
         </MessageBar>
       ) : null}
 
-      <Table aria-label="Membri della famiglia">
+      <Table className="members-table" aria-label="Membri della famiglia">
         <TableHeader>
           <TableRow>
             <TableHeaderCell>Nome</TableHeaderCell>
@@ -235,7 +235,7 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>{member ? `Modifica ${member.displayName}` : "Nuovo membro"}</DialogTitle>
+          <CloseableDialogTitle>{member ? `Modifica ${member.displayName}` : "Nuovo membro"}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             <Field label="Nome visualizzato" required>
               <Input value={form.displayName} onChange={(_, data) => setForm({ ...form, displayName: data.value })} />
@@ -343,7 +343,7 @@ const PasswordDialog = ({ member, onClose }: { member: User; onClose: () => void
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Password di {member.displayName}</DialogTitle>
+          <CloseableDialogTitle>Password di {member.displayName}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             {isSelf ? (
               <Field label="Password attuale" required>

@@ -50,6 +50,13 @@ export const escapeXmlText = (value: string): string =>
 export const eventResourceUrl = (calendarUrl: string, uid: string): string =>
   new URL(`${encodeURIComponent(uid.replace(/[^\w@.-]/g, "_"))}.ics`, calendarUrl.endsWith("/") ? calendarUrl : `${calendarUrl}/`).toString();
 
+/** True when the calendar data contains an event with this UID (folded lines are joined first). */
+const hasUid = (ics: string, uid: string): boolean =>
+  ics
+    .replace(/\r?\n[ \t]/g, "")
+    .split(/\r?\n/)
+    .some((line) => /^UID[;:]/i.test(line) && line.slice(line.indexOf(":") + 1).trim() === uid);
+
 const formatUtc = (value: Date): string => value.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
 export const unescapeXml = (value: string): string =>
@@ -135,28 +142,68 @@ export class CalDavClient {
     });
   }
 
-  /** Looks up the resource holding an event (master and overrides share one resource). */
+  /**
+   * Looks up the resource holding an event (master and overrides share one resource).
+   * Tries, in order: the resource named after the uid (events created by Familywall and most
+   * iOS/macOS events), a calendar-query filtered by UID, and a scan of the whole calendar.
+   * iCloud refuses some UID filters with 412 Precondition Failed, so the scan is the safety net.
+   */
   public async findByUid(credentials: CalDavCredentials, calendarUrl: string, uid: string): Promise<CalDavResource | null> {
+    const direct = await this.getResource(credentials, eventResourceUrl(calendarUrl, uid));
+    if (direct && hasUid(direct.ics, uid)) {
+      return direct;
+    }
+
+    const filter = `<c:prop-filter name="UID"><c:text-match>${escapeXmlText(uid)}</c:text-match></c:prop-filter>`;
+    try {
+      const filtered = await this.queryResources(credentials, calendarUrl, filter);
+      const match = filtered.find((resource) => hasUid(resource.ics, uid));
+      if (match) {
+        return match;
+      }
+    } catch (error) {
+      if (!(error instanceof CalDavError && error.kind === "http")) {
+        throw error;
+      }
+    }
+
+    return (await this.queryResources(credentials, calendarUrl, "")).find((resource) => hasUid(resource.ics, uid)) ?? null;
+  }
+
+  /** Reads one .ics resource; null when it does not exist. */
+  private async getResource(credentials: CalDavCredentials, href: string): Promise<CalDavResource | null> {
+    const response = await this.send(credentials, href, { method: "GET", headers: { Accept: "text/calendar" } });
+    if (response.status === 404 || response.status === 410) {
+      return null;
+    }
+    if (!response.ok) {
+      this.throwForStatus(response.status);
+    }
+    return { href, etag: response.headers.get("etag"), ics: await response.text() };
+  }
+
+  private async queryResources(credentials: CalDavCredentials, calendarUrl: string, eventFilter: string): Promise<CalDavResource[]> {
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
   <d:prop><d:getetag/><c:calendar-data/></d:prop>
-  <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">
-    <c:prop-filter name="UID"><c:text-match collation="i;octet">${escapeXmlText(uid)}</c:text-match></c:prop-filter>
-  </c:comp-filter></c:comp-filter></c:filter>
+  <c:filter><c:comp-filter name="VCALENDAR"><c:comp-filter name="VEVENT">${eventFilter}</c:comp-filter></c:comp-filter></c:filter>
 </c:calendar-query>`;
 
     const response = await this.request(credentials, calendarUrl, "REPORT", "1", body);
-    const block = responseBlocks(await response.text()).find((entry) => tagContent(entry, "calendar-data"));
-    if (!block) {
-      return null;
-    }
-
-    const etag = tagContent(block, "getetag");
-    return {
-      href: new URL(unescapeXml(tagContent(block, "href") ?? ""), calendarUrl).toString(),
-      etag: etag ? unescapeXml(etag) : null,
-      ics: unescapeXml(tagContent(block, "calendar-data")!)
-    };
+    return responseBlocks(await response.text()).flatMap((block) => {
+      const data = tagContent(block, "calendar-data");
+      if (!data) {
+        return [];
+      }
+      const etag = tagContent(block, "getetag");
+      return [
+        {
+          href: new URL(unescapeXml(tagContent(block, "href") ?? ""), calendarUrl).toString(),
+          etag: etag ? unescapeXml(etag) : null,
+          ics: unescapeXml(data)
+        }
+      ];
+    });
   }
 
   /**

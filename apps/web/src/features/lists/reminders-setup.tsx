@@ -32,7 +32,13 @@ export const RemindersSetup = () => {
     setError(null);
     try {
       const { token } = await api.createDavProfileLink(new URL(".", document.baseURI).toString());
-      window.location.href = new URL(`api/dav/profile?t=${encodeURIComponent(token)}`, document.baseURI).toString();
+      const url = new URL(`api/dav/profile?t=${encodeURIComponent(token)}`, document.baseURI).toString();
+      // A home-screen web app cannot install profiles itself: hand the link to Safari.
+      if ((navigator as Navigator & { standalone?: boolean }).standalone) {
+        window.open(url, "_blank");
+      } else {
+        window.location.href = url;
+      }
     } catch (caught) {
       setError(errorText(caught));
     }
@@ -45,7 +51,7 @@ export const RemindersSetup = () => {
           <p className="eyebrow">iPhone e iPad</p>
           <h3>Le liste nei Promemoria</h3>
         </div>
-        <Button appearance="subtle" onClick={() => setOpen(!open)}>{open ? "Chiudi" : "Come si fa"}</Button>
+        <Button appearance="secondary" onClick={() => setOpen(!open)}>{open ? "Chiudi" : "Come si fa"}</Button>
       </div>
       {open ? (
         <div className="reminders-setup__body">
@@ -57,7 +63,7 @@ export const RemindersSetup = () => {
             <>
               <Button appearance="primary" onClick={() => void installProfile()}>Installa su questo iPhone</Button>
               <p className="calendar-detail-hint">
-                Dopo il download apri Impostazioni → Profilo scaricato → Installa, poi inserisci la tua password di Familywall.
+                Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall. Il link vale 10 minuti.
               </p>
             </>
           ) : (

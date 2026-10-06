@@ -95,6 +95,8 @@ I turni di oggi compaiono anche in dashboard ("Oggi in casa").
   - 115% da 1500×800.
 - Le scelte valgono solo per il dispositivo su cui le fai.
 - L'impaginazione si adatta a telefono, tablet, Echo Show (orizzontale e verticale) e desktop.
+- Su telefono le sezioni sono in una barra in basso, come in un'app. I dialoghi si aprono dal basso, hanno sempre il pulsante di chiusura e tengono visibili i pulsanti Salva e Annulla.
+- Sugli schermi touch, pulsanti e campi sono alti almeno 44 px.
 
 ## Ruoli e permessi
 
@@ -166,7 +168,7 @@ Familywall include un server CalDAV (Radicale) per le liste di famiglia.
 - Gli account Pannello e i Figli solo etichetta non accedono al server CalDAV.
 
 Collegare un iPhone:
-- **Automatico**: in Familywall apri Liste → "Le liste nei Promemoria" → "Installa su questo iPhone". Serve l'indirizzo esterno https. Il profilo si scarica da un link valido 5 minuti e non contiene la password: iOS la chiede durante l'installazione.
+- **Automatico**: in Familywall apri Liste → "Le liste nei Promemoria" → "Installa su questo iPhone". Serve l'indirizzo esterno https. Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa. Il link vale 10 minuti e si può riaprire più volte in quel tempo. Il profilo non contiene la password: iOS la chiede durante l'installazione. Se Familywall è aperta come app dalla schermata Home, il profilo si apre in Safari.
 - **Manuale**: in Impostazioni → Promemoria → Account → Aggiungi account → Altro → Account CalDAV, usa il server `<indirizzo>/dav/famiglia/`.
 
 Note:

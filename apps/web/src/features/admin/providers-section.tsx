@@ -8,7 +8,6 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
   Field,
   Input,
   MessageBar,
@@ -21,6 +20,7 @@ import {
 import type { CalendarConfig, CalendarProvider, ProviderAccount, RemoteCalendar } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AddRegular, CalendarRegular, ClipboardTaskRegular, DeleteRegular } from "@/lib/fluent-icons";
 import { GoogleConnect } from "./google-connect";
 import { DiscoverListsDialog } from "./task-lists-section";
@@ -263,7 +263,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Collega account calendario</DialogTitle>
+          <CloseableDialogTitle>Collega account calendario</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             <RadioGroup layout="horizontal" value={form.provider} onChange={(_, data) => setForm({ ...form, provider: data.value as CalendarProvider })}>
               <Radio value="icloud" label="iCloud" />
@@ -364,7 +364,7 @@ const DiscoverDialog = ({ account, onClose }: { account: ProviderAccount; onClos
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Calendari di {account.label}</DialogTitle>
+          <CloseableDialogTitle>Calendari di {account.label}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
             {state.status === "loading" ? <Spinner label="Lettura dei calendari dal provider..." /> : null}
             {state.status === "error" ? <p className="form-error">{state.error}</p> : null}

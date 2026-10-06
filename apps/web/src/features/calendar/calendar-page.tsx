@@ -6,19 +6,18 @@ import {
   DialogBody,
   DialogContent,
   DialogSurface,
-  DialogTitle,
-  DialogTrigger,
   MessageBar,
   MessageBarBody
 } from "@fluentui/react-components";
 import type { FamilyEvent, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular, DismissRegular } from "@/lib/fluent-icons";
+import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular } from "@/lib/fluent-icons";
 import { EventEditor, type CalendarOption } from "./event-editor";
 import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode } from "./calendar-time";
 
@@ -274,15 +273,9 @@ export const CalendarPage = () => {
       <Dialog open={mealsDay !== null} onOpenChange={(_, data) => (!data.open ? setMealsDay(null) : undefined)}>
         <DialogSurface className="event-dialog meals-dialog">
           <DialogBody>
-            <DialogTitle
-              action={
-                <DialogTrigger action="close">
-                  <Button appearance="subtle" aria-label="Chiudi" icon={<DismissRegular />} />
-                </DialogTrigger>
-              }
-            >
+            <CloseableDialogTitle>
               Pasti di {mealsDay?.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}
-            </DialogTitle>
+            </CloseableDialogTitle>
             <DialogContent>
               {mealsDay ? (
                 <ul className="meal-list">
@@ -309,15 +302,9 @@ export const CalendarPage = () => {
       <Dialog open={dialogOpen} onOpenChange={(_, data) => (!data.open ? closeDialog() : undefined)}>
         <DialogSurface className="event-dialog">
           <DialogBody>
-            <DialogTitle
-              action={
-                <DialogTrigger action="close">
-                  <Button appearance="subtle" aria-label="Chiudi" icon={<DismissRegular />} />
-                </DialogTrigger>
-              }
-            >
+            <CloseableDialogTitle>
               {creating ? "Nuovo evento" : selectedEvent?.title}
-            </DialogTitle>
+            </CloseableDialogTitle>
             <DialogContent>
               {dialogOpen ? (
                 <EventEditor

@@ -2221,3 +2221,140 @@ button.schedule-chip {
     gap: 14px;
   }
 }
+
+/*
+ * Touch and phone polish: app-like bottom tab bar, bottom-sheet dialogs with the
+ * actions always visible, and 44px touch targets on touch screens.
+ */
+.dialog-close {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (pointer: coarse) {
+  .fui-Button {
+    min-height: 44px;
+  }
+
+  .fui-Button:not(:has(.fui-Button__content)) {
+    min-width: 44px;
+  }
+
+  .fui-Input,
+  .fui-Dropdown,
+  .fui-Select,
+  .fui-Textarea,
+  .calendar-detail-row select,
+  .calendar-detail-row input,
+  .list-card form input {
+    min-height: 44px;
+  }
+
+  .fui-Checkbox__indicator {
+    width: 22px;
+    height: 22px;
+  }
+
+  .fui-Tab {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* A blurred parent would trap the fixed tab bar inside the header. */
+  .app-shell .app-toolbar {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--color-surface-raised);
+  }
+
+  .app-shell .app-toolbar .app-toolbar__nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    margin: 0;
+    padding: 4px max(8px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    justify-content: space-around;
+    background: var(--color-surface-raised);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .app-shell .app-toolbar__nav .fui-Tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 54px;
+    /* Fluent sets the row layout with its own runtime styles. */
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 0;
+  }
+
+  .app-shell .app-toolbar__nav .fui-Tab .fui-Tab__icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .app-shell .app-toolbar__nav .fui-Tab .fui-Tab__content:not(.fui-Tab__content--reserved-space) {
+    display: block;
+    padding: 0;
+    font-size: 0.66rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .app-shell {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Dialogs become bottom sheets: full width, scrolling content, actions pinned at the bottom. */
+  .fui-DialogSurface {
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top)));
+    margin: 0;
+    border-radius: 22px 22px 0 0;
+    padding: 18px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .fui-DialogBody {
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - 30px - env(safe-area-inset-bottom));
+  }
+
+  .fui-DialogActions {
+    position: sticky;
+    bottom: 0;
+    padding-top: 10px;
+    background: var(--colorNeutralBackground1);
+  }
+
+  .calendar-detail-actions {
+    position: sticky;
+    bottom: -1px;
+    z-index: 1;
+    padding: 10px 0 2px;
+    background: var(--colorNeutralBackground1);
+  }
+
+  .calendar-detail-actions .fui-Button {
+    flex: 1 1 0;
+  }
+
+  /* Members table: the username column is not needed on a phone. */
+  .members-table th:nth-child(2),
+  .members-table td:nth-child(2) {
+    display: none;
+  }
+}
+
+/* Fluent Card sets its own text color at runtime: keep the clock white on green in the light theme. */
+.panel-card.dashboard-clock {
+  color: #fff;
+}
