@@ -9,14 +9,25 @@ import type {
   UpdateTaskInput,
   UpdateTaskListInput
 } from "@familywall/shared";
-import { addTaskListSchema, createTaskSchema, updateTaskListSchema, updateTaskSchema } from "@familywall/shared";
+import { addTaskListSchema, createTaskSchema, dashboardListsSchema, updateTaskListSchema, updateTaskSchema } from "@familywall/shared";
+import type { DashboardListsInput } from "@familywall/shared";
+import { SettingsRepository } from "../settings/settings.repository";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { ListsService } from "./lists.service";
 
 @Controller("lists")
 export class ListsController {
-  public constructor(private readonly listsService: ListsService) {}
+  public constructor(
+    private readonly listsService: ListsService,
+    private readonly settings: SettingsRepository
+  ) {}
+
+  @Patch("dashboard")
+  @RequirePermission("lists:write")
+  public setDashboardLists(@Body(new ZodValidationPipe(dashboardListsSchema)) input: DashboardListsInput): { listIds: string[] } {
+    return { listIds: this.settings.update({ dashboardListIds: input.listIds }).dashboardListIds };
+  }
 
   @Get()
   @RequirePermission("calendar:read")

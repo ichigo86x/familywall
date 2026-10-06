@@ -139,5 +139,25 @@ export const migrations: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+  `,
+  // Notes shown on the dashboard, and household shifts (work location, chores, visits).
+  `
+  ALTER TABLE notes ADD COLUMN on_dashboard INTEGER NOT NULL DEFAULT 0;
+
+  CREATE TABLE schedule_entries (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL CHECK (kind IN ('work', 'chore', 'presence')),
+    title TEXT NOT NULL,
+    member_id TEXT REFERENCES members(id) ON DELETE CASCADE,
+    person TEXT,
+    weekdays TEXT NOT NULL DEFAULT '[]',
+    week_parity TEXT NOT NULL DEFAULT 'all' CHECK (week_parity IN ('all', 'even', 'odd')),
+    date TEXT,
+    start_time TEXT,
+    end_time TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
   `
 ];

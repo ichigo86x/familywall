@@ -62,6 +62,8 @@ export interface HouseholdSettings {
   locale: string;
   timezone: string;
   wallModeEnabled: boolean;
+  /** Lists shown on the dashboard (ids from GET /lists); empty = the shopping list. */
+  dashboardListIds: string[];
 }
 
 export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google";
@@ -225,6 +227,8 @@ export interface FamilyNote {
   body: string;
   color: string;
   pinned: boolean;
+  /** Shown on the dashboard. */
+  onDashboard: boolean;
   createdBy: string | null;
   updatedAt: string;
 }

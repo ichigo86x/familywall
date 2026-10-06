@@ -9,6 +9,7 @@ interface NoteRow {
   body: string;
   color: string;
   pinned: number;
+  on_dashboard: number;
   created_by: string | null;
   updated_at: string;
 }
@@ -19,6 +20,7 @@ const toNote = (row: NoteRow): FamilyNote => ({
   body: row.body,
   color: row.color,
   pinned: row.pinned === 1,
+  onDashboard: row.on_dashboard === 1,
   createdBy: row.created_by,
   updatedAt: row.updated_at
 });
@@ -28,6 +30,7 @@ export interface NewNote {
   body: string;
   color: string;
   pinned: boolean;
+  onDashboard: boolean;
 }
 
 /** The family notes board lives only in Familywall (no provider). */
@@ -48,16 +51,24 @@ export class NotesRepository {
     const id = randomUUID();
     const now = nowIso();
     this.db
-      .prepare("INSERT INTO notes (id, title, body, color, pinned, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .run(id, note.title, note.body, note.color, Number(note.pinned), createdBy, now, now);
+      .prepare("INSERT INTO notes (id, title, body, color, pinned, on_dashboard, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(id, note.title, note.body, note.color, Number(note.pinned), Number(note.onDashboard), createdBy, now, now);
     return this.findById(id)!;
   }
 
   public update(id: string, patch: UpdateNoteInput): FamilyNote {
     const current = this.findById(id)!;
     this.db
-      .prepare("UPDATE notes SET title = ?, body = ?, color = ?, pinned = ?, updated_at = ? WHERE id = ?")
-      .run(patch.title ?? current.title, patch.body ?? current.body, patch.color ?? current.color, Number(patch.pinned ?? current.pinned), nowIso(), id);
+      .prepare("UPDATE notes SET title = ?, body = ?, color = ?, pinned = ?, on_dashboard = ?, updated_at = ? WHERE id = ?")
+      .run(
+        patch.title ?? current.title,
+        patch.body ?? current.body,
+        patch.color ?? current.color,
+        Number(patch.pinned ?? current.pinned),
+        Number(patch.onDashboard ?? current.onDashboard),
+        nowIso(),
+        id
+      );
     return this.findById(id)!;
   }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
-import type { FamilyNote, FamilyTaskList, User } from "@familywall/shared";
+import { scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -10,12 +10,14 @@ import { useNow } from "@/components/live-clock";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
 import { addDays, eventBounds, startOfDay } from "@/features/calendar/calendar-time";
+import { ScheduleChip } from "@/features/schedule/schedule-page";
+import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { Screensaver } from "./screensaver";
 
 const REFRESH_MS = 5 * 60 * 1000;
 /** Wall panels (Kiosk accounts) start the screensaver after this much inactivity on the dashboard. */
 const KIOSK_IDLE_MS = 5 * 60 * 1000;
-const SHOPPING_ITEMS = 8;
+const LIST_ITEMS = 10;
 const NOTES_SHOWN = 4;
 
 const timeOf = (date: Date) => date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
@@ -32,9 +34,21 @@ const relative = (start: Date, end: Date, now: Date): string => {
   return `tra ${hours} h${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
 };
 
-/** The shopping list: the one named "spesa", otherwise the first list. */
-const pickShoppingList = (lists: FamilyTaskList[]): FamilyTaskList | undefined =>
-  lists.find((list) => /spesa|shopping|grocer/i.test(list.name)) ?? lists[0];
+/** Lists chosen for the dashboard; without a choice, the shopping list (or the first list). */
+const dashboardLists = (lists: FamilyTaskList[], chosen: string[]): FamilyTaskList[] => {
+  const selected = lists.filter((list) => chosen.includes(list.id));
+  if (selected.length > 0) {
+    return selected;
+  }
+  const fallback = lists.find((list) => /spesa|shopping|grocer/i.test(list.name)) ?? lists[0];
+  return fallback ? [fallback] : [];
+};
+
+/** Notes marked "in dashboard"; without any, the pinned and most recent ones. */
+const dashboardNotes = (notes: FamilyNote[]): FamilyNote[] => {
+  const marked = notes.filter((note) => note.onDashboard);
+  return (marked.length > 0 ? marked : notes).slice(0, NOTES_SHOWN);
+};
 
 export const DashboardPage = () => {
   const auth = useAuth();
@@ -48,12 +62,16 @@ export const DashboardPage = () => {
   const members = useAsyncResource(() => api.getMembers(), []);
   const lists = useAsyncResource(() => api.getLists(), []);
   const notes = useAsyncResource(() => api.getNotes(), []);
+  const schedule = useAsyncResource(() => api.getSchedule(), []);
+  const settings = useAsyncResource(() => api.getSettings(), []);
 
   const reloadAll = useCallback(() => {
     calendar.reload();
     lists.reload();
     notes.reload();
-  }, [calendar.reload, lists.reload, notes.reload]);
+    schedule.reload();
+    settings.reload();
+  }, [calendar.reload, lists.reload, notes.reload, schedule.reload, settings.reload]);
 
   useEffect(() => {
     const timer = window.setInterval(reloadAll, REFRESH_MS);
@@ -77,10 +95,11 @@ export const DashboardPage = () => {
     };
   }, [calendar.data, now]);
 
+  const today = scheduleForDay(schedule.data ?? [], now);
   const next = upcoming[0];
   const caption = next ? `${next.title} · ${relative(eventBounds(next).start, eventBounds(next).end, now)}` : undefined;
-  const shopping = pickShoppingList(lists.data?.lists ?? []);
-  const openItems = shopping?.tasks.filter((task) => !task.completed) ?? [];
+  const shownLists = dashboardLists(lists.data?.lists ?? [], settings.data?.dashboardListIds ?? []);
+  const shownNotes = dashboardNotes(notes.data ?? []);
 
   const exitScreensaver = useCallback(() => setScreensaver(false), []);
   useKioskIdle(auth.user?.role === "Kiosk" && !screensaver, () => setScreensaver(true));
@@ -93,99 +112,149 @@ export const DashboardPage = () => {
       title={now.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}
       subtitle=""
       summaryChip={`${upcoming.length} in programma`}
-      toolbarActions={
-        <Button appearance="primary" onClick={() => setScreensaver(true)}>Screensaver</Button>
-      }
+      toolbarActions={<Button appearance="primary" onClick={() => setScreensaver(true)}>Screensaver</Button>}
     >
       <div className="dashboard-grid">
-        <Card className="panel-card dashboard-today">
-          <div className="panel-card__header">
-            <div>
-              <p className="eyebrow">Agenda</p>
-              <h3>Ancora oggi</h3>
+        <div className="dashboard-main">
+          <Card className="panel-card dashboard-clock" aria-label="Ora">
+            <div className="dashboard-clock__inner">
+              <strong>{timeOf(now)}</strong>
+              <div>
+                <span>{now.toLocaleDateString("it-IT", { weekday: "long" })}</span>
+                <span>{now.toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })}</span>
+              </div>
             </div>
-            <Link to="/calendar" className="dashboard-link">Calendario →</Link>
-          </div>
+          </Card>
 
-          {allDay.length > 0 || meals.length > 0 ? (
-            <div className="dashboard-chips">
-              {allDay.map((event) => (
-                <span key={event.id} className="dashboard-chip" style={{ borderColor: eventColors(event, membersById)[0] }}>
-                  {event.title}
-                </span>
-              ))}
-              {meals.map((meal) => (
-                <span key={meal.id} className="dashboard-chip dashboard-chip--meal" style={{ borderColor: meal.calendarColor }}>
-                  🍲 {meal.title}
-                </span>
-              ))}
+          <Card className="panel-card dashboard-today">
+            <div className="panel-card__header">
+              <div>
+                <p className="eyebrow">Agenda</p>
+                <h3>Ancora oggi</h3>
+              </div>
+              <Link to="/calendar" className="dashboard-link">Calendario →</Link>
             </div>
+
+            {allDay.length > 0 || meals.length > 0 ? (
+              <div className="dashboard-chips">
+                {allDay.map((event) => (
+                  <span key={event.id} className="dashboard-chip" style={{ borderColor: eventColors(event, membersById)[0] }}>
+                    {event.title}
+                  </span>
+                ))}
+                {meals.map((meal) => (
+                  <span key={meal.id} className="dashboard-chip dashboard-chip--meal" style={{ borderColor: meal.calendarColor }}>
+                    🍲 {meal.title}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            {calendar.status === "loading" && !calendar.data ? (
+              <p className="calendar-detail-hint">Caricamento...</p>
+            ) : calendar.status === "error" ? (
+              <p className="form-error">{calendar.error.message}</p>
+            ) : upcoming.length === 0 ? (
+              <p className="dashboard-empty">Nessun altro impegno per oggi.</p>
+            ) : (
+              <ol className="dashboard-events">
+                {upcoming.map((event, index) => (
+                  <DashboardEvent key={event.id} event={event} membersById={membersById} now={now} highlight={index === 0} />
+                ))}
+              </ol>
+            )}
+          </Card>
+          {today.length > 0 ? (
+            <Card className="panel-card dashboard-home">
+              <div className="panel-card__header">
+                <div>
+                  <p className="eyebrow">Oggi in casa</p>
+                  <h3>Turni</h3>
+                </div>
+                <Link to="/schedule" className="dashboard-link">Turni →</Link>
+              </div>
+              {(["work", "chore", "presence"] as ScheduleKind[]).map((kind) => {
+                const entries = today.filter((entry) => entry.kind === kind);
+                return entries.length > 0 ? (
+                  <div key={kind} className="dashboard-home__group">
+                    <span className="eyebrow">{KIND_LABELS[kind]}</span>
+                    <div className="dashboard-home__chips">
+                      {entries.map((entry) => (
+                        <ScheduleChip key={entry.id} entry={entry} membersById={membersById} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })}
+            </Card>
           ) : null}
 
-          {calendar.status === "loading" && !calendar.data ? (
-            <p className="calendar-detail-hint">Caricamento...</p>
-          ) : calendar.status === "error" ? (
-            <p className="form-error">{calendar.error.message}</p>
-          ) : upcoming.length === 0 ? (
-            <p className="dashboard-empty">Nessun altro impegno per oggi.</p>
-          ) : (
-            <ol className="dashboard-events">
-              {upcoming.map((event, index) => (
-                <DashboardEvent key={event.id} event={event} membersById={membersById} now={now} highlight={index === 0} />
-              ))}
-            </ol>
-          )}
-        </Card>
+        </div>
 
-        <Card className="panel-card dashboard-side">
-          <div className="panel-card__header">
-            <div>
-              <p className="eyebrow">Lista</p>
-              <h3>{shopping?.name ?? "Spesa"}</h3>
-            </div>
-            <Link to="/lists" className="dashboard-link">Liste →</Link>
-          </div>
+        <div className="dashboard-side-column">
           {lists.status === "error" ? (
-            <p className="form-error">{lists.error.message}</p>
-          ) : !shopping ? (
-            <p className="calendar-detail-hint">Nessuna lista collegata.</p>
-          ) : openItems.length === 0 ? (
-            <p className="dashboard-empty">Niente da comprare.</p>
+            <Card className="panel-card dashboard-side">
+              <p className="form-error">{lists.error.message}</p>
+            </Card>
+          ) : shownLists.length === 0 ? (
+            <Card className="panel-card dashboard-side">
+              <p className="calendar-detail-hint">Nessuna lista collegata.</p>
+            </Card>
           ) : (
-            <ul className="dashboard-shopping">
-              {openItems.slice(0, SHOPPING_ITEMS).map((task) => (
-                <li key={task.id}>
-                  <span className="dashboard-shopping__dot" style={{ background: shopping.color }} />
-                  {task.title}
-                </li>
-              ))}
-              {openItems.length > SHOPPING_ITEMS ? <li className="calendar-detail-hint">e altre {openItems.length - SHOPPING_ITEMS}...</li> : null}
-            </ul>
+            shownLists.map((list) => <DashboardList key={list.id} list={list} />)
           )}
-        </Card>
 
-        <Card className="panel-card dashboard-side">
-          <div className="panel-card__header">
-            <div>
-              <p className="eyebrow">Bacheca</p>
-              <h3>Note</h3>
+          <Card className="panel-card dashboard-side">
+            <div className="panel-card__header">
+              <div>
+                <p className="eyebrow">Bacheca</p>
+                <h3>Note</h3>
+              </div>
+              <Link to="/notes" className="dashboard-link">Tutte →</Link>
             </div>
-            <Link to="/notes" className="dashboard-link">Tutte →</Link>
-          </div>
-          {(notes.data ?? []).length === 0 ? (
-            <p className="calendar-detail-hint">Nessuna nota.</p>
-          ) : (
-            <div className="dashboard-notes">
-              {(notes.data ?? []).slice(0, NOTES_SHOWN).map((note) => (
-                <DashboardNote key={note.id} note={note} />
-              ))}
-            </div>
-          )}
-        </Card>
+            {shownNotes.length === 0 ? (
+              <p className="calendar-detail-hint">Nessuna nota.</p>
+            ) : (
+              <div className="dashboard-notes">
+                {shownNotes.map((note) => (
+                  <DashboardNote key={note.id} note={note} />
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
       {screensaver ? <Screensaver caption={caption} onExit={exitScreensaver} /> : null}
     </AppShell>
+  );
+};
+
+const DashboardList = ({ list }: { list: FamilyTaskList }) => {
+  const open = list.tasks.filter((task) => !task.completed);
+  return (
+    <Card className="panel-card dashboard-side" style={{ borderTop: `6px solid ${list.color}` }}>
+      <div className="panel-card__header">
+        <div>
+          <p className="eyebrow">Lista</p>
+          <h3>{list.name}</h3>
+        </div>
+        <Link to="/lists" className="dashboard-link">Liste →</Link>
+      </div>
+      {open.length === 0 ? (
+        <p className="dashboard-empty">Tutto fatto.</p>
+      ) : (
+        <ul className="dashboard-shopping">
+          {open.slice(0, LIST_ITEMS).map((task) => (
+            <li key={task.id}>
+              <span className="dashboard-shopping__dot" style={{ background: list.color }} />
+              {task.title}
+            </li>
+          ))}
+          {open.length > LIST_ITEMS ? <li className="calendar-detail-hint">e altre {open.length - LIST_ITEMS}...</li> : null}
+        </ul>
+      )}
+    </Card>
   );
 };
 

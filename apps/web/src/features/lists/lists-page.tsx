@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { AddRegular, ArrowClockwiseRegular, DismissRegular } from "@/lib/fluent-icons";
+import { AddRegular, ArrowClockwiseRegular, DismissRegular, PinRegular } from "@/lib/fluent-icons";
 import { RemindersSetup } from "./reminders-setup";
 
 /** Lists change from phones too: refresh periodically like the calendar. */
@@ -19,6 +19,13 @@ export const ListsPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("lists:write");
   const lists = useAsyncResource(() => api.getLists(), []);
+  const settings = useAsyncResource(() => api.getSettings(), []);
+  const dashboardIds = settings.data?.dashboardListIds ?? [];
+  const toggleDashboard = async (listId: string) => {
+    const next = dashboardIds.includes(listId) ? dashboardIds.filter((id) => id !== listId) : [...dashboardIds, listId];
+    await api.setDashboardLists(next);
+    settings.reload();
+  };
 
   useEffect(() => {
     const timer = window.setInterval(lists.reload, AUTO_REFRESH_MS);
@@ -57,7 +64,14 @@ export const ListsPage = () => {
         {canWrite ? <RemindersSetup /> : null}
         <div className="task-lists-grid">
           {lists.data!.lists.map((list) => (
-            <TaskListCard key={list.id} list={list} canWrite={canWrite} onChanged={lists.reload} />
+            <TaskListCard
+              key={list.id}
+              list={list}
+              canWrite={canWrite}
+              onChanged={lists.reload}
+              onDashboard={dashboardIds.includes(list.id)}
+              onToggleDashboard={() => void toggleDashboard(list.id)}
+            />
           ))}
         </div>
         </>
@@ -67,7 +81,15 @@ export const ListsPage = () => {
 };
 
 /** Optimistic updates keep ticking fast on the wall panel; the list is re-read afterwards. */
-const TaskListCard = ({ list, canWrite, onChanged }: { list: FamilyTaskList; canWrite: boolean; onChanged: () => void }) => {
+interface TaskListCardProps {
+  list: FamilyTaskList;
+  canWrite: boolean;
+  onChanged: () => void;
+  onDashboard: boolean;
+  onToggleDashboard: () => void;
+}
+
+const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboard }: TaskListCardProps) => {
   const [tasks, setTasks] = useState<TaskItem[]>(list.tasks);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +128,17 @@ const TaskListCard = ({ list, canWrite, onChanged }: { list: FamilyTaskList; can
         <span className="legend-chip__swatch" style={{ background: list.color }} />
         <h3>{list.name}</h3>
         <span className={`list-source list-source--${list.source}`}>{list.source === "reminders" ? "Promemoria" : "Google"}</span>
+        {canWrite ? (
+          <Button
+            size="small"
+            appearance={onDashboard ? "primary" : "subtle"}
+            icon={<PinRegular />}
+            aria-pressed={onDashboard}
+            title={onDashboard ? "Mostrata in dashboard (tocca per togliere)" : "Mostra in dashboard"}
+            aria-label={onDashboard ? "Togli dalla dashboard" : "Mostra in dashboard"}
+            onClick={onToggleDashboard}
+          />
+        ) : null}
         <span className="calendar-detail-hint">{open.length}</span>
       </div>
 

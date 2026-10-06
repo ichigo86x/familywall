@@ -6,7 +6,8 @@ const DEFAULTS: HouseholdSettings = {
   householdName: "Famiglia",
   locale: "it-IT",
   timezone: "Europe/Rome",
-  wallModeEnabled: true
+  wallModeEnabled: true,
+  dashboardListIds: []
 };
 
 @Injectable()

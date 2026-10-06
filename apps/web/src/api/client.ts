@@ -1,4 +1,6 @@
 import type {
+  ScheduleEntry,
+  ScheduleEntryInput,
   AddCalendarInput,
   AddTaskListInput,
   FamilyNote,
@@ -154,6 +156,14 @@ export const api = {
 
   getDavInfo: () => request<{ enabled: boolean; path: string; username: string }>("dav/info"),
   createDavProfileLink: (baseUrl: string) => request<{ token: string }>("dav/profile-link", { method: "POST", json: { baseUrl } }),
+
+  setDashboardLists: (listIds: string[]) => request<{ listIds: string[] }>("lists/dashboard", { method: "PATCH", json: { listIds } }),
+
+  getSchedule: async () => (await request<{ entries: ScheduleEntry[] }>("schedule")).entries,
+  createScheduleEntry: async (input: ScheduleEntryInput) => (await request<{ entry: ScheduleEntry }>("schedule", { method: "POST", json: input })).entry,
+  updateScheduleEntry: async (id: string, input: ScheduleEntryInput) =>
+    (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).entry,
+  deleteScheduleEntry: (id: string) => request<void>(`schedule/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,
   createNote: async (input: NoteInput) => (await request<{ note: FamilyNote }>("notes", { method: "POST", json: input })).note,

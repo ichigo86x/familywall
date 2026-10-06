@@ -1974,3 +1974,231 @@ button.note-card {
   opacity: 0.7;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
+
+/* Dashboard: bigger, readable from a distance */
+.dashboard-grid {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+}
+
+.dashboard-main,
+.dashboard-side-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+
+.dashboard-today {
+  grid-row: auto;
+}
+
+.dashboard-clock {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, var(--color-primary), #2a5a4f);
+  color: #fff;
+}
+
+.dashboard-clock strong {
+  font-size: clamp(3.5rem, 7vw, 6rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.dashboard-clock__inner > div {
+  display: grid;
+  gap: 4px;
+  text-transform: capitalize;
+}
+
+.dashboard-clock__inner > div span:first-child {
+  font-size: clamp(1.3rem, 2.4vw, 2rem);
+  font-weight: 700;
+}
+
+.dashboard-clock__inner > div span:last-child {
+  font-size: clamp(1rem, 1.6vw, 1.3rem);
+  opacity: 0.9;
+}
+
+.dashboard-shopping {
+  font-size: 1.25rem;
+  gap: 8px;
+}
+
+.dashboard-shopping__dot {
+  width: 12px;
+  height: 12px;
+}
+
+.dashboard-side h3,
+.dashboard-today h3,
+.dashboard-home h3 {
+  font-size: 1.25rem;
+}
+
+.dashboard-note strong {
+  font-size: 1.1rem;
+}
+
+.dashboard-note p {
+  font-size: 1.05rem;
+  -webkit-line-clamp: 6;
+}
+
+.dashboard-notes {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+}
+
+.dashboard-home {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-home__group {
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-home__group .eyebrow {
+  margin: 0;
+}
+
+.dashboard-home__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note-card__badge {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Shifts */
+.schedule-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.schedule-day {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 160px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  min-width: 0;
+}
+
+.schedule-day header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  text-transform: capitalize;
+}
+
+.schedule-day header span {
+  color: var(--color-muted);
+}
+
+.schedule-day--today {
+  border: 2px solid var(--color-primary);
+  background: linear-gradient(var(--today-bg), var(--today-bg)), var(--input-bg);
+}
+
+.schedule-day header .today-pill {
+  color: #fff;
+}
+
+.schedule-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--color-border);
+  background: var(--color-surface-soft);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  min-width: 0;
+}
+
+button.schedule-chip {
+  cursor: pointer;
+}
+
+.dashboard-home__chips .schedule-chip {
+  width: auto;
+  font-size: 1.05rem;
+}
+
+.schedule-chip__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.schedule-chip__text {
+  display: grid;
+  min-width: 0;
+}
+
+.schedule-chip__text strong {
+  overflow-wrap: anywhere;
+}
+
+.schedule-chip__text > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1120px) {
+  .schedule-week {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  }
+
+  .schedule-day {
+    min-height: 0;
+  }
+}
+
+.dashboard-clock {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.dashboard-note p {
+  color: #374151;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-clock__inner {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}

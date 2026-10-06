@@ -11,6 +11,7 @@ import { ListsModule } from "./modules/lists/lists.module";
 import { MembersModule } from "./modules/members/members.module";
 import { NotesModule } from "./modules/notes/notes.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
+import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 
 @Module({
@@ -24,6 +25,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
     DavModule,
     ListsModule,
     NotesModule,
+    ScheduleModule,
     HealthModule
   ],
   providers: [

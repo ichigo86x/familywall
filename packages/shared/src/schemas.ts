@@ -78,7 +78,8 @@ export const updateSettingsSchema = z
     householdName: z.string().trim().min(2).max(80).optional(),
     locale: z.string().trim().min(2).max(20).optional(),
     timezone: z.string().trim().min(1).max(64).optional(),
-    wallModeEnabled: z.boolean().optional()
+    wallModeEnabled: z.boolean().optional(),
+    dashboardListIds: z.array(z.string().min(1).max(300)).max(20).optional()
   })
   .strict();
 
@@ -260,7 +261,8 @@ export const noteSchema = z.object({
   title: z.string().trim().max(120).default(""),
   body: z.string().max(5000).default(""),
   color: hexColor.default("#FFF4B8"),
-  pinned: z.boolean().default(false)
+  pinned: z.boolean().default(false),
+  onDashboard: z.boolean().default(false)
 });
 
 export type NoteInput = z.input<typeof noteSchema>;
@@ -270,8 +272,15 @@ export const updateNoteSchema = z
     title: z.string().trim().max(120).optional(),
     body: z.string().max(5000).optional(),
     color: hexColor.optional(),
-    pinned: z.boolean().optional()
+    pinned: z.boolean().optional(),
+    onDashboard: z.boolean().optional()
   })
   .strict();
 
 export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
+
+export const dashboardListsSchema = z.object({
+  listIds: z.array(z.string().min(1).max(300)).max(20)
+});
+
+export type DashboardListsInput = z.infer<typeof dashboardListsSchema>;

@@ -8,6 +8,7 @@ import {
   DarkThemeRegular,
   HomeRegular,
   NoteRegular,
+  PeopleTeamRegular,
   PersonCircleRegular,
   SignOutRegular,
   WeatherMoonRegular,
@@ -22,7 +23,7 @@ const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactE
   dark: { label: "Scuro", icon: <WeatherMoonRegular /> }
 };
 
-export type AppRoute = "/" | "/calendar" | "/lists" | "/notes" | "/admin";
+export type AppRoute = "/" | "/calendar" | "/schedule" | "/lists" | "/notes" | "/admin";
 
 interface AppShellProps {
   currentRoute: AppRoute;
@@ -56,6 +57,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   const tabs = [
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
     { value: "/calendar", label: "Calendario", icon: <CalendarRegular /> },
+    { value: "/schedule", label: "Turni", icon: <PeopleTeamRegular /> },
     { value: "/lists", label: "Liste", icon: <ClipboardTaskRegular /> },
     { value: "/notes", label: "Note", icon: <NoteRegular /> },
     ...(auth.can("members:manage") ? [{ value: "/admin", label: "Admin", icon: <PersonCircleRegular /> }] : [])

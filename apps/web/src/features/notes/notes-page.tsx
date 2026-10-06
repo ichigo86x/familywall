@@ -83,6 +83,7 @@ const NoteCard = ({ note, author, onOpen }: { note: FamilyNote; author: User | u
     <>
       {note.pinned ? <PinFilled className="note-card__pin" aria-label="Fissata" /> : null}
       {note.title ? <h3>{note.title}</h3> : null}
+      {note.onDashboard ? <span className="note-card__badge">In dashboard</span> : null}
       {note.body ? <p>{note.body}</p> : null}
       <footer>
         {author ? <span className="legend-chip__swatch" style={{ background: author.color }} /> : null}
@@ -106,7 +107,8 @@ const NoteDialog = ({ note, onClose, onSaved }: { note: FamilyNote | null; onClo
     title: note?.title ?? "",
     body: note?.body ?? "",
     color: note?.color ?? NOTE_COLORS[0]!,
-    pinned: note?.pinned ?? false
+    pinned: note?.pinned ?? false,
+    onDashboard: note?.onDashboard ?? false
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -150,6 +152,7 @@ const NoteDialog = ({ note, onClose, onSaved }: { note: FamilyNote | null; onClo
               </div>
             </Field>
             <Switch label="Fissata in alto" checked={form.pinned} onChange={(_, data) => setForm({ ...form, pinned: data.checked })} />
+            <Switch label="Mostra in dashboard" checked={form.onDashboard} onChange={(_, data) => setForm({ ...form, onDashboard: data.checked })} />
             {error ? <p className="form-error">{error}</p> : null}
           </DialogContent>
           <DialogActions>
