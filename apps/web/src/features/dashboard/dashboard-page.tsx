@@ -1,154 +1,247 @@
-import { Badge, Button, Card, ProgressBar, Table, TableBody, TableCell, TableHeader, TableHeaderCell, TableRow } from "@fluentui/react-components";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Card } from "@fluentui/react-components";
+import { Link } from "react-router-dom";
+import type { FamilyNote, FamilyTaskList, User } from "@familywall/shared";
+
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
-import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
+import { useAuth } from "@/components/auth/use-auth";
+import { useNow } from "@/components/live-clock";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { ArrowSyncRegular, WeatherSunnyRegular } from "@/lib/fluent-icons";
-import type { DashboardData } from "@familywall/shared";
+import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
+import { addDays, eventBounds, startOfDay } from "@/features/calendar/calendar-time";
+import { Screensaver } from "./screensaver";
 
-const isEmpty = (data: DashboardData): boolean => {
-  return data.agenda.length === 0 && data.routines.length === 0 && data.reminders.length === 0;
+const REFRESH_MS = 5 * 60 * 1000;
+/** Wall panels (Kiosk accounts) start the screensaver after this much inactivity on the dashboard. */
+const KIOSK_IDLE_MS = 5 * 60 * 1000;
+const SHOPPING_ITEMS = 8;
+const NOTES_SHOWN = 4;
+
+const timeOf = (date: Date) => date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+const relative = (start: Date, end: Date, now: Date): string => {
+  if (start <= now) {
+    return `in corso, fino alle ${timeOf(end)}`;
+  }
+  const minutes = Math.round((start.getTime() - now.getTime()) / 60_000);
+  if (minutes < 60) {
+    return `tra ${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  return `tra ${hours} h${minutes % 60 ? ` ${minutes % 60} min` : ""}`;
 };
 
+/** The shopping list: the one named "spesa", otherwise the first list. */
+const pickShoppingList = (lists: FamilyTaskList[]): FamilyTaskList | undefined =>
+  lists.find((list) => /spesa|shopping|grocer/i.test(list.name)) ?? lists[0];
+
 export const DashboardPage = () => {
-  const dashboard = useAsyncResource(() => api.getDashboard(), []);
+  const auth = useAuth();
+  const now = useNow();
+  const todayKey = startOfDay(now).getTime();
+  const [screensaver, setScreensaver] = useState(false);
+
+  const from = new Date(todayKey).toISOString();
+  const to = addDays(new Date(todayKey), 1).toISOString();
+  const calendar = useAsyncResource(() => api.getCalendar(from, to), [from, to]);
+  const members = useAsyncResource(() => api.getMembers(), []);
+  const lists = useAsyncResource(() => api.getLists(), []);
+  const notes = useAsyncResource(() => api.getNotes(), []);
+
+  const reloadAll = useCallback(() => {
+    calendar.reload();
+    lists.reload();
+    notes.reload();
+  }, [calendar.reload, lists.reload, notes.reload]);
+
+  useEffect(() => {
+    const timer = window.setInterval(reloadAll, REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [reloadAll]);
+
+  const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
+
+  const { allDay, upcoming, meals } = useMemo(() => {
+    const entries = (calendar.data?.calendars ?? []).flatMap((entry) =>
+      entry.events.map((event) => ({ ...event, calendarColor: entry.color, calendarName: entry.name, kind: entry.kind ?? "events" }))
+    );
+    const events = entries.filter((event) => event.kind === "events");
+    return {
+      allDay: events.filter((event) => event.allDay),
+      // Today's timed events that have not ended yet, soonest first.
+      upcoming: events
+        .filter((event) => !event.allDay && eventBounds(event).end > now)
+        .sort((left, right) => left.startAt.localeCompare(right.startAt)),
+      meals: entries.filter((event) => event.kind === "meals")
+    };
+  }, [calendar.data, now]);
+
+  const next = upcoming[0];
+  const caption = next ? `${next.title} · ${relative(eventBounds(next).start, eventBounds(next).end, now)}` : undefined;
+  const shopping = pickShoppingList(lists.data?.lists ?? []);
+  const openItems = shopping?.tasks.filter((task) => !task.completed) ?? [];
+
+  const exitScreensaver = useCallback(() => setScreensaver(false), []);
+  useKioskIdle(auth.user?.role === "Kiosk" && !screensaver, () => setScreensaver(true));
 
   return (
-    <>
-      <AppShell
-        currentRoute="/"
-        eyebrow="Today at a glance"
-        title="A warm command center for the whole household"
-        subtitle="Shared agenda, routines, and gentle reminders stay readable from the wall without spilling private detail."
-        summaryChip="Wall mode ready"
-        toolbarActions={
-          <Button appearance="primary" icon={<ArrowSyncRegular />} onClick={dashboard.reload}>
-            Refresh overview
-          </Button>
-        }
-      >
-        {dashboard.status === "loading" ? (
-          <LoadingState title="Loading dashboard" message="Pulling today's household overview and routine progress." />
-        ) : dashboard.status === "error" ? (
-          <ErrorState
-            title="Dashboard temporarily offline"
-            message={dashboard.error.message}
-            actionLabel="Retry dashboard"
-            onAction={dashboard.reload}
-          />
-        ) : isEmpty(dashboard.data) ? (
-          <EmptyState
-            title="Dashboard in arrivo"
-            message="Agenda, routine e promemoria arriveranno nelle prossime versioni. Intanto usa il calendario."
-            actionLabel="Ricarica"
-            onAction={dashboard.reload}
-          />
-        ) : (
-          <>
-            <section className="stats-grid">
-              <Card className="metric-card">
-                <div className="metric-card__header">
-                  <WeatherSunnyRegular fontSize={20} />
-                  <span>{dashboard.data.focusDateLabel}</span>
-                </div>
-                <strong>{dashboard.data.weather.temperatureC}°C</strong>
-                <p>{dashboard.data.weather.condition}</p>
-                <small>{dashboard.data.weather.note}</small>
-              </Card>
-              <Card className="metric-card">
-                <span>Agenda items</span>
-                <strong>{dashboard.data.agenda.length}</strong>
-                <p>Every schedule touchpoint visible for wall and tablet screens.</p>
-              </Card>
-              <Card className="metric-card">
-                <span>Routines running</span>
-                <strong>{dashboard.data.routines.length}</strong>
-                <p>Touch-friendly progress cards help the household close the evening calmly.</p>
-              </Card>
-            </section>
+    <AppShell
+      compact
+      currentRoute="/"
+      eyebrow="Oggi"
+      title={now.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}
+      subtitle=""
+      summaryChip={`${upcoming.length} in programma`}
+      toolbarActions={
+        <Button appearance="primary" onClick={() => setScreensaver(true)}>Screensaver</Button>
+      }
+    >
+      <div className="dashboard-grid">
+        <Card className="panel-card dashboard-today">
+          <div className="panel-card__header">
+            <div>
+              <p className="eyebrow">Agenda</p>
+              <h3>Ancora oggi</h3>
+            </div>
+            <Link to="/calendar" className="dashboard-link">Calendario →</Link>
+          </div>
 
-            <section className="content-grid content-grid--wide">
-              <Card className="panel-card">
-                <div className="panel-card__header">
-                  <div>
-                    <p className="eyebrow">Shared agenda</p>
-                    <h3>Who is on point today</h3>
-                  </div>
-                  <Badge appearance="filled">{dashboard.data.householdName}</Badge>
-                </div>
-                <Table aria-label="Daily family agenda">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHeaderCell>Member</TableHeaderCell>
-                      <TableHeaderCell>Today</TableHeaderCell>
-                      <TableHeaderCell>Time</TableHeaderCell>
-                      <TableHeaderCell>Status</TableHeaderCell>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dashboard.data.agenda.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="identity-cell">
-                            <img src={item.memberAvatarUrl} alt={item.memberName} className="avatar-thumb" />
-                            <span>{item.memberName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.today}</TableCell>
-                        <TableCell>{item.time}</TableCell>
-                        <TableCell>{item.status}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
+          {allDay.length > 0 || meals.length > 0 ? (
+            <div className="dashboard-chips">
+              {allDay.map((event) => (
+                <span key={event.id} className="dashboard-chip" style={{ borderColor: eventColors(event, membersById)[0] }}>
+                  {event.title}
+                </span>
+              ))}
+              {meals.map((meal) => (
+                <span key={meal.id} className="dashboard-chip dashboard-chip--meal" style={{ borderColor: meal.calendarColor }}>
+                  🍲 {meal.title}
+                </span>
+              ))}
+            </div>
+          ) : null}
 
-              <Card className="panel-card">
-                <div className="panel-card__header">
-                  <div>
-                    <p className="eyebrow">Rhythm</p>
-                    <h3>Evening routines</h3>
-                  </div>
-                </div>
-                <div className="stack-list">
-                  {dashboard.data.routines.map((routine) => (
-                    <article key={routine.id} className="routine-row">
-                      <div>
-                        <h4>{routine.title}</h4>
-                        <p>{routine.ownerName} · {routine.cadence}</p>
-                      </div>
-                      <div className="routine-row__progress">
-                        <ProgressBar value={routine.completion / 100} />
-                        <span>{routine.completion}% complete</span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </Card>
+          {calendar.status === "loading" && !calendar.data ? (
+            <p className="calendar-detail-hint">Caricamento...</p>
+          ) : calendar.status === "error" ? (
+            <p className="form-error">{calendar.error.message}</p>
+          ) : upcoming.length === 0 ? (
+            <p className="dashboard-empty">Nessun altro impegno per oggi.</p>
+          ) : (
+            <ol className="dashboard-events">
+              {upcoming.map((event, index) => (
+                <DashboardEvent key={event.id} event={event} membersById={membersById} now={now} highlight={index === 0} />
+              ))}
+            </ol>
+          )}
+        </Card>
 
-              <Card className="panel-card">
-                <div className="panel-card__header">
-                  <div>
-                    <p className="eyebrow">Reminders</p>
-                    <h3>Quiet nudges for the family</h3>
-                  </div>
-                </div>
-                <div className="stack-list">
-                  {dashboard.data.reminders.map((reminder) => (
-                    <article key={reminder.id} className="reminder-card">
-                      <Badge appearance="filled" color={reminder.severity === "Action" ? "danger" : reminder.severity === "Watch" ? "warning" : "success"}>
-                        {reminder.severity}
-                      </Badge>
-                      <h4>{reminder.title}</h4>
-                      <p>{reminder.note}</p>
-                    </article>
-                  ))}
-                </div>
-              </Card>
-            </section>
-          </>
-        )}
-      </AppShell>
-    </>
+        <Card className="panel-card dashboard-side">
+          <div className="panel-card__header">
+            <div>
+              <p className="eyebrow">Lista</p>
+              <h3>{shopping?.name ?? "Spesa"}</h3>
+            </div>
+            <Link to="/lists" className="dashboard-link">Liste →</Link>
+          </div>
+          {lists.status === "error" ? (
+            <p className="form-error">{lists.error.message}</p>
+          ) : !shopping ? (
+            <p className="calendar-detail-hint">Nessuna lista collegata.</p>
+          ) : openItems.length === 0 ? (
+            <p className="dashboard-empty">Niente da comprare.</p>
+          ) : (
+            <ul className="dashboard-shopping">
+              {openItems.slice(0, SHOPPING_ITEMS).map((task) => (
+                <li key={task.id}>
+                  <span className="dashboard-shopping__dot" style={{ background: shopping.color }} />
+                  {task.title}
+                </li>
+              ))}
+              {openItems.length > SHOPPING_ITEMS ? <li className="calendar-detail-hint">e altre {openItems.length - SHOPPING_ITEMS}...</li> : null}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="panel-card dashboard-side">
+          <div className="panel-card__header">
+            <div>
+              <p className="eyebrow">Bacheca</p>
+              <h3>Note</h3>
+            </div>
+            <Link to="/notes" className="dashboard-link">Tutte →</Link>
+          </div>
+          {(notes.data ?? []).length === 0 ? (
+            <p className="calendar-detail-hint">Nessuna nota.</p>
+          ) : (
+            <div className="dashboard-notes">
+              {(notes.data ?? []).slice(0, NOTES_SHOWN).map((note) => (
+                <DashboardNote key={note.id} note={note} />
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {screensaver ? <Screensaver caption={caption} onExit={exitScreensaver} /> : null}
+    </AppShell>
   );
+};
+
+const DashboardEvent = ({ event, membersById, now, highlight }: { event: PlannerEvent; membersById: Map<string, User>; now: Date; highlight: boolean }) => {
+  const colors = eventColors(event, membersById);
+  const { start, end } = eventBounds(event);
+  const people = event.memberIds.map((id) => membersById.get(id)).filter((member): member is User => Boolean(member));
+  return (
+    <li className={`dashboard-event ${highlight ? "dashboard-event--next" : ""}`.trim()} style={{ background: eventBackground(colors) }}>
+      <span className="planner-event__bar" aria-hidden="true">
+        {colors.map((color) => (
+          <span key={color} style={{ background: color }} />
+        ))}
+      </span>
+      <div className="dashboard-event__time">
+        <strong>{timeOf(start)}</strong>
+        <span>{timeOf(end)}</span>
+      </div>
+      <div className="dashboard-event__body">
+        {highlight ? <span className="today-pill">{start <= now ? "Adesso" : "Prossimo"}</span> : null}
+        <strong>{event.title}</strong>
+        <span className="calendar-detail-hint">
+          {relative(start, end, now)}
+          {people.length > 0 ? ` · ${people.map((member) => member.displayName).join(", ")}` : ""}
+        </span>
+      </div>
+    </li>
+  );
+};
+
+const DashboardNote = ({ note }: { note: FamilyNote }) => (
+  <article className="dashboard-note" style={{ background: note.color }}>
+    {note.title ? <strong>{note.title}</strong> : null}
+    {note.body ? <p>{note.body}</p> : null}
+  </article>
+);
+
+/** Calls onIdle after a period without touches, clicks or keys (only while enabled). */
+const useKioskIdle = (enabled: boolean, onIdle: () => void) => {
+  const callback = useRef(onIdle);
+  callback.current = onIdle;
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    let timer = window.setTimeout(() => callback.current(), KIOSK_IDLE_MS);
+    const reset = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => callback.current(), KIOSK_IDLE_MS);
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    events.forEach((name) => window.addEventListener(name, reset, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((name) => window.removeEventListener(name, reset));
+    };
+  }, [enabled]);
 };

@@ -14,6 +14,7 @@ import {
   WeatherSunnyRegular
 } from "@/lib/fluent-icons";
 import { useThemePreference, type ThemePreference } from "@/theme/theme-preference";
+import { LiveClock } from "@/components/live-clock";
 
 const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactElement }> = {
   auto: { label: "Auto", icon: <DarkThemeRegular /> },
@@ -87,6 +88,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
         </TabList>
 
         <div className="app-toolbar__meta">
+          <LiveClock />
           <Badge appearance="filled" color="informative">
             {summaryChip}
           </Badge>

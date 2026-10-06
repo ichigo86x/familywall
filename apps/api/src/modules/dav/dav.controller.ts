@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Post, Query, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Header, Post, Query, Req, Res } from "@nestjs/common";
 import { randomBytes, randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
@@ -55,7 +55,7 @@ const caldavProfile = (input: { host: string; port: number; ssl: boolean; princi
  */
 @Controller("dav")
 export class DavController {
-  private readonly links = new Map<string, { username: string; expiresAt: number }>();
+  private readonly links = new Map<string, { username: string; expiresAt: number; baseUrl?: URL }>();
 
   public constructor(private readonly gateway: DavGatewayService) {}
 
@@ -67,15 +67,26 @@ export class DavController {
 
   @Post("profile-link")
   @RequirePermission("lists:write")
-  public profileLink(@Req() request: RequestWithUser): { token: string } {
+  public profileLink(@Req() request: RequestWithUser, @Body() body: { baseUrl?: unknown }): { token: string } {
     const now = Date.now();
     for (const [token, link] of this.links) {
       if (link.expiresAt < now) {
         this.links.delete(token);
       }
     }
+    // The browser knows the public address (e.g. https://host:8443/); proxies often hide the port.
+    let baseUrl: URL | undefined;
+    try {
+      baseUrl = typeof body?.baseUrl === "string" ? new URL(body.baseUrl) : undefined;
+    } catch {
+      baseUrl = undefined;
+    }
     const token = randomBytes(24).toString("base64url");
-    this.links.set(token, { username: request.user.username, expiresAt: now + LINK_TTL_MS });
+    this.links.set(token, {
+      username: request.user.username,
+      expiresAt: now + LINK_TTL_MS,
+      baseUrl: baseUrl && /^https?:$/.test(baseUrl.protocol) ? baseUrl : undefined
+    });
     return { token };
   }
 
@@ -90,17 +101,29 @@ export class DavController {
     }
     this.links.delete(token);
 
-    const forwardedHost = String(request.headers["x-forwarded-host"] ?? "").split(",")[0]?.trim();
-    const hostHeader = forwardedHost || request.headers.host || "localhost";
-    const ssl = request.protocol === "https";
-    const [host, portText] = hostHeader.split(":");
-    const port = portText ? Number(portText) : ssl ? 443 : 80;
-    const prefix = String(request.headers["x-forwarded-prefix"] ?? "").replace(/\/+$/, "");
+    let host: string;
+    let port: number;
+    let ssl: boolean;
+    let prefix: string;
+    if (link.baseUrl) {
+      ssl = link.baseUrl.protocol === "https:";
+      host = link.baseUrl.hostname;
+      port = link.baseUrl.port ? Number(link.baseUrl.port) : ssl ? 443 : 80;
+      prefix = link.baseUrl.pathname.replace(/\/+$/, "");
+    } else {
+      const forwardedHost = String(request.headers["x-forwarded-host"] ?? "").split(",")[0]?.trim();
+      const hostHeader = forwardedHost || request.headers.host || "localhost";
+      ssl = request.protocol === "https";
+      const [hostName, portText] = hostHeader.split(":");
+      host = hostName!;
+      port = portText ? Number(portText) : ssl ? 443 : 80;
+      prefix = String(request.headers["x-forwarded-prefix"] ?? "").replace(/\/+$/, "");
+    }
 
     response
       .status(200)
       .type("application/x-apple-aspen-config")
       .setHeader("Content-Disposition", 'attachment; filename="familywall-promemoria.mobileconfig"')
-      .send(caldavProfile({ host: host!, port, ssl, principalPath: `${prefix}${DAV_PATH}/${DAV_FAMILY_USER}/`, username: link.username }));
+      .send(caldavProfile({ host, port, ssl, principalPath: `${prefix}${DAV_PATH}/${DAV_FAMILY_USER}/`, username: link.username }));
   }
 }

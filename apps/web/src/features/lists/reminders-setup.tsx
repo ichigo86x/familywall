@@ -31,7 +31,7 @@ export const RemindersSetup = () => {
   const installProfile = async () => {
     setError(null);
     try {
-      const { token } = await api.createDavProfileLink();
+      const { token } = await api.createDavProfileLink(new URL(".", document.baseURI).toString());
       window.location.href = new URL(`api/dav/profile?t=${encodeURIComponent(token)}`, document.baseURI).toString();
     } catch (caught) {
       setError(errorText(caught));

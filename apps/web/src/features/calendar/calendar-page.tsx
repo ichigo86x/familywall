@@ -34,7 +34,7 @@ export interface PlannerEvent extends FamilyEvent {
  * Colors of an event: the main tag wins, otherwise one color per involved member
  * (assigned in the app or recognised in the title), otherwise the calendar color.
  */
-const eventColors = (event: PlannerEvent, membersById: Map<string, User>): string[] => {
+export const eventColors = (event: PlannerEvent, membersById: Map<string, User>): string[] => {
   const tagColor = event.tagMemberId ? membersById.get(event.tagMemberId)?.color : undefined;
   if (tagColor) {
     return [tagColor];
@@ -44,7 +44,7 @@ const eventColors = (event: PlannerEvent, membersById: Map<string, User>): strin
 };
 
 /** Single member: tinted card. Several members: soft gradient across all their colors. */
-const eventBackground = (colors: string[]): string =>
+export const eventBackground = (colors: string[]): string =>
   colors.length === 1 ? `${colors[0]}22` : `linear-gradient(90deg, ${colors.map((color) => `${color}2E`).join(", ")})`;
 
 /** Chef hat (no Fluent equivalent); takes the current text color. */

@@ -17,7 +17,6 @@ import type {
   CreateEventInput,
   CreateMemberInput,
   CreateProviderAccountInput,
-  DashboardData,
   FamilyEvent,
   HouseholdSettings,
   ListsResponse,
@@ -133,7 +132,6 @@ export const api = {
   deleteEvent: (id: string, scope?: RecurrenceScope) =>
     request<void>(`events/${encodeURIComponent(id)}${scope ? `?scope=${scope}` : ""}`, { method: "DELETE" }),
 
-  getDashboard: async (): Promise<DashboardData> => (await request<{ dashboard: DashboardData }>("dashboard")).dashboard,
   getLists: () => request<ListsResponse>("lists"),
   createTask: (listId: string, title: string) =>
     request<{ id: string }>(`lists/${encodeURIComponent(listId)}/tasks`, { method: "POST", json: { title } }),
@@ -155,7 +153,7 @@ export const api = {
     (await request<{ account: ProviderAccount }>("providers/google/complete", { method: "POST", json: input })).account,
 
   getDavInfo: () => request<{ enabled: boolean; path: string; username: string }>("dav/info"),
-  createDavProfileLink: () => request<{ token: string }>("dav/profile-link", { method: "POST" }),
+  createDavProfileLink: (baseUrl: string) => request<{ token: string }>("dav/profile-link", { method: "POST", json: { baseUrl } }),
 
   getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,
   createNote: async (input: NoteInput) => (await request<{ note: FamilyNote }>("notes", { method: "POST", json: input })).note,

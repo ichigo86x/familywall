@@ -5,7 +5,6 @@ import { PermissionsGuard } from "./common/auth/permissions.guard";
 import { DatabaseModule } from "./database/database.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CalendarsModule } from "./modules/calendars/calendars.module";
-import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { DavModule } from "./modules/dav/dav.module";
 import { HealthModule } from "./modules/health/health.module";
 import { ListsModule } from "./modules/lists/lists.module";
@@ -22,7 +21,6 @@ import { SettingsModule } from "./modules/settings/settings.module";
     SettingsModule,
     ProvidersModule,
     CalendarsModule,
-    DashboardModule,
     DavModule,
     ListsModule,
     NotesModule,

@@ -167,51 +167,6 @@ export interface EventResponse {
   event: FamilyEvent;
 }
 
-export interface WeatherSummary {
-  temperatureC: number;
-  condition: string;
-  note: string;
-}
-
-export interface AgendaItem {
-  id: string;
-  memberId: string;
-  memberName: string;
-  memberAvatarUrl: string;
-  today: string;
-  time: string;
-  status: "On track" | "Confirmed" | "Needs input" | "In progress";
-}
-
-export interface RoutineItem {
-  id: string;
-  title: string;
-  ownerName: string;
-  ownerAvatarUrl: string;
-  cadence: string;
-  completion: number;
-}
-
-export interface ReminderItem {
-  id: string;
-  title: string;
-  note: string;
-  severity: "Calm" | "Watch" | "Action";
-}
-
-export interface DashboardData {
-  householdName: string;
-  focusDateLabel: string;
-  weather: WeatherSummary;
-  agenda: AgendaItem[];
-  routines: RoutineItem[];
-  reminders: ReminderItem[];
-}
-
-export interface DashboardResponse {
-  dashboard: DashboardData;
-}
-
 /** A provider task list (Google Tasks) chosen by the Admin. */
 export interface TaskListConfig {
   id: string;
