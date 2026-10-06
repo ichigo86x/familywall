@@ -38,7 +38,9 @@ export const createMemberSchema = z
     password: password.optional(),
     keywords: keywords.default([]),
     /** false = tag-only member (children only): no password, never signs in. */
-    loginEnabled: z.boolean().default(true)
+    loginEnabled: z.boolean().default(true),
+    /** Kiosk only: write mode. */
+    panelWrite: z.boolean().default(false)
   })
   .superRefine((input, context) => {
     if (input.loginEnabled && !input.password) {
@@ -60,7 +62,8 @@ export const updateMemberSchema = z
     disabled: z.boolean().optional(),
     keywords: keywords.optional(),
     /** Only false is accepted: it removes the password. Setting a password enables sign-in again. */
-    loginEnabled: z.literal(false).optional()
+    loginEnabled: z.literal(false).optional(),
+    panelWrite: z.boolean().optional()
   })
   .strict();
 

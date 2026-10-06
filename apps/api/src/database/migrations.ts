@@ -159,5 +159,9 @@ export const migrations: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+  `,
+  // Wall panels in write mode.
+  `
+  ALTER TABLE members ADD COLUMN panel_write INTEGER NOT NULL DEFAULT 0;
   `
 ];

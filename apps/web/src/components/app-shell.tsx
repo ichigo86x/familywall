@@ -1,4 +1,17 @@
-import { Badge, Button, Tab, TabList, Toolbar } from "@fluentui/react-components";
+import {
+  Badge,
+  Button,
+  Menu,
+  MenuGroup,
+  MenuGroupHeader,
+  MenuItemRadio,
+  MenuList,
+  MenuPopover,
+  MenuTrigger,
+  Tab,
+  TabList,
+  Toolbar
+} from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/components/auth/use-auth";
@@ -14,13 +27,21 @@ import {
   WeatherMoonRegular,
   WeatherSunnyRegular
 } from "@/lib/fluent-icons";
-import { useThemePreference, type ThemePreference } from "@/theme/theme-preference";
+import { SCALE_OPTIONS, useThemePreference, type ScalePreference, type ThemePreference } from "@/theme/theme-preference";
 import { LiveClock } from "@/components/live-clock";
 
 const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactElement }> = {
   auto: { label: "Auto", icon: <DarkThemeRegular /> },
   light: { label: "Chiaro", icon: <WeatherSunnyRegular /> },
   dark: { label: "Scuro", icon: <WeatherMoonRegular /> }
+};
+
+const SCALE_LABELS: Record<ScalePreference, string> = {
+  auto: "Automatico",
+  "100": "Normale",
+  "115": "Grande",
+  "130": "Molto grande",
+  "150": "Enorme"
 };
 
 export type AppRoute = "/" | "/calendar" | "/schedule" | "/lists" | "/notes" | "/admin";
@@ -104,16 +125,50 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
               {initials(auth.user.displayName)}
             </span>
           ) : null}
-          <Button
-            appearance="subtle"
-            className="theme-toggle"
-            icon={THEME_OPTIONS[theme.preference].icon}
-            onClick={theme.cycle}
-            title={`Tema: ${THEME_OPTIONS[theme.preference].label} (tocca per cambiare)`}
-            aria-label={`Tema ${THEME_OPTIONS[theme.preference].label}`}
+          <Menu
+            checkedValues={{ theme: [theme.preference], scale: [theme.scalePreference] }}
+            onCheckedValueChange={(_, data) => {
+              const value = data.checkedItems[0];
+              if (data.name === "theme") {
+                theme.setPreference(value as ThemePreference);
+              } else if (data.name === "scale") {
+                theme.setScale(value as ScalePreference);
+              }
+            }}
           >
-            <span className="button-label">{THEME_OPTIONS[theme.preference].label}</span>
-          </Button>
+            <MenuTrigger disableButtonEnhancement>
+              <Button
+                appearance="subtle"
+                className="theme-toggle"
+                icon={THEME_OPTIONS[theme.preference].icon}
+                title="Tema e dimensione del testo (solo su questo dispositivo)"
+                aria-label="Tema e dimensione del testo"
+              >
+                <span className="button-label">Schermo</span>
+              </Button>
+            </MenuTrigger>
+            <MenuPopover>
+              <MenuList>
+                <MenuGroup>
+                  <MenuGroupHeader>Tema</MenuGroupHeader>
+                  {(Object.keys(THEME_OPTIONS) as ThemePreference[]).map((option) => (
+                    <MenuItemRadio key={option} name="theme" value={option} icon={THEME_OPTIONS[option].icon}>
+                      {THEME_OPTIONS[option].label}
+                    </MenuItemRadio>
+                  ))}
+                </MenuGroup>
+                <MenuGroup>
+                  <MenuGroupHeader>Testo</MenuGroupHeader>
+                  {SCALE_OPTIONS.map((option) => (
+                    <MenuItemRadio key={option} name="scale" value={option}>
+                      {SCALE_LABELS[option]}
+                      {option === "auto" && theme.scalePreference === "auto" ? ` (${Math.round(theme.scale * 100)}%)` : ""}
+                    </MenuItemRadio>
+                  ))}
+                </MenuGroup>
+              </MenuList>
+            </MenuPopover>
+          </Menu>
           <Button
             appearance="subtle"
             className="logout-button"

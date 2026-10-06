@@ -32,9 +32,10 @@ export class EventsController {
   @Delete(":eventId")
   @HttpCode(HttpStatus.NO_CONTENT)
   public delete(
+    @Req() request: RequestWithUser,
     @Param("eventId") eventId: string,
     @Query(new ZodValidationPipe(deleteEventQuerySchema)) query: DeleteEventQuery
   ): Promise<void> {
-    return this.eventsService.delete(eventId, query.scope);
+    return this.eventsService.delete(request.user, eventId, query.scope);
   }
 }

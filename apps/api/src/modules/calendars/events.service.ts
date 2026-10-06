@@ -47,6 +47,7 @@ export class EventsService {
   public async create(actor: User, input: CreateEventInput): Promise<FamilyEvent> {
     const calendar = this.requireWritableCalendar(input.calendarId);
     this.assertMembersExist(input.memberIds, input.tagMemberId);
+    this.assertPanelMayWrite(actor, input.privacy);
 
     let uid = newEventUid();
     const times = { startAt: input.startAt, endAt: input.endAt, allDay: input.allDay };
@@ -95,6 +96,7 @@ export class EventsService {
 
   public async update(actor: User, eventId: string, input: UpdateEventInput): Promise<{ id: string }> {
     this.assertMembersExist(input.memberIds ?? [], input.tagMemberId ?? null);
+    this.assertPanelMayWrite(actor, input.privacy, eventId);
 
     const remote = decodeRemoteEventId(eventId);
     if (!remote) {
@@ -145,7 +147,8 @@ export class EventsService {
     return { id: eventId };
   }
 
-  public async delete(eventId: string, requestedScope?: RecurrenceScope): Promise<void> {
+  public async delete(actor: User, eventId: string, requestedScope?: RecurrenceScope): Promise<void> {
+    this.assertPanelMayWrite(actor, undefined, eventId);
     const remote = decodeRemoteEventId(eventId);
     if (!remote) {
       const current = this.events.findById(eventId);
@@ -234,6 +237,33 @@ export class EventsService {
       throw AppException.conflict("Il calendario è disattivato.");
     }
     return calendar;
+  }
+
+  /**
+   * Wall panels in write mode only handle shared events: they cannot see the details
+   * of private or wall-hidden ones, so they must not change them or create new ones.
+   */
+  private assertPanelMayWrite(actor: User, privacy: string | undefined, eventId?: string): void {
+    if (actor.role !== "Kiosk") {
+      return;
+    }
+    if (privacy !== undefined && privacy !== "shared") {
+      throw AppException.forbidden("Dal pannello si gestiscono solo eventi condivisi.");
+    }
+    if (eventId !== undefined && this.currentPrivacy(eventId) !== "shared") {
+      throw AppException.forbidden("Questo evento si modifica solo dall'app dei genitori.");
+    }
+  }
+
+  private currentPrivacy(eventId: string): string {
+    const remote = decodeRemoteEventId(eventId);
+    if (!remote) {
+      return this.events.findById(eventId)?.privacy ?? "shared";
+    }
+    const meta =
+      (remote.occurrenceKey ? this.events.findRemoteMeta(remote.calendarId, remoteMetaKey(remote.uid, remote.occurrenceKey, "occurrence")) : undefined) ??
+      this.events.findRemoteMeta(remote.calendarId, remote.uid);
+    return meta?.privacy ?? "shared";
   }
 
   private assertMembersExist(memberIds: string[], tagMemberId: string | null): void {

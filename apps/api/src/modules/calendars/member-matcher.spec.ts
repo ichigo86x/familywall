@@ -10,7 +10,7 @@ const member = (id: string, displayName: string, keywords: string[] = [], role: 
   color: "#000000",
   disabled: false,
   keywords,
-  canLogin: true
+  canLogin: true, panelWrite: false
 });
 
 const match = buildMemberMatcher([

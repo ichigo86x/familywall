@@ -133,15 +133,28 @@ describe("CalendarsService and EventsService", () => {
     expect(current.map((event) => event.privacy)).toEqual(["wall-hidden", "shared", "wall-hidden"]);
   });
 
+  it("lets wall panels in write mode change shared events only", async () => {
+    const { ctx, admin, events } = await setup({ "trip.ics": SCHOOL_TRIP });
+    const panel = { ...admin, id: "panel", role: "Kiosk" as const, panelWrite: true };
+    const [trip] = await events();
+
+    await ctx.events.update(panel, trip!.id, { title: "Gita al lago" });
+    await expect(ctx.events.update(panel, trip!.id, { privacy: "private" })).rejects.toThrow(/solo eventi condivisi/);
+
+    await ctx.events.update(admin, trip!.id, { privacy: "private" });
+    await expect(ctx.events.update(panel, trip!.id, { title: "X" })).rejects.toThrow(/app dei genitori/);
+    await expect(ctx.events.delete(panel, trip!.id)).rejects.toThrow(/app dei genitori/);
+  });
+
   it("deletes one occurrence or the whole series", async () => {
-    const { ctx, server, events } = await setup({ "swim.ics": WEEKLY_SWIM });
+    const { ctx, admin, server, events } = await setup({ "swim.ics": WEEKLY_SWIM });
     const [, second] = await events();
 
-    await ctx.events.delete(second!.id, "occurrence");
+    await ctx.events.delete(admin, second!.id, "occurrence");
     const remaining = await events();
     expect(remaining).toHaveLength(2);
 
-    await ctx.events.delete(remaining[0]!.id, "series");
+    await ctx.events.delete(admin, remaining[0]!.id, "series");
     expect(await events()).toEqual([]);
     expect(server.size).toBe(0);
   });
@@ -194,7 +207,7 @@ describe("CalendarsService and EventsService", () => {
 });
 
 describe("projectEventForViewer", () => {
-  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false, keywords: [], canLogin: true });
+  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false, keywords: [], canLogin: true, panelWrite: false });
   const event = {
     id: "e1",
     calendarId: "c1",

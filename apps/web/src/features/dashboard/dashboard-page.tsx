@@ -164,6 +164,28 @@ export const DashboardPage = () => {
               </ol>
             )}
           </Card>
+
+          <Card className="panel-card dashboard-side">
+            <div className="panel-card__header">
+              <div>
+                <p className="eyebrow">Bacheca</p>
+                <h3>Note</h3>
+              </div>
+              <Link to="/notes" className="dashboard-link">Tutte →</Link>
+            </div>
+            {shownNotes.length === 0 ? (
+              <p className="calendar-detail-hint">Nessuna nota.</p>
+            ) : (
+              <div className="dashboard-notes">
+                {shownNotes.map((note) => (
+                  <DashboardNote key={note.id} note={note} />
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        <div className="dashboard-side-column">
           {today.length > 0 ? (
             <Card className="panel-card dashboard-home">
               <div className="panel-card__header">
@@ -189,9 +211,6 @@ export const DashboardPage = () => {
             </Card>
           ) : null}
 
-        </div>
-
-        <div className="dashboard-side-column">
           {lists.status === "error" ? (
             <Card className="panel-card dashboard-side">
               <p className="form-error">{lists.error.message}</p>
@@ -203,25 +222,6 @@ export const DashboardPage = () => {
           ) : (
             shownLists.map((list) => <DashboardList key={list.id} list={list} />)
           )}
-
-          <Card className="panel-card dashboard-side">
-            <div className="panel-card__header">
-              <div>
-                <p className="eyebrow">Bacheca</p>
-                <h3>Note</h3>
-              </div>
-              <Link to="/notes" className="dashboard-link">Tutte →</Link>
-            </div>
-            {shownNotes.length === 0 ? (
-              <p className="calendar-detail-hint">Nessuna nota.</p>
-            ) : (
-              <div className="dashboard-notes">
-                {shownNotes.map((note) => (
-                  <DashboardNote key={note.id} note={note} />
-                ))}
-              </div>
-            )}
-          </Card>
         </div>
       </div>
 

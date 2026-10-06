@@ -17,7 +17,7 @@ export const LoginPage = () => {
     return <LoadingState title="Apertura del family wall" message="Verifica dell'accesso in corso." />;
   }
   if (auth.status === "authenticated") {
-    return <Navigate to={auth.user?.role === "Kiosk" ? "/calendar" : "/"} replace />;
+    return <Navigate to="/" replace />;
   }
   if (auth.status === "needs-setup") {
     return <Navigate to="/setup" replace />;

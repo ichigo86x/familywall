@@ -1,4 +1,6 @@
 :root {
+  /* Wide but not endless: wall panels (1920px) use the whole width. */
+  --content-max: 2400px;
   --color-primary: #3A7D6E;
   --color-accent: #E9A24D;
   --color-surface: #F5F3EF;
@@ -88,7 +90,7 @@ code {
 .app-toolbar {
   margin: 0 auto 16px;
   align-items: center;
-  max-width: 1480px;
+  max-width: var(--content-max);
   padding: 16px 20px;
   border: 1px solid var(--line);
   border-radius: 24px;
@@ -162,7 +164,7 @@ code {
 }
 
 .shell-grid {
-  max-width: 1480px;
+  max-width: var(--content-max);
   margin: 0 auto;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
@@ -220,7 +222,7 @@ code {
 }
 
 .shell-main {
-  max-width: 1480px;
+  max-width: var(--content-max);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -2201,4 +2203,21 @@ button.schedule-chip {
   align-items: center;
   gap: 28px;
   flex-wrap: wrap;
+}
+
+/* Large screens (Echo Show 15 in Fully Kiosk, TVs): thin margins, every pixel for content. */
+@media (min-width: 1500px) {
+  .app-shell {
+    padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .app-toolbar {
+    margin-bottom: 12px;
+    padding: 10px 18px;
+  }
+
+  .shell-main {
+    gap: 14px;
+  }
 }

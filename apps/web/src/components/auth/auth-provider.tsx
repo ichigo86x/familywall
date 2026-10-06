@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { hasPermission, type HouseholdSettings, type LoginInput, type Permission, type SetupInput, type User } from "@familywall/shared";
+import { userCan, type HouseholdSettings, type LoginInput, type Permission, type SetupInput, type User } from "@familywall/shared";
 
 import { api, setUnauthorizedHandler, tokenStore } from "@/api/client";
 import { AuthContext, type AuthContextValue } from "@/components/auth/use-auth";
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = useCallback(async (input: LoginInput) => adopt((await api.login(input)).user), [adopt]);
   const setup = useCallback(async (input: SetupInput) => adopt((await api.setup(input)).user), [adopt]);
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
-  const can = useCallback((permission: Permission) => Boolean(user && hasPermission(user.role, permission)), [user]);
+  const can = useCallback((permission: Permission) => Boolean(user && userCan(user, permission)), [user]);
   const reloadHousehold = useCallback(async () => setHousehold(await api.getSettings()), []);
 
   const value = useMemo<AuthContextValue>(

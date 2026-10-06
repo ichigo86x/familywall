@@ -14,6 +14,7 @@ import {
 import type { EventPrivacy, FamilyEvent, RecurrenceRule, RecurrenceScope, UpdateEventInput, User, Weekday } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { useAuth } from "@/components/auth/use-auth";
 import { DeleteRegular } from "@/lib/fluent-icons";
 import { addDays, eventBounds, fromInputs, timeLabel, toInputValue } from "./calendar-time";
 
@@ -136,6 +137,8 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
   const [pendingScope, setPendingScope] = useState<"save" | "delete" | null>(null);
   const [repeat, setRepeat] = useState<RepeatDraft>(NO_REPEAT);
   const updateRepeat = (patch: Partial<RepeatDraft>) => setRepeat((current) => ({ ...current, ...patch }));
+  // Wall panels in write mode only handle shared events (the API enforces it too).
+  const isPanel = useAuth().user?.role === "Kiosk";
 
   if (event && (readOnly || event.redacted)) {
     return (
@@ -403,14 +406,16 @@ export const EventEditor = ({ event, calendars, members, membersById, readOnly, 
         </select>
       </div>
 
-      <div className="calendar-detail-row">
-        <label htmlFor="event-privacy">Privacy</label>
-        <select id="event-privacy" value={draft.privacy} onChange={(change) => update("privacy", change.target.value as EventPrivacy)}>
-          {(Object.keys(PRIVACY_LABELS) as EventPrivacy[]).map((privacy) => (
-            <option key={privacy} value={privacy}>{PRIVACY_LABELS[privacy]}</option>
-          ))}
-        </select>
-      </div>
+      {isPanel ? null : (
+        <div className="calendar-detail-row">
+          <label htmlFor="event-privacy">Privacy</label>
+          <select id="event-privacy" value={draft.privacy} onChange={(change) => update("privacy", change.target.value as EventPrivacy)}>
+            {(Object.keys(PRIVACY_LABELS) as EventPrivacy[]).map((privacy) => (
+              <option key={privacy} value={privacy}>{PRIVACY_LABELS[privacy]}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {feedback ? (
         <MessageBar intent={feedback.intent}>

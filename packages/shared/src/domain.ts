@@ -18,8 +18,15 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   Kiosk: ["calendar:read"]
 };
 
+/** Extra rights of a wall panel in write mode: add events, shifts, list items and notes from the wall. */
+export const PANEL_WRITE_PERMISSIONS: readonly Permission[] = ["events:write", "lists:write"];
+
 export const hasPermission = (role: UserRole, permission: Permission): boolean =>
   ROLE_PERMISSIONS[role].includes(permission);
+
+/** Permissions of a specific member: the role's ones, plus write mode for panels that have it. */
+export const userCan = (user: Pick<User, "role" | "panelWrite">, permission: Permission): boolean =>
+  hasPermission(user.role, permission) || (user.role === "Kiosk" && user.panelWrite && PANEL_WRITE_PERMISSIONS.includes(permission));
 
 export type ErrorDetails = Record<string, unknown> | null;
 
@@ -34,6 +41,8 @@ export interface User {
   keywords: string[];
   /** False for tag-only members: they appear on events but have no password and cannot sign in. */
   canLogin: boolean;
+  /** Kiosk only: the panel may also write events, shifts, lists and notes. */
+  panelWrite: boolean;
 }
 
 export interface AuthSession {

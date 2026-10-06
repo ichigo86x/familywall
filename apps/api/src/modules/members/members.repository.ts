@@ -13,6 +13,7 @@ export interface MemberRow {
   token_version: number;
   disabled: number;
   keywords: string;
+  panel_write: number;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +25,7 @@ export interface NewMember {
   color: string;
   passwordHash: string;
   keywords?: string[];
+  panelWrite?: boolean;
 }
 
 export interface MemberPatch {
@@ -34,6 +36,7 @@ export interface MemberPatch {
   keywords?: string[];
   /** Removes the password: the member becomes tag-only. */
   loginEnabled?: false;
+  panelWrite?: boolean;
 }
 
 /** Tag-only members store an empty hash, which never verifies. */
@@ -47,7 +50,8 @@ export const toUser = (row: MemberRow): User => ({
   color: row.color,
   disabled: row.disabled === 1,
   keywords: JSON.parse(row.keywords) as string[],
-  canLogin: row.password_hash !== NO_PASSWORD
+  canLogin: row.password_hash !== NO_PASSWORD,
+  panelWrite: row.role === "Kiosk" && row.panel_write === 1
 });
 
 @Injectable()
@@ -92,10 +96,21 @@ export class MembersRepository {
     const id = randomUUID();
     this.db
       .prepare(
-        `INSERT INTO members (id, username, display_name, role, color, password_hash, keywords, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO members (id, username, display_name, role, color, password_hash, keywords, panel_write, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(id, member.username, member.displayName, member.role, member.color, member.passwordHash, JSON.stringify(member.keywords ?? []), now, now);
+      .run(
+        id,
+        member.username,
+        member.displayName,
+        member.role,
+        member.color,
+        member.passwordHash,
+        JSON.stringify(member.keywords ?? []),
+        member.role === "Kiosk" && member.panelWrite ? 1 : 0,
+        now,
+        now
+      );
     return this.findById(id)!;
   }
 
@@ -110,7 +125,7 @@ export class MembersRepository {
     this.db
       .prepare(
         `UPDATE members
-         SET display_name = ?, role = ?, color = ?, disabled = ?, keywords = ?, password_hash = ?, token_version = token_version + ?, updated_at = ?
+         SET display_name = ?, role = ?, color = ?, disabled = ?, keywords = ?, password_hash = ?, panel_write = ?, token_version = token_version + ?, updated_at = ?
          WHERE id = ?`
       )
       .run(
@@ -120,6 +135,7 @@ export class MembersRepository {
         patch.disabled === undefined ? current.disabled : Number(patch.disabled),
         patch.keywords === undefined ? current.keywords : JSON.stringify(patch.keywords),
         patch.loginEnabled === false ? NO_PASSWORD : current.password_hash,
+        patch.panelWrite === undefined ? current.panel_write : Number(patch.panelWrite),
         revokeTokens ? 1 : 0,
         nowIso(),
         id

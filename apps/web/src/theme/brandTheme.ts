@@ -1,4 +1,4 @@
-import { BrandVariants, createDarkTheme, createLightTheme } from "@fluentui/react-components";
+import { BrandVariants, createDarkTheme, createLightTheme, type Theme } from "@fluentui/react-components";
 
 const brandRamp: BrandVariants = {
   10: "#071712",
@@ -47,3 +47,18 @@ appDarkTheme.colorBrandForeground1 = "#6FC2AE";
 appDarkTheme.colorCompoundBrandStroke = "#6FC2AE";
 appDarkTheme.fontFamilyBase = appTheme.fontFamilyBase;
 appDarkTheme.fontFamilyMonospace = appTheme.fontFamilyMonospace;
+
+/** Copy of a theme with font sizes and line heights multiplied (bigger text on wall panels). */
+export const scaleTheme = (theme: Theme, scale: number): Theme => {
+  if (scale === 1) {
+    return theme;
+  }
+  const scaled: Record<string, string | number> = { ...theme };
+  for (const [key, value] of Object.entries(theme)) {
+    const px = typeof value === "string" ? /^(\d+(?:\.\d+)?)px$/.exec(value) : null;
+    if (px && (key.startsWith("fontSize") || key.startsWith("lineHeight"))) {
+      scaled[key] = `${Math.round(Number(px[1]) * scale)}px`;
+    }
+  }
+  return scaled as unknown as Theme;
+};

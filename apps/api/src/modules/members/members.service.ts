@@ -25,6 +25,7 @@ export class MembersService {
         role: input.role,
         color: input.color,
         keywords: input.keywords,
+        panelWrite: input.panelWrite,
         passwordHash: input.loginEnabled !== false && input.password ? await hashPassword(input.password) : NO_PASSWORD
       })
     );

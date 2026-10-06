@@ -32,8 +32,8 @@ import { DeleteRegular, EditRegular, KeyRegular, PersonAddRegular } from "@/lib/
 export const ROLE_INFO: Record<UserRole, { label: string; description: string }> = {
   Admin: { label: "Admin", description: "Gestisce membri, account e calendari; modifica eventi." },
   Parent: { label: "Genitore", description: "Crea e modifica eventi." },
-  Child: { label: "Figlio", description: "Vede il calendario, non modifica." },
-  Kiosk: { label: "Pannello", description: "Pannello a muro in sola lettura; non vede gli eventi nascosti sul wall." }
+  Child: { label: "Figlio", description: "Vede il calendario; scrive liste e note." },
+  Kiosk: { label: "Pannello", description: "Pannello a muro; non vede gli eventi nascosti sul wall. In sola lettura, salvo modalità scrittura." }
 };
 
 const ROLES = Object.keys(ROLE_INFO) as UserRole[];
@@ -111,6 +111,7 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
               <TableCell>
                 {ROLE_INFO[member.role].label}
                 {member.canLogin === false ? <div className="table-subline">solo etichetta, nessun accesso</div> : null}
+                {member.panelWrite ? <div className="table-subline">modalità scrittura</div> : null}
                 {member.keywords?.length ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
               </TableCell>
               <TableCell>
@@ -169,7 +170,8 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
     password: "",
     disabled: member?.disabled ?? false,
     keywords: (member?.keywords ?? []).join(", "),
-    tagOnly: member ? member.canLogin === false : false
+    tagOnly: member ? member.canLogin === false : false,
+    panelWrite: member?.panelWrite ?? false
   });
   const wasTagOnly = member?.canLogin === false;
   const tagOnly = form.role === "Child" && form.tagOnly;
@@ -201,6 +203,7 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
           color: form.color,
           disabled: form.disabled,
           keywords: keywordList,
+          panelWrite: form.role === "Kiosk" && form.panelWrite,
           ...(tagOnly && !wasTagOnly ? { loginEnabled: false as const } : {})
         });
       } else {
@@ -211,6 +214,7 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
           color: form.color,
           keywords: keywordList,
           loginEnabled: !tagOnly,
+          panelWrite: form.role === "Kiosk" && form.panelWrite,
           password: tagOnly ? undefined : form.password
         });
         if (!parsed.success) {
@@ -280,6 +284,13 @@ const MemberDialog = ({ member, defaultColor, onClose, onSaved }: MemberDialogPr
                 label="Solo etichetta: nessuna password, non accede all'app"
                 checked={form.tagOnly}
                 onChange={(_, data) => setForm({ ...form, tagOnly: data.checked })}
+              />
+            ) : null}
+            {form.role === "Kiosk" ? (
+              <Switch
+                label="Modalità scrittura: dal pannello si aggiungono eventi, turni, liste e note"
+                checked={form.panelWrite}
+                onChange={(_, data) => setForm({ ...form, panelWrite: data.checked })}
               />
             ) : null}
             {needsPassword ? (
