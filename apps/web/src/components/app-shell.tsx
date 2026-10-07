@@ -89,7 +89,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
 
   return (
     // Wall panels fall back to the screensaver when nobody touches them, on every page except Admin.
-    <ScreensaverHost idleStart={auth.user?.role === "Kiosk" && currentRoute !== "/admin"}>
+    <ScreensaverHost panel={auth.user?.role === "Kiosk"} idleStart={currentRoute !== "/admin"}>
       <div className={fit ? "app-shell app-shell--fit" : "app-shell"}>
         <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
           <div className="app-toolbar__brand">

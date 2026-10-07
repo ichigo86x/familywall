@@ -83,6 +83,13 @@ export const updateSettingsSchema = z
     timezone: z.string().trim().min(1).max(64).optional(),
     wallModeEnabled: z.boolean().optional(),
     dashboardListIds: z.array(z.string().min(1).max(300)).max(20).optional(),
+    panelNight: z
+      .object({
+        enabled: z.boolean(),
+        start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa HH:MM"),
+        end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa HH:MM")
+      })
+      .optional(),
     weatherLocation: z
       .object({
         name: z.string().trim().min(1).max(120),

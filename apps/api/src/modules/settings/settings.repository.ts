@@ -8,7 +8,8 @@ const DEFAULTS: HouseholdSettings = {
   timezone: "Europe/Rome",
   wallModeEnabled: true,
   dashboardListIds: [],
-  weatherLocation: null
+  weatherLocation: null,
+  panelNight: { enabled: false, start: "23:00", end: "06:30" }
 };
 
 @Injectable()

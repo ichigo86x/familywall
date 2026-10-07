@@ -77,7 +77,31 @@ export interface HouseholdSettings {
   dashboardListIds: string[];
   /** Place for the dashboard weather; null = no weather. */
   weatherLocation: WeatherLocation | null;
+  /** Night mode of wall panels: dark screen with a dim clock between start and end (HH:MM, may cross midnight). */
+  panelNight: PanelNight;
 }
+
+export interface PanelNight {
+  enabled: boolean;
+  start: string;
+  end: string;
+}
+
+const minutesOf = (time: string): number => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return (hours ?? 0) * 60 + (minutes ?? 0);
+};
+
+/** True when the clock time falls in the night window (which may cross midnight). */
+export const isNightTime = (night: PanelNight, now: Date): boolean => {
+  if (!night.enabled) {
+    return false;
+  }
+  const current = now.getHours() * 60 + now.getMinutes();
+  const start = minutesOf(night.start);
+  const end = minutesOf(night.end);
+  return start <= end ? current >= start && current < end : current >= start || current < end;
+};
 
 export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google";
 

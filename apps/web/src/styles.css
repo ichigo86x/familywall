@@ -2917,3 +2917,36 @@ button.schedule-chip {
   font-weight: 600;
   text-decoration: none;
 }
+
+/* Night mode of wall panels */
+.night-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: #000;
+  cursor: none;
+}
+
+.night-screen__clock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: #6b7280;
+  opacity: 0.55;
+  text-transform: capitalize;
+  transition: transform 2s ease;
+}
+
+.night-screen__clock strong {
+  font-size: clamp(4rem, 12vw, 9rem);
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.night-screen__clock span {
+  font-size: clamp(1rem, 2vw, 1.4rem);
+}
