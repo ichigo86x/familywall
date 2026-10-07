@@ -150,6 +150,28 @@ export const api = {
   updateOccasion: (id: string, input: OccasionInput) => request<{ occasion: Occasion }>(`occasions/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
   deleteOccasion: (id: string) => request<void>(`occasions/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
+  getStoredBackups: async () => (await request<{ backups: Array<{ name: string; size: number; createdAt: string }> }>("backup/stored")).backups,
+  /** Downloads a backup file (the Authorization header rules out a plain link). */
+  downloadBackup: async (path: string): Promise<void> => {
+    const response = await fetch(apiUrl(path), { headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}` }, cache: "no-store" });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+      throw new ApiError(payload?.error?.message ?? `Download non riuscito (HTTP ${response.status})`, response.status);
+    }
+    const name = /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? "familywall.fwbackup";
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(await response.blob());
+    link.download = name;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+  },
+  restoreBackup: (file: File) =>
+    request<{ members: number; lists: number; credentials: "kept" | "re-encrypted" | "unreadable" }>("backup/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: file
+    }),
+
   getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
   runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),
   getHomeEntities: async () => (await request<{ entities: HomeEntity[] }>("home/entities")).entities,

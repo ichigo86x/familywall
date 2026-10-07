@@ -3181,3 +3181,21 @@ button.schedule-chip {
   background: #422006;
   color: #fde68a;
 }
+
+.backup-list ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.backup-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}

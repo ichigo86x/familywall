@@ -15,6 +15,7 @@ import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { WeatherModule } from "./modules/weather/weather.module";
 import { HomeModule } from "./modules/home/home.module";
+import { BackupModule } from "./modules/backup/backup.module";
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { HomeModule } from "./modules/home/home.module";
     ScheduleModule,
     WeatherModule,
     HomeModule,
+    BackupModule,
     HealthModule
   ],
   providers: [

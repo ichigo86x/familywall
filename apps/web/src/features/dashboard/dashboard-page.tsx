@@ -164,8 +164,8 @@ export const DashboardPage = () => {
                 <p className="form-error">{calendar.error.message}</p>
               ) : upcoming.length === 0 ? (
                 <p className="dashboard-empty">
-                  <span aria-hidden="true">{todayEvents.length > 0 ? "✅" : "🌿"}</span>
-                  {todayEvents.length > 0 ? "Giornata conclusa: niente altro per oggi." : "Oggi niente in agenda."}
+                  <span aria-hidden="true">{todayEvents.some((event) => !event.allDay) ? "✅" : "🌿"}</span>
+                  {todayEvents.some((event) => !event.allDay) ? "Giornata conclusa: niente altro per oggi." : "Oggi niente in agenda."}
                 </p>
               ) : (
                 <ol className="dashboard-events">

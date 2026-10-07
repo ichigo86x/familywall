@@ -12,6 +12,7 @@ import { TaskListsSection } from "./task-lists-section";
 import { WeatherCard } from "./weather-card";
 import { PanelSettingsCard } from "./panel-settings-card";
 import { HomeButtonsCard } from "./home-buttons-card";
+import { BackupCard } from "./backup-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists] = await Promise.all([
@@ -48,6 +49,7 @@ export const AdminPage = () => {
           <MembersSection members={admin.data.members} onChanged={admin.reload} />
           <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
           <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
+          <BackupCard />
         </>
       ) : null}
     </AppShell>

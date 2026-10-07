@@ -6,7 +6,10 @@ Familywall è l'organizzazione della famiglia su un'unica schermata:
 - liste sincronizzate con i Promemoria di iPhone o con Google Tasks;
 - bacheca di note;
 - turni di casa;
-- dashboard con screensaver per il pannello a muro.
+- compleanni e ricorrenze;
+- pulsanti di Home Assistant (portone, cancello, luci);
+- dashboard con meteo, screensaver e modalità notte per il pannello a muro;
+- cache, funzionamento offline e backup.
 
 Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet Android ed Echo Show 15 (con Fully Kiosk Browser).
 
@@ -22,7 +25,10 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - [Sviluppo locale](#sviluppo-locale)
 - [Installazione come add-on di Home Assistant](#installazione-come-add-on-di-home-assistant)
 - [Accesso esterno con nginx](#accesso-esterno-con-nginx)
-- [Dati, chiavi e backup](#dati-chiavi-e-backup)
+- [Pulsanti Home Assistant](#pulsanti-home-assistant)
+- [Sincronizzazione, cache e offline](#sincronizzazione-cache-e-offline)
+- [Backup e ripristino](#backup-e-ripristino)
+- [Dati e chiavi](#dati-e-chiavi)
 - [Struttura del progetto](#struttura-del-progetto)
 - [Limiti noti e prossimi passi](#limiti-noti-e-prossimi-passi)
 
@@ -38,7 +44,8 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - **In tavola**: i pasti Cookidoo di oggi e domani, se c'è un calendario Cookidoo.
 - **Liste**: le liste scelte, con un campo per aggiungere subito una voce.
 - **Note**: le note scelte.
-- **Azioni rapide**: nuovo evento, nuovo turno, nuova nota e liste, secondo i permessi dell'utente.
+- **Barra delle azioni** (in alto a destra): pulsanti rotondi per nuovo evento, nuovo turno, nuova nota e liste, secondo i permessi dell'utente, seguiti dai pulsanti di Home Assistant (portone, cancello, luci...). Vedi [Pulsanti Home Assistant](#pulsanti-home-assistant).
+- **Compleanni e ricorrenze**: quelli dei prossimi 30 giorni; quello di oggi è evidenziato.
 
 Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece di restare vuota. I contenuti si aggiornano da soli ogni 5 minuti.
 
@@ -89,6 +96,18 @@ I turni di oggi compaiono anche in dashboard ("Oggi in casa").
 
 - La bacheca di famiglia contiene note colorate. Le note possono essere fissate in alto e mostrate in dashboard.
 - Le note sono salvate solo in Familywall.
+
+### Compleanni e ricorrenze
+
+Ci sono due modi, che si possono usare insieme:
+- **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze sono salvate nel database e incluse nel backup.
+- **Da un calendario**: in Admin → Calendari visibili, attiva "Compleanni" sul calendario giusto. Per esempio:
+  - un calendario iCloud dedicato ("Compleanni") con eventi di tutto il giorno ripetuti ogni anno;
+  - il calendario "Compleanni" di Google (dai contatti), se l'account Google è collegato.
+
+Il calendario "Compleanni" di iCloud generato dai contatti non è disponibile via CalDAV: per iCloud usa un calendario normale dedicato.
+
+Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 per gli anniversari) e nella card della dashboard. Chi può creare eventi può gestirli.
 
 ### Tema e dimensione del testo
 
@@ -173,7 +192,9 @@ Familywall include un server CalDAV (Radicale) per le liste di famiglia.
 - Gli account Pannello e i Figli solo etichetta non accedono al server CalDAV.
 
 Collegare un iPhone:
-- **Automatico**: in Familywall apri Liste → "Le liste nei Promemoria" → "Installa su questo iPhone". Serve l'indirizzo esterno https. Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa. Il link vale 10 minuti e si può riaprire più volte in quel tempo. Il profilo non contiene la password: iOS la chiede durante l'installazione. Se Familywall è aperta come app dalla schermata Home, il profilo si apre in Safari.
+- **Automatico**: apri Familywall **in Safari** (non dall'icona sulla schermata Home) all'indirizzo esterno https. Vai in Liste → "Le liste nei Promemoria" → "Come si fa" → "Prepara il profilo per questo iPhone" → "Installa su questo iPhone". Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall.
+  - Dall'app aggiunta alla schermata Home iOS non installa profili (pagina bianca): lì Familywall mostra "Copia link", da incollare in Safari.
+  - Il link vale 10 minuti e si può aprire più volte. Il profilo non contiene la password.
 - **Manuale**: in Impostazioni → Promemoria → Account → Aggiungi account → Altro → Account CalDAV, usa il server `<indirizzo>/dav/famiglia/`.
 
 Note:
@@ -201,9 +222,31 @@ Note:
 
 A 1920×1080 la dashboard sta in una sola schermata:
 - a sinistra: orologio con meteo, agenda di oggi e domani, prossimi giorni e note;
-- a destra: turni, pasti, liste e azioni rapide.
+- a destra: barra delle azioni e di Home Assistant, turni, compleanni, pasti e liste.
 
 In verticale (1080×1920) restano due colonne con il testo grande.
+
+### Notte del pannello
+
+In Admin → Pannello a muro → Notte scegli gli orari (per esempio dalle 23:00 alle 06:30). In quegli orari gli account Pannello mostrano solo un orologio tenue su sfondo nero, che si sposta piano per non segnare lo schermo.
+- Un tocco riattiva il pannello per 2 minuti, poi torna la notte.
+- Con Fully Kiosk, attiva **Settings → Advanced Web Settings → Enable JavaScript Interface**: Familywall abbassa anche la luminosità dello schermo e la ripristina al mattino.
+- I pannelli leggono la nuova impostazione entro 15 minuti.
+
+## Pulsanti Home Assistant
+
+La barra in alto della dashboard può contenere pulsanti per entità di Home Assistant: apertura del portone o del cancello, citofono, luci, script e scene.
+
+1. In Admin → Home Assistant → **Aggiungi pulsante**.
+2. Scegli l'entità ("Scegli da Home Assistant" la elenca, oppure scrivila, per esempio `lock.portone`).
+3. Scegli l'azione. Sono ammesse solo azioni sicure per ogni tipo di entità: `button`/`input_button` premi; `lock` apri, sblocca, blocca; `cover` apri, chiudi; `switch`/`light`/`fan`/`input_boolean` accendi, spegni; `script`/`scene` esegui; `automation` avvia.
+4. Scegli nome, icona, se chiedere conferma (consigliato per porte e cancelli) e chi può usarlo (Genitore, Figlio, Pannello; l'Admin sempre).
+
+Il pulsante mostra lo stato di serrature, tapparelle e interruttori (aggiornato ogni 30 secondi).
+
+Collegamento a Home Assistant:
+- **Add-on**: automatico tramite il Supervisor (`homeassistant_api: true` in `config.yaml`). Non serve nessun token.
+- **Fuori dall'add-on** (sviluppo o Docker): imposta `HA_URL` (per esempio `http://homeassistant.local:8123`) e `HA_TOKEN` con un token di lunga durata creato nel profilo utente di Home Assistant. Non salvare il token nel repository.
 
 ## Web app su iPhone e iPad
 
@@ -226,6 +269,8 @@ npm run dev:web   # web su http://localhost:5173, /api e /dav inoltrati all'API
 - Se la porta 3001 è occupata:
   - avvia l'API con `PORT=3002 npm run dev:api`;
   - avvia il web con `API_PROXY_TARGET=http://localhost:3002 npm run dev:web`.
+
+Per provare i pulsanti di Home Assistant in sviluppo aggiungi `HA_URL` e `HA_TOKEN` (vedi [Pulsanti Home Assistant](#pulsanti-home-assistant)).
 
 In PowerShell imposta le variabili prima del comando:
 
@@ -292,15 +337,31 @@ server {
 - L'API considera attendibile un solo proxy (`trust proxy 1`). Così il limite ai tentativi di login usa l'IP reale del client.
 - Il blocco `location /` copre anche `/dav` e `/.well-known/caldav` per i Promemoria.
 
-## Dati, chiavi e backup
+## Sincronizzazione, cache e offline
+
+- **Server**: ogni 5 minuti Familywall legge i calendari visibili, da un mese fa a sei mesi avanti, e li salva nel database. Le pagine si aprono dalla cache; se un provider (iCloud, Google, Cookidoo) non risponde, restano gli ultimi eventi letti, con l'avviso dell'ora dei dati. Dopo una modifica a un evento, il calendario viene riletto subito.
+- **Liste**: se Google Tasks o il server dei Promemoria non rispondono, restano le ultime voci lette.
+- **Dispositivi**: telefoni, tablet e pannelli salvano le ultime risposte. Senza rete, o con il server spento, mostrano i dati salvati con l'avviso "Offline" e riprovano da soli. Il pannello si può anche ricaricare senza rete (service worker, solo in HTTPS o su localhost). I dati salvati sul dispositivo si cancellano all'uscita (Esci).
+- Senza rete non si possono salvare modifiche: Familywall lo segnala.
+
+## Backup e ripristino
+
+In Admin → Backup:
+- **Scarica backup**: un file `.fwbackup` con membri (password cifrate), impostazioni, eventi locali, metadati degli eventi, turni, note, ricorrenze, account collegati, configurazione dei calendari e delle liste, e le liste dei Promemoria.
+- **Includi la chiave delle credenziali**: aggiunge `secret.key` al file. Serve per ripristinare su un'altra installazione senza ricollegare iCloud, Google e Cookidoo. **Con la chiave, chi ha il file può leggere quelle password: conservalo in un posto sicuro e non metterlo nel repository.**
+- **Copie automatiche**: ogni giorno Familywall salva un backup (senza chiave) in `DATA_DIR/backups` e tiene gli ultimi 7. Si scaricano dalla stessa card.
+- **Ripristina da file**: sostituisce tutti i dati con quelli del backup, senza riavviare. Un backup di una versione precedente viene aggiornato al formato attuale. Dopo il ripristino può servire accedere di nuovo.
+
+## Dati e chiavi
 
 Tutto vive in `DATA_DIR`: `/data` nell'add-on, `./data` in sviluppo.
 - `familywall.db`: database SQLite.
-- `secret.key`: chiave AES-256 che cifra le credenziali dei provider. **Se la perdi, devi ricollegare gli account.**
+- `secret.key`: chiave AES-256 che cifra le credenziali dei provider. **Se la perdi, devi ricollegare gli account** (o ripristinare un backup con la chiave).
 - `jwt.key`: chiave che firma le sessioni.
 - `radicale/`: liste dei Promemoria.
+- `backups/`: copie automatiche giornaliere.
 
-Il backup di Home Assistant include `/data`.
+Il backup di Home Assistant include `/data`, quindi anche le copie giornaliere.
 
 **Non salvare mai nel repository la cartella `data/`, i file `*.db` e `*.key`, i file `.env`, le password o i client secret.** Il file `.gitignore` li esclude già.
 
@@ -315,6 +376,5 @@ Il backup di Home Assistant include `/data`.
 
 ## Limiti noti e prossimi passi
 
-- Gli eventi vengono letti dal provider a ogni caricamento del calendario. È prevista una sincronizzazione periodica con cache.
 - Le note restano solo in Familywall: non c'è sincronizzazione con Note di iCloud o Google Keep, che non hanno API pubbliche adatte.
 - Cookidoo è in sola lettura e usa un'API non ufficiale.
