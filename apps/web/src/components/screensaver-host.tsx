@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { Button } from "@fluentui/react-components";
 
 import { Screensaver } from "@/features/dashboard/screensaver";
 
@@ -46,8 +45,5 @@ export const ScreensaverHost = ({ idleStart, children }: { idleStart: boolean; c
   );
 };
 
-export const ScreensaverButton = () => (
-  <Button appearance="primary" onClick={useContext(StartScreensaver)}>
-    Screensaver
-  </Button>
-);
+/** Starts the screensaver of the current page (e.g. tapping the dashboard clock). */
+export const useStartScreensaver = () => useContext(StartScreensaver);

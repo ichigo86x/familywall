@@ -7,7 +7,6 @@ import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { useNow } from "@/components/live-clock";
-import { ScreensaverButton } from "@/components/screensaver-host";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
 import { addDays, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
@@ -116,17 +115,16 @@ export const DashboardPage = () => {
 
   return (
     <AppShell
-      compact
+      headless
       currentRoute="/"
       eyebrow="Oggi"
       title={dayLabel(now)}
       subtitle=""
       summaryChip={`${upcoming.length} in programma`}
-      toolbarActions={<ScreensaverButton />}
     >
       <div className="dashboard-grid">
         <div className="dashboard-main">
-          <WeatherClock now={now} weather={weather.data ?? null} canConfigure={auth.can("settings:manage")} />
+          <WeatherClock now={now} weather={weather.data ?? null} canConfigure={auth.can("settings:manage") && Boolean(settings.data) && !settings.data?.weatherLocation} />
 
           <div className="dashboard-pair">
             <Card className="panel-card dashboard-today">

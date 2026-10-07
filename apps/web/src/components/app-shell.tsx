@@ -57,6 +57,8 @@ interface AppShellProps {
   toolbarActions?: React.ReactNode;
   /** Slim one-line header instead of the hero card, leaving the content as much room as possible. */
   compact?: boolean;
+  /** No page header at all (dashboard: the clock card already says what day it is). */
+  headless?: boolean;
   /** Fill exactly the screen below the header (calendar planner); other pages scroll normally. */
   fit?: boolean;
 }
@@ -71,7 +73,7 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("");
 
-export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, fit = false }: AppShellProps) => {
+export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, headless = false, fit = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
   const theme = useThemePreference();
@@ -187,7 +189,9 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
         </Toolbar>
 
         <main className="shell-main">
-          {compact ? (
+          {headless ? (
+            <h2 className="visually-hidden">{title}</h2>
+          ) : compact ? (
             <section className="page-header">
               <div>
                 <p className="eyebrow">{eyebrow}</p>

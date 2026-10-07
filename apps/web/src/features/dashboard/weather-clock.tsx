@@ -1,5 +1,7 @@
 import { Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
+
+import { useStartScreensaver } from "@/components/screensaver-host";
 import { WEATHER_LABELS, type WeatherCondition, type WeatherReport } from "@familywall/shared";
 
 const ICONS: Record<WeatherCondition, { day: string; night: string }> = {
@@ -36,7 +38,7 @@ const SceneLayer = ({ condition, isDay }: { condition: WeatherCondition; isDay: 
 interface WeatherClockProps {
   now: Date;
   weather: WeatherReport | null;
-  /** Shows the "set a city" hint (Admin only). */
+  /** Shows the "set a city" hint (Admin only, no city chosen yet). */
   canConfigure: boolean;
 }
 
@@ -45,10 +47,21 @@ export const WeatherClock = ({ now, weather, canConfigure }: WeatherClockProps) 
   // The sky shows the weather of the whole day (a rainy day stays rainy during a dry spell).
   const condition = weather?.today.condition;
   const isDay = weather ? weather.current.isDay : now.getHours() >= 7 && now.getHours() < 19;
+  const startScreensaver = useStartScreensaver();
   const sceneClass = condition ? `weather-sky--${condition} ${isDay ? "weather-sky--day" : "weather-sky--night"}` : "";
 
   return (
-    <Card className={`panel-card dashboard-clock ${sceneClass}`.trim()} aria-label="Ora e meteo">
+    // Tapping the clock starts the screensaver.
+    <Card
+      className={`panel-card dashboard-clock ${sceneClass}`.trim()}
+      aria-label="Ora e meteo: tocca per lo screensaver"
+      title="Tocca per lo screensaver"
+      onClick={(click) => {
+        if (!(click.target as HTMLElement).closest("a")) {
+          startScreensaver();
+        }
+      }}
+    >
       {condition ? <SceneLayer condition={condition} isDay={isDay} /> : null}
       <div className="dashboard-clock__inner">
         <strong>{now.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</strong>

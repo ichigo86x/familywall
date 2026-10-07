@@ -30,7 +30,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 
 ### Dashboard
 
-È la pagina iniziale, pensata per il pannello a muro. Mostra:
+È la pagina iniziale, pensata per il pannello a muro. Non ha intestazione di pagina, per lasciare più spazio ai contenuti. Mostra:
 - **Orologio e meteo**: ora e data grandi, su uno sfondo animato che segue il meteo del giorno (sereno, nuvoloso, pioggia, neve, nebbia, temporale, di giorno o di notte). Accanto ci sono la temperatura attuale, minima e massima, la probabilità di pioggia e il meteo di domani.
 - **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, e sotto gli impegni di **domani**. Quando la giornata è conclusa, domani passa in primo piano.
 - **Prossimi giorni**: i cinque giorni dopo domani, con i primi impegni di ogni giorno e l'icona dei pasti Cookidoo.
@@ -45,7 +45,7 @@ Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece
 - **Meteo**: in Admin → Meteo cerca la città e sceglila. Familywall usa Open-Meteo, gratuito e senza account. Al servizio arrivano solo le coordinate della città. La previsione resta in memoria 20 minuti.
 - **Liste in dashboard**: in Liste, tocca la puntina di una lista. Se nessuna lista è scelta, compare la lista della spesa.
 - **Note in dashboard**: apri una nota e attiva "Mostra in dashboard". Se nessuna nota è scelta, compaiono le prime quattro.
-- **Screensaver**: il pulsante "Screensaver" apre a tutto schermo una scena stagionale animata con l'ora e il prossimo impegno. Se il browser lo permette, lo schermo resta acceso. Un tocco chiude lo screensaver.
+- **Screensaver**: tocca l'orologio per aprire a tutto schermo una scena stagionale animata con l'ora e il prossimo impegno. Se il browser lo permette, lo schermo resta acceso. Un tocco chiude lo screensaver.
 - **Screensaver automatico**: sugli account Pannello lo screensaver parte da solo dopo 5 minuti senza tocchi, su ogni pagina tranne Admin (dashboard, calendario, turni, liste, note).
 
 ### Calendario
