@@ -16,7 +16,7 @@ export const projectEventForViewer = (event: FamilyEvent, viewer: User): FamilyE
   if (event.privacy === "private") {
     const canSeeDetails = viewer.role === "Admin" || viewer.role === "Parent" || event.memberIds.includes(viewer.id);
     if (!canSeeDetails) {
-      return { ...event, title: REDACTED_TITLE, tagMemberId: null, redacted: true };
+      return { ...event, title: REDACTED_TITLE, tagMemberId: null, redacted: true, notes: null };
     }
   }
 

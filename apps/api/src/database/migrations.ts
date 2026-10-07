@@ -188,5 +188,38 @@ export const migrations: string[] = [
     events_json TEXT NOT NULL,
     synced_at TEXT NOT NULL
   );
+  `,
+  // Menus: calendars can be marked as menus (CHECK widened by rebuilding the table), and the family menu.
+  `
+  CREATE TABLE calendars_new (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL REFERENCES provider_accounts(id) ON DELETE CASCADE,
+    remote_url TEXT NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    last_synced_at TEXT,
+    last_error TEXT,
+    created_at TEXT NOT NULL,
+    purpose TEXT NOT NULL DEFAULT 'events' CHECK (purpose IN ('events', 'birthdays', 'meals')),
+    UNIQUE (account_id, remote_url)
+  );
+  INSERT INTO calendars_new (id, account_id, remote_url, name, color, enabled, sort_order, last_synced_at, last_error, created_at, purpose)
+    SELECT id, account_id, remote_url, name, color, enabled, sort_order, last_synced_at, last_error, created_at, purpose FROM calendars;
+  DROP TABLE calendars;
+  ALTER TABLE calendars_new RENAME TO calendars;
+
+  CREATE TABLE menu_meals (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    slot TEXT NOT NULL CHECK (slot IN ('colazione', 'pranzo', 'merenda', 'cena')),
+    title TEXT NOT NULL,
+    ingredients TEXT NOT NULL DEFAULT '[]',
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE INDEX menu_meals_date ON menu_meals (date);
   `
 ];

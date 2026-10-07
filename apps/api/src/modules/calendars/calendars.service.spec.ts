@@ -4,6 +4,7 @@ import { CalDavClient, CalDavError } from "../providers/caldav/caldav-client";
 import { parseCalendarData } from "../providers/caldav/ics-parser";
 import { createTestContext } from "../../test/test-context";
 import { projectEventForViewer } from "./event-visibility";
+import { ingredientsFromText } from "@familywall/shared";
 
 const SCHOOL_TRIP = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -173,6 +174,21 @@ describe("CalendarsService and EventsService", () => {
     const [calendar] = (await ctx.calendars.getCalendars(admin, range)).calendars;
     expect(calendar!.events.map((event) => event.title)).toEqual(["Gita scolastica"]);
     expect(calendar!.lastError).toMatch(/non raggiungibile. Mostro i dati delle 10:00./);
+  });
+
+  it("shows the family menu and menu calendars with their ingredients", async () => {
+    const dinner = SCHOOL_TRIP.replace("SUMMARY:Gita scolastica", "SUMMARY:Lasagne\nDESCRIPTION:Ingredienti:\\n- 500 g di ragù\\n- sfoglia");
+    const { ctx, admin, calendar } = await setup({ "dinner.ics": dinner });
+    ctx.calendars.update(calendar.id, { purpose: "meals" });
+    ctx.menu.insert({ date: "2026-10-06", slot: "cena", title: "Minestrone", ingredients: ["zucchine", "carote"], note: null });
+
+    const { calendars } = await ctx.calendars.getCalendars(admin, range);
+    expect(calendars.map((entry) => [entry.id, entry.kind])).toEqual([[calendar.id, "meals"], ["menu", "meals"]]);
+    expect(calendars[0]!.events[0]).toMatchObject({ title: "Lasagne", notes: "Ingredienti:\n- 500 g di ragù\n- sfoglia" });
+    expect(calendars[1]!.events).toMatchObject([
+      { id: expect.stringMatching(/^meal_/), title: "Cena: Minestrone", allDay: true, startAt: "2026-10-06T00:00:00.000Z", notes: "zucchine\ncarote" }
+    ]);
+    expect(ingredientsFromText(calendars[0]!.events[0]!.notes)).toEqual(["500 g di ragù", "sfoglia"]);
   });
 
   it("deletes one occurrence or the whole series", async () => {

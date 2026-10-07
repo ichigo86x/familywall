@@ -4,14 +4,17 @@ import {
   Card,
   Dialog,
   DialogBody,
+  DialogActions,
   DialogContent,
   DialogSurface,
   MessageBar,
   MessageBarBody
 } from "@fluentui/react-components";
-import type { FamilyEvent, User } from "@familywall/shared";
+import { MENU_CALENDAR_ID, ingredientsFromText, type FamilyEvent, type User } from "@familywall/shared";
 
+import { Link } from "react-router-dom";
 import { api } from "@/api/client";
+import { IngredientsDialog, type DishSource } from "@/features/menu/ingredients-dialog";
 import { useNewParam } from "@/hooks/use-new-param";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
@@ -101,6 +104,7 @@ export const CalendarPage = () => {
   // Meal plans (Cookidoo) are not drawn as events: a chef hat on the day opens them.
   const meals = useMemo<PlannerEvent[]>(() => toPlannerEvents("meals"), [calendars]);
   const [mealsDay, setMealsDay] = useState<Date | null>(null);
+  const [shopping, setShopping] = useState<DishSource[] | null>(null);
   const events = useMemo<PlannerEvent[]>(
     () =>
       calendars
@@ -307,9 +311,31 @@ export const CalendarPage = () => {
                 </ul>
               ) : null}
             </DialogContent>
+            <DialogActions>
+              <Link to="/menu" className="dashboard-link">Apri il menu →</Link>
+              {auth.can("lists:write") && mealsDay ? (
+                <Button
+                  appearance="primary"
+                  onClick={() => {
+                    setShopping(
+                      meals
+                        .filter((meal) => occursOnDay(meal, mealsDay))
+                        .map((meal) => {
+                          const cookidoo = readOnlyCalendarIds.has(meal.calendarId) && meal.calendarId !== MENU_CALENDAR_ID;
+                          return { id: meal.id, title: meal.title, cookidoo, ingredients: cookidoo ? null : ingredientsFromText(meal.notes) };
+                        })
+                    );
+                    setMealsDay(null);
+                  }}
+                >
+                  🛒 Ingredienti → spesa
+                </Button>
+              ) : null}
+            </DialogActions>
           </DialogBody>
         </DialogSurface>
       </Dialog>
+      {shopping ? <IngredientsDialog dishes={shopping} onClose={() => setShopping(null)} /> : null}
 
       <Dialog open={dialogOpen} onOpenChange={(_, data) => (!data.open ? closeDialog() : undefined)}>
         <DialogSurface className="event-dialog">

@@ -1,4 +1,7 @@
 import type {
+  MenuIngredientsResponse,
+  MenuMeal,
+  MenuMealInput,
   Occasion,
   OccasionInput,
   HomeButtonsResponse,
@@ -144,6 +147,14 @@ export const api = {
 
   getSettings: () => request<HouseholdSettings>("settings"),
   updateSettings: (input: UpdateSettingsInput) => request<HouseholdSettings>("settings", { method: "PATCH", json: input }),
+
+  getMenu: async (from: string, to: string) =>
+    (await request<{ meals: MenuMeal[] }>(`menu?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)).meals,
+  createMenuMeal: (input: MenuMealInput) => request<{ meal: MenuMeal }>("menu", { method: "POST", json: input }),
+  updateMenuMeal: (id: string, input: MenuMealInput) => request<{ meal: MenuMeal }>(`menu/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
+  deleteMenuMeal: (id: string) => request<void>(`menu/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  getCookidooIngredients: async (eventIds: string[]) =>
+    (await request<MenuIngredientsResponse>(`menu/ingredients?ids=${encodeURIComponent(eventIds.join(","))}`)).ingredients,
 
   getOccasions: async () => (await request<{ occasions: Occasion[] }>("occasions")).occasions,
   createOccasion: (input: OccasionInput) => request<{ occasion: Occasion }>("occasions", { method: "POST", json: input }),

@@ -54,6 +54,7 @@ interface GoogleEventJson {
   id: string;
   status?: string;
   summary?: string;
+  description?: string;
   recurringEventId?: string;
   start?: { date?: string; dateTime?: string; timeZone?: string };
   end?: { date?: string; dateTime?: string; timeZone?: string };
@@ -196,7 +197,8 @@ export class GoogleClient {
           title: item.summary ?? "(senza titolo)",
           startAt,
           endAt,
-          allDay: Boolean(item.start?.date)
+          allDay: Boolean(item.start?.date),
+          ...(item.description?.trim() ? { description: item.description.trim() } : {})
         }
       ];
     });

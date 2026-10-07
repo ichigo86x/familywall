@@ -146,6 +146,8 @@ export const DashboardPage = () => {
         <div className="dashboard-main">
           <WeatherClock now={now} weather={weather.data ?? null} canConfigure={auth.can("settings:manage") && Boolean(settings.data) && !settings.data?.weatherLocation} />
 
+          <BirthdayStrip birthdays={birthdays} today={today} />
+
           <div className="dashboard-pair">
             <Card className="panel-card dashboard-today">
               <div className="panel-card__header">
@@ -156,7 +158,8 @@ export const DashboardPage = () => {
                 <Link to="/calendar" className="dashboard-link">Calendario →</Link>
               </div>
 
-              <DayChips allDay={todayAllDay} meals={mealsOn(today)} membersById={membersById} />
+              <DayChips allDay={todayAllDay} membersById={membersById} />
+              <MenuLine label="In tavola oggi" meals={mealsOn(today)} />
 
               {calendar.status === "loading" && !calendar.data ? (
                 <p className="calendar-detail-hint">Caricamento...</p>
@@ -179,7 +182,8 @@ export const DashboardPage = () => {
                 <h4>
                   Domani <span>· {tomorrow.toLocaleDateString("it-IT", { weekday: "long", day: "numeric" })}</span>
                 </h4>
-                <DayChips allDay={tomorrowEvents.filter((event) => event.allDay)} meals={mealsOn(tomorrow)} membersById={membersById} />
+                <DayChips allDay={tomorrowEvents.filter((event) => event.allDay)} membersById={membersById} />
+                <MenuLine label="In tavola" meals={mealsOn(tomorrow)} />
                 {tomorrowEvents.filter((event) => !event.allDay).length === 0 ? (
                   <p className="calendar-detail-hint">{tomorrowEvents.length === 0 ? "Nessun impegno." : "Solo impegni di tutto il giorno."}</p>
                 ) : (
@@ -262,10 +266,6 @@ export const DashboardPage = () => {
 
           <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} />
 
-          <BirthdaysCard birthdays={birthdays} today={today} />
-
-          {meals.length > 0 ? <MealsCard today={mealsOn(today)} tomorrow={mealsOn(tomorrow)} /> : null}
-
           {lists.status === "error" ? (
             <Card className="panel-card dashboard-side">
               <p className="form-error">{lists.error.message}</p>
@@ -287,20 +287,24 @@ export const DashboardPage = () => {
   );
 };
 
-const DayChips = ({ allDay, meals, membersById }: { allDay: PlannerEvent[]; meals: PlannerEvent[]; membersById: Map<string, User> }) =>
-  allDay.length > 0 || meals.length > 0 ? (
+const DayChips = ({ allDay, membersById }: { allDay: PlannerEvent[]; membersById: Map<string, User> }) =>
+  allDay.length > 0 ? (
     <div className="dashboard-chips">
       {allDay.map((event) => (
         <span key={event.id} className="dashboard-chip" style={{ borderColor: eventColors(event, membersById)[0] }}>
           {event.title}
         </span>
       ))}
-      {meals.map((meal) => (
-        <span key={meal.id} className="dashboard-chip dashboard-chip--meal" style={{ borderColor: meal.calendarColor }}>
-          🍲 {meal.title}
-        </span>
-      ))}
     </div>
+  ) : null;
+
+/** "In tavola": the dishes of a day from every menu (family menu, Cookidoo, menu calendars). */
+const MenuLine = ({ label, meals }: { label: string; meals: PlannerEvent[] }) =>
+  meals.length > 0 ? (
+    <Link to="/menu" className="dashboard-menu-line">
+      <strong>🍽️ {label}</strong>
+      <span>{meals.map((meal) => meal.title).join(" · ")}</span>
+    </Link>
   ) : null;
 
 /** Parents' work, kids' chores and visits; in the evening the work plan switches to tomorrow. */
@@ -345,70 +349,30 @@ const HomeCard = ({ entries, now, membersById }: { entries: ScheduleEntry[]; now
   );
 };
 
-const BirthdaysCard = ({ birthdays, today }: { birthdays: PlannerEvent[]; today: Date }) => {
+/** Birthdays and anniversaries of the next days, shown only when there are some. */
+const BirthdayStrip = ({ birthdays, today }: { birthdays: PlannerEvent[]; today: Date }) => {
   const upcoming = birthdays.filter((event) => eventBounds(event).end > today).slice(0, 6);
+  if (upcoming.length === 0) {
+    return null;
+  }
   const daysUntil = (event: PlannerEvent) => Math.round((eventBounds(event).start.getTime() - today.getTime()) / 86_400_000);
   const when = (days: number, event: PlannerEvent) =>
     days <= 0 ? "oggi 🎉" : days === 1 ? "domani" : days < 7 ? `tra ${days} giorni` : eventBounds(event).start.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
   return (
-    <Card className="panel-card dashboard-side">
-      <div className="panel-card__header">
-        <div>
-          <p className="eyebrow">Prossimi {BIRTHDAY_DAYS} giorni</p>
-          <h3>Compleanni e ricorrenze</h3>
-        </div>
-        <Link to="/notes" className="dashboard-link">Gestisci →</Link>
-      </div>
-      {upcoming.length === 0 ? (
-        <p className="dashboard-empty">
-          <span aria-hidden="true">🎂</span>
-          Nessun compleanno in arrivo.
-        </p>
-      ) : (
-        <ul className="dashboard-birthdays">
-          {upcoming.map((event) => {
-            const days = daysUntil(event);
-            return (
-              <li key={event.id} className={days <= 0 ? "dashboard-birthdays__today" : ""}>
-                <span>{event.title}</span>
-                <span>{when(days, event)}</span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <Card className="panel-card dashboard-birthday-strip" aria-label="Compleanni e ricorrenze">
+      <span className="eyebrow">Ricorrenze</span>
+      {upcoming.map((event) => {
+        const days = daysUntil(event);
+        return (
+          <span key={event.id} className={`dashboard-birthday-chip ${days <= 0 ? "dashboard-birthday-chip--today" : ""}`.trim()}>
+            {event.title}
+            <span>{when(days, event)}</span>
+          </span>
+        );
+      })}
     </Card>
   );
 };
-
-const MealsCard = ({ today, tomorrow }: { today: PlannerEvent[]; tomorrow: PlannerEvent[] }) => (
-  <Card className="panel-card dashboard-side">
-    <div className="panel-card__header">
-      <div>
-        <p className="eyebrow">Cucina</p>
-        <h3>In tavola</h3>
-      </div>
-      <Link to="/calendar" className="dashboard-link">Menu →</Link>
-    </div>
-    {[
-      { label: "Oggi", meals: today },
-      { label: "Domani", meals: tomorrow }
-    ].map((day) => (
-      <div key={day.label} className="dashboard-meals">
-        <span className="eyebrow">{day.label}</span>
-        {day.meals.length === 0 ? (
-          <span className="calendar-detail-hint">Niente in programma.</span>
-        ) : (
-          <ul>
-            {day.meals.map((meal) => (
-              <li key={meal.id}>🍲 {meal.title}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-    ))}
-  </Card>
-);
 
 const DashboardList = ({ list, canWrite, onChanged }: { list: FamilyTaskList; canWrite: boolean; onChanged: () => void }) => {
   const open = list.tasks.filter((task) => !task.completed);

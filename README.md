@@ -2,7 +2,7 @@
 
 Familywall è l'organizzazione della famiglia su un'unica schermata:
 - calendari condivisi (iCloud, CalDAV, Google);
-- piano dei pasti Cookidoo;
+- menu della settimana (di casa, Cookidoo e calendari "menu") con gli ingredienti da mandare nella lista della spesa;
 - liste sincronizzate con i Promemoria di iPhone o con Google Tasks;
 - bacheca di note;
 - turni di casa;
@@ -38,14 +38,13 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 
 È la pagina iniziale, pensata per il pannello a muro. Non ha intestazione di pagina, per lasciare più spazio ai contenuti. Mostra:
 - **Orologio e meteo**: ora e data grandi, su uno sfondo animato che segue il meteo del giorno (sereno, nuvoloso, pioggia, neve, nebbia, temporale, di giorno o di notte). Accanto ci sono la temperatura attuale, minima e massima, la probabilità di pioggia e il meteo di domani.
-- **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, e sotto gli impegni di **domani**. Quando la giornata è conclusa, domani passa in primo piano.
-- **Prossimi giorni**: i cinque giorni dopo domani, con i primi impegni di ogni giorno e l'icona dei pasti Cookidoo.
+- **Compleanni e ricorrenze**: subito sotto l'orologio, solo se ce ne sono nei prossimi 30 giorni; quello di oggi è evidenziato.
+- **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, la riga **In tavola** con i piatti di oggi (da tutti i menu) e sotto gli impegni e i piatti di **domani**. Quando la giornata è conclusa, domani passa in primo piano.
+- **Prossimi giorni**: i cinque giorni dopo domani, con i primi impegni di ogni giorno e l'icona dei pasti.
 - **Turni**: lavoro dei genitori, faccende dei bambini e presenze in casa di oggi. Dalle 18 il lavoro dei genitori mostra già quello di domani.
-- **In tavola**: i pasti Cookidoo di oggi e domani, se c'è un calendario Cookidoo.
 - **Liste**: le liste scelte, con un campo per aggiungere subito una voce.
 - **Note**: le note scelte.
-- **Barra delle azioni** (in alto a destra): pulsanti rotondi per nuovo evento, nuovo turno, nuova nota e liste, secondo i permessi dell'utente, seguiti dai pulsanti di Home Assistant (portone, cancello, luci...). Vedi [Pulsanti Home Assistant](#pulsanti-home-assistant).
-- **Compleanni e ricorrenze**: quelli dei prossimi 30 giorni; quello di oggi è evidenziato.
+- **Barra delle azioni** (in alto a destra): pulsanti rotondi per nuovo evento, nuovo turno, nuovo piatto, nuova nota e liste, secondo i permessi dell'utente, seguiti dai pulsanti di Home Assistant (portone, cancello, luci...). Vedi [Pulsanti Home Assistant](#pulsanti-home-assistant).
 
 Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece di restare vuota. I contenuti si aggiornano da soli ogni 5 minuti.
 
@@ -65,13 +64,29 @@ Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece
 - **Eventi ripetuti**: per modificarne o eliminarne uno, l'app chiede se agire solo su quell'evento o su tutta la serie.
 - Le modifiche vengono scritte subito sul provider (iCloud, CalDAV, Google).
 - **Colori dei membri**: i membri vengono riconosciuti dal titolo, con il nome o gli "altri nomi" impostati in Admin. Esempio: "Karate Luca" prende il colore di Luca. Il riconoscimento avviene a ogni caricamento e non modifica l'evento sul provider. Se assegni i membri a mano, vale la scelta manuale.
-- **Pasti Cookidoo**: compaiono come un cappello da chef nel giorno, colorato come il calendario. Tocca il cappello per vedere le ricette.
+- **Pasti**: i piatti di tutti i menu compaiono come un cappello da chef nel giorno, colorato come il primo menu. Tocca il cappello per vedere i piatti e mandare gli ingredienti nella lista della spesa.
 - Il calendario si aggiorna da solo ogni 5 minuti.
 
 Privacy degli eventi:
 - **Condiviso**: visibile a tutti.
 - **Privato**: i dettagli sono visibili solo ad Admin, Genitori e membri coinvolti. Gli altri vedono "Occupato".
 - **Nascosto sul pannello**: non compare sugli account Pannello.
+
+### Menu
+
+La pagina Menu mostra la settimana con i piatti di tutti i menu insieme:
+- **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota.
+- **Cookidoo**: il piano "La mia settimana", se l'account è collegato.
+- **Calendari menu**: in Admin → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati).
+
+**Ingredienti → spesa** (per la settimana, per un giorno o per un piatto):
+1. Familywall raccoglie gli ingredienti dei piatti e unisce quelli uguali.
+2. Scegli la lista (di solito "Spesa") e togli la spunta a quello che hai già in casa.
+3. Le voci già presenti e non spuntate nella lista vengono saltate.
+
+Per le ricette Cookidoo gli ingredienti vengono letti da Cookidoo al momento (API dell'app, poi pagina della ricetta). Cookidoo non ha API pubbliche: se non li fornisce (per esempio per le ricette create da te) Familywall lo segnala e li aggiungi a mano.
+
+Possono creare e modificare piatti i membri che scrivono eventi; mandare gli ingredienti in lista richiede il permesso sulle liste.
 
 ### Turni
 
@@ -181,7 +196,7 @@ Il client secret e il refresh token sono salvati cifrati. Inseriscili solo nel c
 
 - In Admin collega un account Cookidoo con email e password.
 - Il piano "La mia settimana" compare come calendario in sola lettura. Familywall legge le settimane da 5 prima a 9 dopo oggi.
-- In calendario i pasti compaiono come un cappello da chef nel giorno.
+- I pasti compaiono nella pagina Menu e come cappello da chef nel calendario. Gli ingredienti delle ricette si possono mandare nella lista della spesa (vedi [Menu](#menu)).
 - Cookidoo non ha API pubbliche. L'accesso usa lo stesso flusso dell'app mobile: OAuth2 con PKCE, come la libreria `cookidoo-api` usata da Home Assistant. Questo accesso può smettere di funzionare se Vorwerk cambia il flusso.
 
 ## Liste nei Promemoria di iPhone (CalDAV)

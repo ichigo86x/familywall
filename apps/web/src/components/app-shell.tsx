@@ -19,6 +19,7 @@ import {
   CalendarRegular,
   ClipboardTaskRegular,
   DarkThemeRegular,
+  FoodRegular,
   HomeRegular,
   NoteRegular,
   PeopleTeamRegular,
@@ -46,7 +47,7 @@ const SCALE_LABELS: Record<ScalePreference, string> = {
   "150": "Enorme"
 };
 
-export type AppRoute = "/" | "/calendar" | "/schedule" | "/lists" | "/notes" | "/admin";
+export type AppRoute = "/" | "/calendar" | "/menu" | "/schedule" | "/lists" | "/notes" | "/admin";
 
 interface AppShellProps {
   currentRoute: AppRoute;
@@ -82,6 +83,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   const tabs = [
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
     { value: "/calendar", label: "Calendario", icon: <CalendarRegular /> },
+    { value: "/menu", label: "Menu", icon: <FoodRegular /> },
     { value: "/schedule", label: "Turni", icon: <PeopleTeamRegular /> },
     { value: "/lists", label: "Liste", icon: <ClipboardTaskRegular /> },
     { value: "/notes", label: "Note", icon: <NoteRegular /> },

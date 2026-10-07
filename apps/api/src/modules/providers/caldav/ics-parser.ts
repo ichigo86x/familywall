@@ -12,7 +12,14 @@ export interface RemoteEvent {
   startAt: string;
   endAt: string;
   allDay: boolean;
+  /** DESCRIPTION, when present (menu calendars keep the ingredients there). */
+  description?: string;
 }
+
+const withDescription = (value: unknown): { description?: string } => {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text ? { description: text } : {};
+};
 
 /** Safety cap for unbounded rules (e.g. a daily event started years ago). */
 const MAX_ITERATIONS = 5000;
@@ -59,7 +66,7 @@ export const parseCalendarData = (ics: string, from: Date, to: Date): RemoteEven
     if (!event.isRecurring()) {
       const end = event.endDate ?? defaultEnd(event.startDate);
       if (overlaps(event.startDate, end, from, to)) {
-        events.push({ uid: event.uid, occurrenceKey: "", title, startAt: toIso(event.startDate), endAt: toIso(end), allDay: event.startDate.isDate });
+        events.push({ uid: event.uid, occurrenceKey: "", title, startAt: toIso(event.startDate), endAt: toIso(end), allDay: event.startDate.isDate, ...withDescription(event.description) });
       }
       continue;
     }
@@ -81,7 +88,8 @@ export const parseCalendarData = (ics: string, from: Date, to: Date): RemoteEven
         title: details.item.summary || title,
         startAt: toIso(details.startDate),
         endAt: toIso(details.endDate),
-        allDay: details.startDate.isDate
+        allDay: details.startDate.isDate,
+        ...withDescription(details.item.description || event.description)
       });
     }
   }
@@ -101,7 +109,8 @@ export const parseCalendarData = (ics: string, from: Date, to: Date): RemoteEven
         title: event.summary || "Evento",
         startAt: toIso(event.startDate),
         endAt: toIso(end),
-        allDay: event.startDate.isDate
+        allDay: event.startDate.isDate,
+        ...withDescription(event.description)
       });
     }
   }

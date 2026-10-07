@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CookidooClient, CookidooError, parseCookidooSite } from "./cookidoo-client";
+import { CookidooClient, CookidooError, cookidooRecipeId, findIngredients, parseCookidooSite } from "./cookidoo-client";
 
 const CIAM = "https://ciam.prod.cookidoo.vorwerk-digital.com";
 const credentials = { serverUrl: "https://cookidoo.it/foundation/it-IT", username: "family@example.com", password: "secret-pass" };
@@ -127,5 +127,18 @@ describe("CookidooClient", () => {
 
     await expect(client.verify(credentials)).rejects.toBeInstanceOf(CookidooError);
     await expect(client.verify(credentials)).rejects.toMatchObject({ kind: "auth" });
+  });
+});
+
+describe("Cookidoo recipe ingredients", () => {
+  it("reads recipe ids and ingredients from app data or schema.org data", () => {
+    expect(cookidooRecipeId("cookidoo-2026-10-07-r59322")).toBe("r59322");
+    expect(cookidooRecipeId("abc")).toBeNull();
+    expect(
+      findIngredients({
+        recipeIngredientGroups: [{ recipeIngredients: [{ ingredientNotation: "farina", quantity: { value: 200 }, unitNotation: "g" }, { ingredientNotation: "sale" }] }]
+      })
+    ).toEqual(["200 g farina", "sale"]);
+    expect(findIngredients([{ "@type": "Recipe", recipeIngredient: ["2 uova", " 100 g zucchero "] }])).toEqual(["2 uova", "100 g zucchero"]);
   });
 });

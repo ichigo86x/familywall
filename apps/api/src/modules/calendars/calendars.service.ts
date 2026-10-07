@@ -10,7 +10,17 @@ import type {
   UpdateCalendarInput,
   User
 } from "@familywall/shared";
-import { OCCASIONS_CALENDAR_ID, READ_ONLY_PROVIDERS, occasionDate, occasionTitle, type Occasion } from "@familywall/shared";
+import {
+  MEAL_SLOT_LABELS,
+  MENU_CALENDAR_ID,
+  MENU_EVENT_PREFIX,
+  OCCASIONS_CALENDAR_ID,
+  READ_ONLY_PROVIDERS,
+  occasionDate,
+  occasionTitle,
+  type MenuMeal,
+  type Occasion
+} from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient } from "../providers/caldav/caldav-client";
 import { CookidooClient } from "../providers/cookidoo/cookidoo-client";
@@ -25,6 +35,7 @@ import { buildMemberMatcher } from "./member-matcher";
 import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
 import { OccasionsRepository } from "./occasions.repository";
+import { MenuRepository } from "./menu.repository";
 import { CalendarCacheRepository } from "./calendar-cache.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 
@@ -98,6 +109,30 @@ const withInferredMembers = (event: FamilyEvent, matchMembers: (title: string) =
   return memberIds.length > 0 ? { ...event, memberIds, membersInferred: true } : event;
 };
 
+const isoDate = (date: Date): string => date.toISOString().slice(0, 10);
+
+/** Dishes of the family menu as all-day events ("Pranzo: Lasagne"), ingredients in the notes. */
+export const menuEvents = (meals: MenuMeal[]): FamilyEvent[] =>
+  meals.map((meal) => {
+    const start = new Date(`${meal.date}T00:00:00.000Z`);
+    return {
+      id: MENU_EVENT_PREFIX + meal.id,
+      calendarId: MENU_CALENDAR_ID,
+      title: `${MEAL_SLOT_LABELS[meal.slot]}: ${meal.title}`,
+      startAt: start.toISOString(),
+      endAt: new Date(start.getTime() + DAY_MS).toISOString(),
+      allDay: true,
+      memberIds: [],
+      tagMemberId: null,
+      privacy: "shared",
+      source: "local",
+      membersInferred: false,
+      recurring: false,
+      redacted: false,
+      notes: meal.ingredients.join("\n") || null
+    };
+  });
+
 /** One all-day event per occasion and year in the range (all-day events travel as UTC midnight). */
 export const occasionEvents = (occasions: Occasion[], from: Date, to: Date): FamilyEvent[] =>
   occasions.flatMap((occasion) => {
@@ -145,7 +180,8 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     private readonly google: GoogleClient,
     private readonly occasions: OccasionsRepository,
     private readonly cache: CalendarCacheRepository,
-    private readonly settings: SettingsRepository
+    private readonly settings: SettingsRepository,
+    private readonly menu: MenuRepository
   ) {}
 
   /** Clock, replaceable in tests. */
@@ -167,9 +203,11 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
         const rows = stored.filter((row) => row.calendar_id === config.id);
         const { events: remoteEvents, error } = await this.fetchRemote(config, from, to);
         const metaByKey = new Map(rows.filter((row) => row.source === "remote").map((row) => [row.uid, row]));
+        const kind = config.provider === "cookidoo" || config.purpose === "meals" ? "meals" : config.purpose === "birthdays" ? "birthdays" : "events";
 
         const events = [
-          ...remoteEvents.map((remote) => remoteToEvent(config.id, remote, metaByKey)),
+          // Menu calendars keep the ingredients in the description.
+          ...remoteEvents.map((remote) => ({ ...remoteToEvent(config.id, remote, metaByKey), ...(kind === "meals" ? { notes: remote.description ?? null } : {}) })),
           ...rows.filter((row) => row.source === "local").map(storedToEvent)
         ]
           .map((event) => withInferredMembers(event, matchMembers))
@@ -178,12 +216,26 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
           .sort((left, right) => left.startAt.localeCompare(right.startAt));
 
         return { id: config.id, name: config.name, color: config.color, readOnly: READ_ONLY_PROVIDERS.includes(config.provider),
-          kind: config.provider === "cookidoo" ? "meals" : config.purpose === "birthdays" ? "birthdays" : "events",
+          kind,
           lastError: error,
           events
         };
       })
     );
+
+    // A day of margin on both sides: menu dates are local, the range is in UTC.
+    const meals = this.menu.between(isoDate(new Date(from.getTime() - DAY_MS)), isoDate(new Date(to.getTime() + DAY_MS)));
+    if (meals.length > 0) {
+      calendars.push({
+        id: MENU_CALENDAR_ID,
+        name: "Menu di casa",
+        color: "#EA580C",
+        readOnly: true,
+        kind: "meals",
+        lastError: null,
+        events: menuEvents(meals).filter((event) => new Date(event.startAt) < to && new Date(event.endAt) > from)
+      });
+    }
 
     const occasions = this.occasions.list();
     if (occasions.length > 0) {

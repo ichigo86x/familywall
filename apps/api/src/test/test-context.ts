@@ -8,6 +8,7 @@ import { EventsRepository } from "../modules/calendars/events.repository";
 import { EventsService } from "../modules/calendars/events.service";
 import { OccasionsRepository } from "../modules/calendars/occasions.repository";
 import { CalendarCacheRepository } from "../modules/calendars/calendar-cache.repository";
+import { MenuRepository } from "../modules/calendars/menu.repository";
 import { MembersRepository } from "../modules/members/members.repository";
 import { MembersService } from "../modules/members/members.service";
 import { CalDavClient } from "../modules/providers/caldav/caldav-client";
@@ -33,7 +34,8 @@ export const createTestContext = (
   const providers = new ProvidersService(accounts, caldav, cookidoo, google);
   const occasions = new OccasionsRepository(db);
   const cache = new CalendarCacheRepository(db);
-  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings);
+  const menu = new MenuRepository(db);
+  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings, menu);
 
   return {
     db,
@@ -48,6 +50,7 @@ export const createTestContext = (
     providers,
     occasions,
     cache,
+    menu,
     calendars,
     events: new EventsService(eventsRepository, calendars, membersRepository, accounts, caldav, settings, google)
   };

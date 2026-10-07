@@ -55,7 +55,8 @@ export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => 
     ...(canWriteEvents
       ? [
           { to: "/calendar?new=1", icon: "📅", label: "Evento" },
-          { to: "/schedule?new=1", icon: "🏡", label: "Turno" }
+          { to: "/schedule?new=1", icon: "🏡", label: "Turno" },
+          { to: "/menu?new=1", icon: "🍽️", label: "Piatto" }
         ]
       : []),
     ...(canWriteLists

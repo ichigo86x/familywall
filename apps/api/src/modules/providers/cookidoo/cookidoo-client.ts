@@ -76,6 +76,50 @@ export const parseCookidooSite = (serverUrl: string): { origin: string; language
   return { origin: url.origin, language, market };
 };
 
+/** Recipe id from the uid of a Cookidoo meal event ("cookidoo-YYYY-MM-DD-<id>"). */
+export const cookidooRecipeId = (uid: string): string | null => {
+  const match = /^cookidoo-\d{4}-\d{2}-\d{2}-(.+)$/.exec(uid);
+  return match ? match[1]! : null;
+};
+
+/**
+ * Finds ingredient lines anywhere in a recipe document: schema.org "recipeIngredient" strings
+ * (web page JSON-LD) or Cookidoo app objects with "ingredientNotation".
+ */
+export const findIngredients = (value: unknown, found: string[] = []): string[] => {
+  if (Array.isArray(value)) {
+    value.forEach((item) => findIngredients(item, found));
+    return found;
+  }
+  if (!value || typeof value !== "object") {
+    return found;
+  }
+  const record = value as Record<string, unknown>;
+  if (Array.isArray(record.recipeIngredient)) {
+    record.recipeIngredient.filter((item): item is string => typeof item === "string").forEach((item) => found.push(item.trim()));
+  }
+  if (typeof record.ingredientNotation === "string") {
+    const quantity = record.quantity as { value?: number; from?: number; to?: number } | number | undefined;
+    const amount = typeof quantity === "number" ? quantity : (quantity?.value ?? quantity?.from);
+    const unit = typeof record.unitNotation === "string" ? record.unitNotation : "";
+    found.push([amount, unit, record.ingredientNotation].filter((part) => part !== undefined && part !== "").join(" ").trim());
+    return found;
+  }
+  Object.entries(record)
+    .filter(([key]) => key !== "recipeIngredient")
+    .forEach(([, item]) => findIngredients(item, found));
+  return found;
+};
+
+const jsonLdBlocks = (html: string): unknown[] =>
+  [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)].flatMap((match) => {
+    try {
+      return [JSON.parse(match[1]!) as unknown];
+    } catch {
+      return [];
+    }
+  });
+
 /** Minimal cookie jar for the login redirects (all on the CIAM host). */
 class CookieJar {
   private readonly cookies = new Map<string, string>();
@@ -100,6 +144,7 @@ export class CookidooClient {
   private readonly weekCache = new Map<string, { at: number; days: CalendarDayJson[] }>();
   private readonly weekPaths = new Map<string, string>();
   private oidc: { authorization_endpoint: string; token_endpoint: string } | null = null;
+  private readonly recipeIngredientsCache = new Map<string, string[]>();
 
   public constructor(
     private readonly fetchImpl: FetchLike = (input, init) => fetch(input, init),
@@ -111,6 +156,46 @@ export class CookidooClient {
   public async verify(credentials: CookidooCredentials): Promise<void> {
     this.sessions.delete(this.sessionKey(credentials));
     await this.week(credentials, isoDay(mondayOf(new Date(this.now()))), true);
+  }
+
+  /**
+   * Ingredients of a recipe, best effort: the recipe API of the mobile app first, then the
+   * recipe web page (schema.org data). Empty when Cookidoo does not give them (own recipes).
+   */
+  public async recipeIngredients(credentials: CookidooCredentials, recipeId: string): Promise<string[]> {
+    const cacheKey = `${credentials.serverUrl}|${recipeId}`;
+    const cached = this.recipeIngredientsCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const { origin, language, market } = parseCookidooSite(credentials.serverUrl);
+    const id = encodeURIComponent(recipeId);
+    let ingredients: string[] = [];
+    for (const url of [`https://${market}.tmmobile.vorwerk-digital.com/recipes/recipe/${language}/${id}`, `${origin}/recipes/recipe/${language}/${id}`]) {
+      try {
+        ingredients = findIngredients(await this.apiGet(credentials, url));
+      } catch {
+        ingredients = [];
+      }
+      if (ingredients.length > 0) {
+        break;
+      }
+    }
+    if (ingredients.length === 0) {
+      try {
+        const page = await this.send(`${origin}/recipes/recipe/${language}/${id}`, { headers: { Accept: "text/html", "User-Agent": BROWSER_UA } });
+        if (page.ok) {
+          ingredients = findIngredients(jsonLdBlocks(await page.text()));
+        }
+      } catch {
+        ingredients = [];
+      }
+    }
+    const unique = [...new Set(ingredients.filter(Boolean))];
+    if (unique.length > 0) {
+      this.recipeIngredientsCache.set(cacheKey, unique);
+    }
+    return unique;
   }
 
   /** Planned recipes as all-day events, one per recipe. */

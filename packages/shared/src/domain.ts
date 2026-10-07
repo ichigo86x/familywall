@@ -153,8 +153,8 @@ export interface CalendarConfig {
   name: string;
   color: string;
   enabled: boolean;
-  /** "birthdays": events of this calendar are birthdays and anniversaries. */
-  purpose: "events" | "birthdays";
+  /** "birthdays": birthdays and anniversaries; "meals": a menu (dishes, ingredients in the description). */
+  purpose: "events" | "birthdays" | "meals";
   lastSyncedAt: string | null;
   lastError: string | null;
 }
@@ -188,6 +188,8 @@ export interface FamilyEvent {
   recurring: boolean;
   /** True when the viewer may only see that the slot is busy. */
   redacted: boolean;
+  /** Menu calendars only: the description (ingredients), one per line. */
+  notes?: string | null;
 }
 
 export interface FamilyCalendar {

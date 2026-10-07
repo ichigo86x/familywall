@@ -215,11 +215,17 @@ const CalendarRow = ({
       </div>
       <div className="row-actions">
         {calendar.provider === "cookidoo" ? null : (
-          <Switch
-            label="Compleanni"
-            checked={calendar.purpose === "birthdays"}
-            onChange={(_, data) => void onAction(() => api.updateCalendar(calendar.id, { purpose: data.checked ? "birthdays" : "events" }))}
-          />
+          <select
+            className="native-select calendar-purpose"
+            aria-label="Uso del calendario"
+            title="Eventi normali, compleanni e ricorrenze, oppure menu (piatti con gli ingredienti nella descrizione)"
+            value={calendar.purpose}
+            onChange={(change) => void onAction(() => api.updateCalendar(calendar.id, { purpose: change.target.value as CalendarConfig["purpose"] }))}
+          >
+            <option value="events">📅 Eventi</option>
+            <option value="birthdays">🎂 Compleanni</option>
+            <option value="meals">🍽️ Menu</option>
+          </select>
         )}
         <Switch
           label={calendar.enabled ? "Visibile" : "Nascosto"}

@@ -5,3 +5,4 @@ export * from "./schedule";
 export * from "./weather";
 export * from "./home";
 export * from "./occasions";
+export * from "./menu";
