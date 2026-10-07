@@ -2891,3 +2891,29 @@ button.schedule-chip {
 .panel-card.dashboard-clock {
   cursor: pointer;
 }
+
+.reminders-setup__profile,
+.reminders-setup__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.reminders-setup__profile {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.reminders-setup__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}

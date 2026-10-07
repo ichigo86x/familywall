@@ -121,10 +121,12 @@ export class DavController {
       prefix = String(request.headers["x-forwarded-prefix"] ?? "").replace(/\/+$/, "");
     }
 
-    response
-      .status(200)
-      .type("application/x-apple-aspen-config")
-      .setHeader("Content-Disposition", 'attachment; filename="familywall-promemoria.mobileconfig"')
-      .send(caldavProfile({ host, port, ssl, principalPath: `${prefix}${DAV_PATH}/${DAV_FAMILY_USER}/`, username: link.username }));
+    // Plain bytes with the exact profile type (no charset): Safari then offers to install it.
+    const body = Buffer.from(caldavProfile({ host, port, ssl, principalPath: `${prefix}${DAV_PATH}/${DAV_FAMILY_USER}/`, username: link.username }), "utf8");
+    response.status(200);
+    response.setHeader("Content-Type", "application/x-apple-aspen-config");
+    response.setHeader("Content-Disposition", 'inline; filename="familywall-promemoria.mobileconfig"');
+    response.setHeader("Content-Length", String(body.length));
+    response.end(body);
   }
 }
