@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { DavModule } from "../dav/dav.module";
 import { NotesController } from "./notes.controller";
-import { NotesRepository } from "./notes.repository";
 
 @Module({
-  controllers: [NotesController],
-  providers: [NotesRepository]
+  imports: [DavModule],
+  controllers: [NotesController]
 })
 export class NotesModule {}

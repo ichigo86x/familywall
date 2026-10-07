@@ -147,10 +147,10 @@ describe("CalendarsService and EventsService", () => {
     await expect(ctx.events.delete(panel, trip!.id)).rejects.toThrow(/app dei genitori/);
   });
 
-  it("shows birthdays kept in Familywall and marks birthday calendars", async () => {
+  it("shows the family birthdays and marks birthday calendars", async () => {
     const { ctx, admin, child, calendar } = await setup({ "trip.ics": SCHOOL_TRIP });
-    ctx.occasions.insert({ name: "Luca", kind: "birthday", month: 10, day: 20, year: 2017 });
-    ctx.occasions.insert({ name: "Nonni", kind: "anniversary", month: 3, day: 1, year: null });
+    await ctx.occasions.create({ name: "Luca", kind: "birthday", month: 10, day: 20, year: 2017 });
+    await ctx.occasions.create({ name: "Nonni", kind: "anniversary", month: 3, day: 1, year: null });
     ctx.calendars.update(calendar.id, { purpose: "birthdays" });
 
     const { calendars } = await ctx.calendars.getCalendars(admin, range);
@@ -180,7 +180,7 @@ describe("CalendarsService and EventsService", () => {
     const dinner = SCHOOL_TRIP.replace("SUMMARY:Gita scolastica", "SUMMARY:Lasagne\nDESCRIPTION:Ingredienti:\\n- 500 g di ragù\\n- sfoglia");
     const { ctx, admin, calendar } = await setup({ "dinner.ics": dinner });
     ctx.calendars.update(calendar.id, { purpose: "meals" });
-    ctx.menu.insert({ date: "2026-10-06", slot: "cena", title: "Minestrone", ingredients: ["zucchine", "carote"], note: null });
+    await ctx.menu.create({ date: "2026-10-06", slot: "cena", title: "Minestrone", ingredients: ["zucchine", "carote"], note: null });
 
     const { calendars } = await ctx.calendars.getCalendars(admin, range);
     expect(calendars.map((entry) => [entry.id, entry.kind])).toEqual([[calendar.id, "meals"], ["menu", "meals"]]);

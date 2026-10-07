@@ -6,9 +6,9 @@ import { CalendarsRepository } from "../modules/calendars/calendars.repository";
 import { CalendarsService } from "../modules/calendars/calendars.service";
 import { EventsRepository } from "../modules/calendars/events.repository";
 import { EventsService } from "../modules/calendars/events.service";
-import { OccasionsRepository } from "../modules/calendars/occasions.repository";
 import { CalendarCacheRepository } from "../modules/calendars/calendar-cache.repository";
-import { MenuRepository } from "../modules/calendars/menu.repository";
+import { LegacyDataMigration } from "../modules/dav/legacy-migration";
+import { MenuStore, NotesStore, OccasionsStore, ScheduleStore } from "../modules/dav/family-stores";
 import { MembersRepository } from "../modules/members/members.repository";
 import { MembersService } from "../modules/members/members.service";
 import { CalDavClient } from "../modules/providers/caldav/caldav-client";
@@ -17,6 +17,7 @@ import { GoogleClient } from "../modules/providers/google/google-client";
 import { ProviderAccountsRepository } from "../modules/providers/provider-accounts.repository";
 import { ProvidersService } from "../modules/providers/providers.service";
 import { SettingsRepository } from "../modules/settings/settings.repository";
+import { MemoryDavStore } from "./memory-dav-store";
 
 /** Wires the services by hand on an in-memory database, mirroring the Nest modules. */
 export const createTestContext = (
@@ -32,9 +33,12 @@ export const createTestContext = (
   const calendarsRepository = new CalendarsRepository(db);
   const eventsRepository = new EventsRepository(db);
   const providers = new ProvidersService(accounts, caldav, cookidoo, google);
-  const occasions = new OccasionsRepository(db);
+  const dav = new MemoryDavStore();
+  const occasions = new OccasionsStore(dav, settings);
   const cache = new CalendarCacheRepository(db);
-  const menu = new MenuRepository(db);
+  const menu = new MenuStore(dav, settings);
+  const notes = new NotesStore(dav, settings);
+  const schedule = new ScheduleStore(dav, settings, membersRepository);
   const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings, menu);
 
   return {
@@ -48,9 +52,13 @@ export const createTestContext = (
     members: new MembersService(membersRepository),
     auth: new AuthService(db, randomBytes(32), membersRepository, settings),
     providers,
+    dav,
     occasions,
     cache,
     menu,
+    notes,
+    schedule,
+    migration: new LegacyDataMigration(db, occasions, menu, schedule, notes),
     calendars,
     events: new EventsService(eventsRepository, calendars, membersRepository, accounts, caldav, settings, google)
   };

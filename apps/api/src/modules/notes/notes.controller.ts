@@ -6,45 +6,42 @@ import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import type { RequestWithUser } from "../../common/types/request-with-user";
-import { NotesRepository } from "./notes.repository";
+import { NotesStore } from "../dav/family-stores";
 
+/** The family notes board, kept on the built-in CalDAV server ("Note" collection). */
 @Controller("notes")
 export class NotesController {
-  public constructor(private readonly notes: NotesRepository) {}
+  public constructor(private readonly notes: NotesStore) {}
 
   @Get()
   @RequirePermission("calendar:read")
-  public list(): NotesResponse {
-    return { notes: this.notes.list() };
+  public async list(): Promise<NotesResponse> {
+    return { notes: await this.notes.list() };
   }
 
   @Post()
   @RequirePermission("lists:write")
-  public create(@Req() request: RequestWithUser, @Body(new ZodValidationPipe(noteSchema)) input: z.output<typeof noteSchema>): NoteResponse {
+  public async create(@Req() request: RequestWithUser, @Body(new ZodValidationPipe(noteSchema)) input: z.output<typeof noteSchema>): Promise<NoteResponse> {
     if (!input.title.trim() && !input.body.trim()) {
       throw AppException.validation("La nota è vuota.");
     }
-    return { note: this.notes.insert(input, request.user.id) };
+    return { note: await this.notes.create({ ...input, createdBy: request.user.id }) };
   }
 
   @Patch(":noteId")
   @RequirePermission("lists:write")
-  public update(@Param("noteId") noteId: string, @Body(new ZodValidationPipe(updateNoteSchema)) input: UpdateNoteInput): NoteResponse {
-    this.requireNote(noteId);
-    return { note: this.notes.update(noteId, input) };
+  public async update(@Param("noteId") noteId: string, @Body(new ZodValidationPipe(updateNoteSchema)) input: UpdateNoteInput): Promise<NoteResponse> {
+    const current = await this.notes.find(noteId);
+    if (!current) {
+      throw AppException.notFound("Nota non trovata.");
+    }
+    return { note: await this.notes.update(noteId, { ...current, ...input }) };
   }
 
   @Delete(":noteId")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("lists:write")
-  public delete(@Param("noteId") noteId: string): void {
-    this.requireNote(noteId);
-    this.notes.delete(noteId);
-  }
-
-  private requireNote(noteId: string): void {
-    if (!this.notes.findById(noteId)) {
-      throw AppException.notFound("Nota non trovata.");
-    }
+  public async delete(@Param("noteId") noteId: string): Promise<void> {
+    await this.notes.delete(noteId);
   }
 }

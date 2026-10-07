@@ -65,7 +65,7 @@ export const RemindersSetup = () => {
       <div className="panel-card__header">
         <div>
           <p className="eyebrow">iPhone e iPad</p>
-          <h3>Le liste nei Promemoria</h3>
+          <h3>Liste e calendari sul telefono</h3>
         </div>
         <Button appearance="secondary" onClick={() => setOpen(!open)}>{open ? "Chiudi" : "Come si fa"}</Button>
       </div>
@@ -73,7 +73,8 @@ export const RemindersSetup = () => {
         <div className="reminders-setup__body">
           <p>
             Le liste con l'etichetta <strong>Promemoria</strong> sono condivise da tutta la famiglia e compaiono anche nell'app Promemoria
-            dell'iPhone, dove si possono aggiungere voci anche con Siri.
+            dell'iPhone, dove si possono aggiungere voci anche con Siri. Lo stesso account porta nell'app Calendario i calendari{" "}
+            <strong>Menu</strong>, <strong>Compleanni</strong> e <strong>Turni</strong>: quello che modifichi lì compare anche su Familywall.
           </p>
           {!secure ? (
             <p className="calendar-detail-hint">Per l'installazione automatica apri Familywall dall'indirizzo esterno (https) sull'iPhone.</p>

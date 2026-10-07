@@ -1,21 +1,21 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from "@nestjs/common";
 import { menuMealSchema, menuRangeSchema, type MenuIngredientsResponse, type MenuMeal, type MenuMealsResponse } from "@familywall/shared";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
-import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { CookidooClient, cookidooRecipeId } from "../providers/cookidoo/cookidoo-client";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { CalendarsRepository } from "./calendars.repository";
 import { decodeRemoteEventId } from "./event-ids";
-import { MenuRepository, type MenuMealFields } from "./menu.repository";
+import type { MenuMealFields } from "../dav/family-ics";
+import { MenuStore } from "../dav/family-stores";
 
 const MAX_INGREDIENT_LOOKUPS = 30;
 
-/** The family menu kept in Familywall, and the ingredients of Cookidoo recipes. */
+/** The family menu (on the built-in CalDAV server), and the ingredients of Cookidoo recipes. */
 @Controller("menu")
 export class MenuController {
   public constructor(
-    private readonly menu: MenuRepository,
+    private readonly menu: MenuStore,
     private readonly calendars: CalendarsRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly cookidoo: CookidooClient
@@ -23,29 +23,27 @@ export class MenuController {
 
   @Get()
   @RequirePermission("calendar:read")
-  public list(@Query(new ZodValidationPipe(menuRangeSchema)) range: { from: string; to: string }): MenuMealsResponse {
-    return { meals: this.menu.between(range.from, range.to) };
+  public async list(@Query(new ZodValidationPipe(menuRangeSchema)) range: { from: string; to: string }): Promise<MenuMealsResponse> {
+    return { meals: await this.menu.between(range.from, range.to) };
   }
 
   @Post()
   @RequirePermission("events:write")
-  public create(@Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): { meal: MenuMeal } {
-    return { meal: this.menu.insert(input) };
+  public async create(@Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): Promise<{ meal: MenuMeal }> {
+    return { meal: await this.menu.create(input) };
   }
 
   @Patch(":id")
   @RequirePermission("events:write")
-  public update(@Param("id") id: string, @Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): { meal: MenuMeal } {
-    this.require(id);
-    return { meal: this.menu.update(id, input) };
+  public async update(@Param("id") id: string, @Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): Promise<{ meal: MenuMeal }> {
+    return { meal: await this.menu.update(id, input) };
   }
 
   @Delete(":id")
   @RequirePermission("events:write")
   @HttpCode(HttpStatus.NO_CONTENT)
-  public delete(@Param("id") id: string): void {
-    this.require(id);
-    this.menu.delete(id);
+  public async delete(@Param("id") id: string): Promise<void> {
+    await this.menu.delete(id);
   }
 
   /** Ingredients of Cookidoo meal events (ids from GET /calendars); null when Cookidoo does not give them. */
@@ -76,12 +74,6 @@ export class MenuController {
       return ingredients.length > 0 ? ingredients : null;
     } catch {
       return null;
-    }
-  }
-
-  private require(id: string): void {
-    if (!this.menu.findById(id)) {
-      throw AppException.notFound("Piatto non trovato.");
     }
   }
 }

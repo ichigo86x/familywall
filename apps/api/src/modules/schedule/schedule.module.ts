@@ -1,11 +1,10 @@
 import { Module } from "@nestjs/common";
+import { DavModule } from "../dav/dav.module";
 import { MembersModule } from "../members/members.module";
 import { ScheduleController } from "./schedule.controller";
-import { ScheduleRepository } from "./schedule.repository";
 
 @Module({
-  imports: [MembersModule],
-  controllers: [ScheduleController],
-  providers: [ScheduleRepository]
+  imports: [MembersModule, DavModule],
+  controllers: [ScheduleController]
 })
 export class ScheduleModule {}

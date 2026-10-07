@@ -1,30 +1,46 @@
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { DavGatewayService } from "./dav-gateway.service";
 import { DavTasksClient } from "./dav-tasks.client";
+import { MenuStore, NotesStore, OccasionsStore, ScheduleStore } from "./family-stores";
+import { LegacyDataMigration } from "./legacy-migration";
 
 const ATTEMPTS = 10;
 const DELAY_MS = 2_000;
 
-/** Waits for Radicale to come up, then makes sure the family has at least one reminders list. */
+/**
+ * Waits for Radicale to come up, then makes sure the family has at least one reminders list
+ * and the menu, birthdays, shifts and notes collections, and moves the data still in the database.
+ */
 @Injectable()
 export class DavBootstrap implements OnApplicationBootstrap {
   private readonly logger = new Logger("CalDAV");
 
   public constructor(
     private readonly gateway: DavGatewayService,
-    private readonly tasks: DavTasksClient
+    private readonly tasks: DavTasksClient,
+    private readonly occasions: OccasionsStore,
+    private readonly menu: MenuStore,
+    private readonly schedule: ScheduleStore,
+    private readonly notes: NotesStore,
+    private readonly migration: LegacyDataMigration
   ) {}
 
   public onApplicationBootstrap(): void {
     if (this.gateway.enabled) {
       void this.prepare(1);
+    } else if (this.migration.pending() > 0) {
+      this.logger.warn("CalDAV server disabled: menu, birthdays, shifts and notes stay in the database until it is enabled.");
     }
   }
 
   private async prepare(attempt: number): Promise<void> {
     try {
       await this.tasks.ensureDefaultList();
-      this.logger.log("Family reminders lists ready.");
+      for (const store of [this.occasions, this.menu, this.schedule, this.notes]) {
+        await store.ensure();
+      }
+      await this.migration.run();
+      this.logger.log("Family collections ready.");
     } catch (error) {
       if (attempt >= ATTEMPTS) {
         this.logger.warn(`CalDAV server not ready: ${error instanceof Error ? error.message : String(error)}`);

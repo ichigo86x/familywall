@@ -34,8 +34,7 @@ import { projectEventForViewer } from "./event-visibility";
 import { buildMemberMatcher } from "./member-matcher";
 import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
-import { OccasionsRepository } from "./occasions.repository";
-import { MenuRepository } from "./menu.repository";
+import { MenuStore, OccasionsStore } from "../dav/family-stores";
 import { CalendarCacheRepository } from "./calendar-cache.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 
@@ -178,10 +177,10 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     private readonly members: MembersRepository,
     private readonly cookidoo: CookidooClient,
     private readonly google: GoogleClient,
-    private readonly occasions: OccasionsRepository,
+    private readonly occasions: OccasionsStore,
     private readonly cache: CalendarCacheRepository,
     private readonly settings: SettingsRepository,
-    private readonly menu: MenuRepository
+    private readonly menu: MenuStore
   ) {}
 
   /** Clock, replaceable in tests. */
@@ -223,34 +222,46 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
       })
     );
 
+    // Family menu and birthdays from the built-in CalDAV server; shown when they have something (or fail).
     // A day of margin on both sides: menu dates are local, the range is in UTC.
-    const meals = this.menu.between(isoDate(new Date(from.getTime() - DAY_MS)), isoDate(new Date(to.getTime() + DAY_MS)));
-    if (meals.length > 0) {
+    const [meals, occasions] = await Promise.all([
+      this.familyData(() => this.menu.between(isoDate(new Date(from.getTime() - DAY_MS)), isoDate(new Date(to.getTime() + DAY_MS)))),
+      this.familyData(() => this.occasions.list())
+    ]);
+    if (meals.items.length > 0 || meals.error) {
       calendars.push({
         id: MENU_CALENDAR_ID,
         name: "Menu di casa",
         color: "#EA580C",
         readOnly: true,
         kind: "meals",
-        lastError: null,
-        events: menuEvents(meals).filter((event) => new Date(event.startAt) < to && new Date(event.endAt) > from)
+        lastError: meals.error,
+        events: menuEvents(meals.items).filter((event) => new Date(event.startAt) < to && new Date(event.endAt) > from)
       });
     }
-
-    const occasions = this.occasions.list();
-    if (occasions.length > 0) {
+    if (occasions.items.length > 0 || occasions.error) {
       calendars.push({
         id: OCCASIONS_CALENDAR_ID,
         name: "Compleanni e ricorrenze",
         color: "#DB2777",
         readOnly: true,
         kind: "birthdays",
-        lastError: null,
-        events: occasionEvents(occasions, from, to).map((event) => withInferredMembers(event, matchMembers))
+        lastError: occasions.error,
+        events: occasionEvents(occasions.items, from, to).map((event) => withInferredMembers(event, matchMembers))
       });
     }
 
     return { range: { from: from.toISOString(), to: to.toISOString() }, calendars };
+  }
+
+  private async familyData<T>(read: () => Promise<T[]>): Promise<{ items: T[]; error: string | null }> {
+    try {
+      return { items: await read(), error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore CalDAV.";
+      this.logger.warn(`Reading family data failed: ${message}`);
+      return { items: [], error: message };
+    }
   }
 
   public listConfigs(): CalendarConfig[] {

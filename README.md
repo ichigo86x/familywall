@@ -11,6 +11,8 @@ Familywall è l'organizzazione della famiglia su un'unica schermata:
 - dashboard con meteo, screensaver e modalità notte per il pannello a muro;
 - cache, funzionamento offline e backup.
 
+I dati della famiglia (liste, menu, compleanni, turni e note) stanno sul server CalDAV integrato, non nel database: si sincronizzano anche con i telefoni, fuori dall'app. Il database tiene solo configurazione, utenti e collegamenti.
+
 Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet Android ed Echo Show 15 (con Fully Kiosk Browser).
 
 ## Indice
@@ -19,7 +21,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - [Ruoli e permessi](#ruoli-e-permessi)
 - [Primo avvio](#primo-avvio)
 - [Collegare i calendari](#collegare-i-calendari)
-- [Liste nei Promemoria di iPhone (CalDAV)](#liste-nei-promemoria-di-iphone-caldav)
+- [Server CalDAV integrato (liste, menu, compleanni, turni, note)](#server-caldav-integrato-liste-menu-compleanni-turni-note)
 - [Pannello a muro: Echo Show 15 con Fully Kiosk](#pannello-a-muro-echo-show-15-con-fully-kiosk)
 - [Web app su iPhone e iPad](#web-app-su-iphone-e-ipad)
 - [Sviluppo locale](#sviluppo-locale)
@@ -75,7 +77,7 @@ Privacy degli eventi:
 ### Menu
 
 La pagina Menu mostra la settimana con i piatti di tutti i menu insieme:
-- **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota.
+- **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota. Stanno nel calendario "Menu" del server CalDAV integrato, quindi si vedono e si modificano anche dal calendario del telefono (vedi [Server CalDAV integrato](#server-caldav-integrato-liste-menu-compleanni-turni-note)).
 - **Cookidoo**: il piano "La mia settimana", se l'account è collegato.
 - **Calendari menu**: in Admin → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati).
 
@@ -99,7 +101,7 @@ Ogni turno vale in uno di due modi:
 - **Ricorrente**: nei giorni della settimana scelti, ogni settimana oppure solo nelle settimane pari o dispari (utile per alternare due figli);
 - **Una volta**: in una data precisa.
 
-I turni di oggi compaiono anche in dashboard ("Oggi in casa").
+I turni di oggi compaiono anche in dashboard ("Oggi in casa"). Stanno nel calendario "Turni" del server CalDAV integrato: sul telefono compaiono come eventi ripetuti, per esempio "Luca: Apparecchiare".
 
 ### Liste
 
@@ -110,12 +112,12 @@ I turni di oggi compaiono anche in dashboard ("Oggi in casa").
 ### Note
 
 - La bacheca di famiglia contiene note colorate. Le note possono essere fissate in alto e mostrate in dashboard.
-- Le note sono salvate solo in Familywall.
+- Le note stanno nella raccolta "Note" del server CalDAV integrato (come voci di diario, VJOURNAL). L'app Calendario e l'app Note di iPhone non le mostrano; le leggono client come Thunderbird o jtx Board con DAVx⁵ su Android.
 
 ### Compleanni e ricorrenze
 
 Ci sono due modi, che si possono usare insieme:
-- **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze sono salvate nel database e incluse nel backup.
+- **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze stanno nel calendario "Compleanni" del server CalDAV integrato, come eventi di tutto il giorno ripetuti ogni anno: si vedono anche sul telefono, e un compleanno aggiunto lì compare in Familywall.
 - **Da un calendario**: in Admin → Calendari visibili, attiva "Compleanni" sul calendario giusto. Per esempio:
   - un calendario iCloud dedicato ("Compleanni") con eventi di tutto il giorno ripetuti ogni anno;
   - il calendario "Compleanni" di Google (dai contatti), se l'account Google è collegato.
@@ -199,18 +201,43 @@ Il client secret e il refresh token sono salvati cifrati. Inseriscili solo nel c
 - I pasti compaiono nella pagina Menu e come cappello da chef nel calendario. Gli ingredienti delle ricette si possono mandare nella lista della spesa (vedi [Menu](#menu)).
 - Cookidoo non ha API pubbliche. L'accesso usa lo stesso flusso dell'app mobile: OAuth2 con PKCE, come la libreria `cookidoo-api` usata da Home Assistant. Questo accesso può smettere di funzionare se Vorwerk cambia il flusso.
 
-## Liste nei Promemoria di iPhone (CalDAV)
+## Server CalDAV integrato (liste, menu, compleanni, turni, note)
 
-Familywall include un server CalDAV (Radicale) per le liste di famiglia.
-- Admin, Genitori e Figli vedono le liste nell'app Promemoria dell'iPhone, con il proprio utente e la propria password di Familywall.
-- Tutti condividono le stesse liste. Alla prima partenza Familywall crea la lista "Spesa".
+Familywall include un server CalDAV (Radicale). Tutti i dati della famiglia stanno lì, nell'utente condiviso `famiglia`:
+
+| Raccolta | Contenuto | Sul telefono |
+|---|---|---|
+| Liste (per esempio "Spesa") | Promemoria (VTODO) | App Promemoria |
+| Menu | un evento di tutto il giorno per piatto ("Cena: Minestrone"), ingredienti e nota nella descrizione | App Calendario |
+| Compleanni | un evento di tutto il giorno ripetuto ogni anno ("🎂 Luca", "💍 Mario e Anna") | App Calendario |
+| Turni | eventi ripetuti ogni settimana, o ogni due per le settimane pari/dispari ("Anna: Ufficio") | App Calendario |
+| Note | voci di diario (VJOURNAL) | Solo client che le supportano |
+
+- Admin, Genitori e Figli vedono liste e calendari sul telefono, con il proprio utente e la propria password di Familywall. Tutti condividono gli stessi dati.
+- Alla prima partenza Familywall crea la lista "Spesa" e i calendari Menu, Compleanni, Turni e Note.
+- Quello che modifichi sul telefono compare in Familywall alla lettura successiva. Familywall legge titolo, date, ripetizione e descrizione; le informazioni che solo Familywall conosce (tipo di turno, membro, colore della nota...) restano in proprietà `X-FAMILYWALL-*` dell'evento.
+- Un evento aggiunto dal telefono a un calendario di Familywall vale come piatto, compleanno o turno. Nel Menu il pasto si sceglie iniziando il titolo con "Colazione:", "Pranzo:", "Merenda:" o "Cena:".
 - Gli account Pannello e i Figli solo etichetta non accedono al server CalDAV.
 
-Collegare un iPhone:
-- **Automatico**: apri Familywall **in Safari** (non dall'icona sulla schermata Home) all'indirizzo esterno https. Vai in Liste → "Le liste nei Promemoria" → "Come si fa" → "Prepara il profilo per questo iPhone" → "Installa su questo iPhone". Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall.
+### Aggiornamento dalla versione 0.3
+
+Fino alla 0.3 menu, compleanni, turni e note stavano nel database. All'avvio della 0.4 Familywall li sposta da solo sul server CalDAV:
+1. aspetta che Radicale sia pronto e crea i calendari mancanti;
+2. scrive ogni piatto, ricorrenza, turno e nota con lo stesso identificativo;
+3. lo cancella dal database solo dopo averlo scritto.
+
+Se lo spostamento si interrompe, riprende al riavvio successivo senza creare doppioni. Lo stesso succede quando ripristini un backup fatto con una versione precedente. Nel log dell'add-on compare la riga `Moved to the CalDAV server: …`.
+
+Senza Radicale (`RADICALE_COMMAND` vuoto) i dati restano nel database ma menu, compleanni, turni e note non sono disponibili.
+
+### Collegare un iPhone
+
+- **Automatico**: apri Familywall **in Safari** (non dall'icona sulla schermata Home) all'indirizzo esterno https. Vai in Liste → "Liste e calendari sul telefono" → "Come si fa" → "Prepara il profilo per questo iPhone" → "Installa su questo iPhone". Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall.
   - Dall'app aggiunta alla schermata Home iOS non installa profili (pagina bianca): lì Familywall mostra "Copia link", da incollare in Safari.
   - Il link vale 10 minuti e si può aprire più volte. Il profilo non contiene la password.
 - **Manuale**: in Impostazioni → Promemoria → Account → Aggiungi account → Altro → Account CalDAV, usa il server `<indirizzo>/dav/famiglia/`.
+- Lo stesso account porta sia le liste (Promemoria) sia i calendari Menu, Compleanni e Turni (Calendario). Se non li vedi, in Impostazioni → Calendario → Account → Familywall attiva "Calendari".
+- Android: con DAVx⁵ usa lo stesso indirizzo, utente e password.
 
 Note:
 - iOS richiede HTTPS con un certificato valido. Usa l'indirizzo pubblicato tramite nginx.
@@ -326,7 +353,8 @@ npm run build
 5. Apri Familywall dalla barra laterale (ingress) e completa la configurazione iniziale.
 
 - La porta `3001` è esposta per il reverse proxy esterno. Se non ti serve, svuotala nella scheda **Rete** dell'add-on.
-- L'immagine include Radicale per le liste dei Promemoria.
+- L'immagine include Radicale, che tiene liste, menu, compleanni, turni e note.
+- Aggiornando dalla 0.3, i dati vengono spostati da soli sul server CalDAV (vedi [Aggiornamento dalla versione 0.3](#aggiornamento-dalla-versione-03)).
 
 ## Accesso esterno con nginx
 
@@ -350,30 +378,30 @@ server {
 ```
 
 - L'API considera attendibile un solo proxy (`trust proxy 1`). Così il limite ai tentativi di login usa l'IP reale del client.
-- Il blocco `location /` copre anche `/dav` e `/.well-known/caldav` per i Promemoria.
+- Il blocco `location /` copre anche `/dav` e `/.well-known/caldav` per i telefoni.
 
 ## Sincronizzazione, cache e offline
 
 - **Server**: ogni 5 minuti Familywall legge i calendari visibili, da un mese fa a sei mesi avanti, e li salva nel database. Le pagine si aprono dalla cache; se un provider (iCloud, Google, Cookidoo) non risponde, restano gli ultimi eventi letti, con l'avviso dell'ora dei dati. Dopo una modifica a un evento, il calendario viene riletto subito.
-- **Liste**: se Google Tasks o il server dei Promemoria non rispondono, restano le ultime voci lette.
+- **Liste e dati della famiglia**: se Google Tasks o il server CalDAV integrato non rispondono, restano le ultime voci lette.
 - **Dispositivi**: telefoni, tablet e pannelli salvano le ultime risposte. Senza rete, o con il server spento, mostrano i dati salvati con l'avviso "Offline" e riprovano da soli. Il pannello si può anche ricaricare senza rete (service worker, solo in HTTPS o su localhost). I dati salvati sul dispositivo si cancellano all'uscita (Esci).
 - Senza rete non si possono salvare modifiche: Familywall lo segnala.
 
 ## Backup e ripristino
 
 In Admin → Backup:
-- **Scarica backup**: un file `.fwbackup` con membri (password cifrate), impostazioni, eventi locali, metadati degli eventi, turni, note, ricorrenze, account collegati, configurazione dei calendari e delle liste, e le liste dei Promemoria.
+- **Scarica backup**: un file `.fwbackup` con il database (membri con password cifrate, impostazioni, metadati degli eventi, account collegati, configurazione dei calendari e delle liste) e i file del server CalDAV integrato (liste, menu, compleanni, turni e note).
 - **Includi la chiave delle credenziali**: aggiunge `secret.key` al file. Serve per ripristinare su un'altra installazione senza ricollegare iCloud, Google e Cookidoo. **Con la chiave, chi ha il file può leggere quelle password: conservalo in un posto sicuro e non metterlo nel repository.**
 - **Copie automatiche**: ogni giorno Familywall salva un backup (senza chiave) in `DATA_DIR/backups` e tiene gli ultimi 7. Si scaricano dalla stessa card.
-- **Ripristina da file**: sostituisce tutti i dati con quelli del backup, senza riavviare. Un backup di una versione precedente viene aggiornato al formato attuale. Dopo il ripristino può servire accedere di nuovo.
+- **Ripristina da file**: sostituisce tutti i dati con quelli del backup, senza riavviare. Un backup di una versione precedente viene aggiornato al formato attuale; menu, compleanni, turni e note di un backup della 0.3 vengono spostati sul server CalDAV. Dopo il ripristino può servire accedere di nuovo.
 
 ## Dati e chiavi
 
 Tutto vive in `DATA_DIR`: `/data` nell'add-on, `./data` in sviluppo.
-- `familywall.db`: database SQLite.
+- `familywall.db`: database SQLite (configurazione, utenti, collegamenti, cache dei calendari).
 - `secret.key`: chiave AES-256 che cifra le credenziali dei provider. **Se la perdi, devi ricollegare gli account** (o ripristinare un backup con la chiave).
 - `jwt.key`: chiave che firma le sessioni.
-- `radicale/`: liste dei Promemoria.
+- `radicale/`: dati della famiglia sul server CalDAV (liste, menu, compleanni, turni, note).
 - `backups/`: copie automatiche giornaliere.
 
 Il backup di Home Assistant include `/data`, quindi anche le copie giornaliere.
@@ -391,5 +419,6 @@ Il backup di Home Assistant include `/data`, quindi anche le copie giornaliere.
 
 ## Limiti noti e prossimi passi
 
-- Le note restano solo in Familywall: non c'è sincronizzazione con Note di iCloud o Google Keep, che non hanno API pubbliche adatte.
+- Le note non compaiono nell'app Note di iPhone né in Google Keep, che non hanno API pubbliche adatte: sono voci CalDAV (VJOURNAL).
+- Sul telefono le settimane pari/dispari dei turni diventano "ogni 2 settimane": negli anni con 53 settimane l'alternanza del telefono può sfasarsi di una settimana rispetto a Familywall, che resta corretto.
 - Cookidoo è in sola lettura e usa un'API non ufficiale.

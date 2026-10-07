@@ -23,7 +23,7 @@ interface BackupBundle {
   schemaVersion: number;
   /** SQLite snapshot, base64. */
   database: string;
-  /** Files of the built-in CalDAV server (family lists), paths relative to radicale/collections. */
+  /** Files of the built-in CalDAV server (lists, menu, birthdays, shifts, notes), paths relative to radicale/collections. */
   files: Array<{ path: string; data: string }>;
   /** secret.key (base64) when the Admin chose to include it: without it provider credentials must be entered again. */
   secretKey: string | null;
@@ -53,8 +53,9 @@ const quoteIdentifier = (name: string) => `"${name.replace(/"/g, '""')}"`;
 const quoteLiteral = (value: string) => `'${value.replace(/'/g, "''")}'`;
 
 /**
- * Backups of everything Familywall keeps (members, settings, local events, shifts, notes,
- * occasions, Google/iCloud links and the family lists of the CalDAV server). A daily copy is
+ * Backups of everything Familywall keeps: the database (members, settings, Google/iCloud links,
+ * event metadata) and the files of the built-in CalDAV server (reminder lists, menu, birthdays,
+ * shifts and notes). A daily copy is
  * kept in DATA_DIR/backups; the Admin can download one and restore it in place.
  */
 @Injectable()
@@ -273,7 +274,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     return (this.db.prepare("SELECT COUNT(*) AS total FROM members").get() as { total: number }).total;
   }
 
-  /** Family lists of the CalDAV server: replaced only when the backup has them. */
+  /** Collections of the CalDAV server: replaced only when the backup has them. */
   private restoreFiles(files: BackupBundle["files"]): number {
     const safe = files.filter((file) => typeof file.path === "string" && typeof file.data === "string" && !file.path.split("/").some((part) => part === ".." || part === "") && !path.isAbsolute(file.path));
     if (safe.length === 0) {

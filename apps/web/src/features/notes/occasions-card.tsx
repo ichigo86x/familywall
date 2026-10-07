@@ -11,7 +11,7 @@ const MONTHS = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "l
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
-/** Birthdays and anniversaries kept in Familywall: they appear in the calendar and on the dashboard. */
+/** Birthdays and anniversaries ("Compleanni" on the built-in CalDAV server): they appear in the calendar and on the dashboard. */
 export const OccasionsCard = ({ canWrite }: { canWrite: boolean }) => {
   const occasions = useAsyncResource(() => api.getOccasions(), []);
   const [editing, setEditing] = useState<Occasion | "new" | null>(null);

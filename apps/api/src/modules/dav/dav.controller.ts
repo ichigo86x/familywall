@@ -30,7 +30,7 @@ const caldavProfile = (input: { host: string; port: number; ssl: boolean; princi
       <key>CalDAVPrincipalURL</key><string>${escapeXml(input.principalPath)}</string>
       <key>CalDAVUseSSL</key><${input.ssl ? "true" : "false"}/>
       <key>CalDAVUsername</key><string>${escapeXml(input.username)}</string>
-      <key>PayloadDescription</key><string>Liste della famiglia nei Promemoria</string>
+      <key>PayloadDescription</key><string>Liste, menu, compleanni e turni della famiglia</string>
       <key>PayloadDisplayName</key><string>Familywall Promemoria</string>
       <key>PayloadIdentifier</key><string>familywall.caldav.${accountId}</string>
       <key>PayloadType</key><string>com.apple.caldav.account</string>

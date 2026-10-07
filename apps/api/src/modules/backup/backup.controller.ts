@@ -2,6 +2,8 @@ import { Controller, Get, Param, Post, Query, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { AppException } from "../../common/errors/app-exception";
+import { DavStore } from "../dav/dav-store";
+import { LegacyDataMigration } from "../dav/legacy-migration";
 import { BackupService, type RestoreSummary, type StoredBackup } from "./backup.service";
 
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
@@ -34,7 +36,11 @@ const readBody = (request: Request): Promise<Buffer> =>
 @Controller("backup")
 @RequirePermission("settings:manage")
 export class BackupController {
-  public constructor(private readonly backup: BackupService) {}
+  public constructor(
+    private readonly backup: BackupService,
+    private readonly dav: DavStore,
+    private readonly migration: LegacyDataMigration
+  ) {}
 
   @Get("download")
   public download(@Query("key") key: string | undefined, @Res() response: Response): void {
@@ -54,6 +60,16 @@ export class BackupController {
 
   @Post("restore")
   public async restore(@Req() request: Request): Promise<RestoreSummary> {
-    return this.backup.restore(await readBody(request));
+    const summary = this.backup.restore(await readBody(request));
+    this.dav.clearCache();
+    // Backups made before 0.4 keep menu, birthdays, shifts and notes in the database: move them now.
+    if (this.dav.enabled && this.migration.pending() > 0) {
+      try {
+        await this.migration.run();
+      } catch (error) {
+        throw AppException.providerError(`Backup ripristinato, ma lo spostamento dei dati sul server CalDAV non è riuscito: ${error instanceof Error ? error.message : String(error)}. Verrà ritentato al prossimo avvio.`);
+      }
+    }
+    return summary;
   }
 }

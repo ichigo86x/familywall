@@ -5,52 +5,44 @@ import type { z } from "zod";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { AppException } from "../../common/errors/app-exception";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
+import { ScheduleStore } from "../dav/family-stores";
 import { MembersRepository } from "../members/members.repository";
-import { ScheduleRepository } from "./schedule.repository";
 
 type ScheduleInput = z.output<typeof scheduleEntrySchema>;
 
-/** Everyone sees the shifts; Admins and Parents organise them. */
+/** Everyone sees the shifts; Admins and Parents organise them. They live in the "Turni" CalDAV collection. */
 @Controller("schedule")
 export class ScheduleController {
   public constructor(
-    private readonly schedule: ScheduleRepository,
+    private readonly schedule: ScheduleStore,
     private readonly members: MembersRepository
   ) {}
 
   @Get()
   @RequirePermission("calendar:read")
-  public list(): ScheduleResponse {
-    return { entries: this.schedule.list() };
+  public async list(): Promise<ScheduleResponse> {
+    return { entries: await this.schedule.list() };
   }
 
   @Post()
   @RequirePermission("events:write")
-  public create(@Body(new ZodValidationPipe(scheduleEntrySchema)) input: ScheduleInput): ScheduleEntryResponse {
+  public async create(@Body(new ZodValidationPipe(scheduleEntrySchema)) input: ScheduleInput): Promise<ScheduleEntryResponse> {
     this.assertMember(input.memberId);
-    return { entry: this.schedule.insert(input) };
+    return { entry: await this.schedule.create(input) };
   }
 
   @Patch(":entryId")
   @RequirePermission("events:write")
-  public update(@Param("entryId") entryId: string, @Body(new ZodValidationPipe(scheduleEntrySchema)) input: ScheduleInput): ScheduleEntryResponse {
-    this.requireEntry(entryId);
+  public async update(@Param("entryId") entryId: string, @Body(new ZodValidationPipe(scheduleEntrySchema)) input: ScheduleInput): Promise<ScheduleEntryResponse> {
     this.assertMember(input.memberId);
-    return { entry: this.schedule.update(entryId, input) };
+    return { entry: await this.schedule.update(entryId, input) };
   }
 
   @Delete(":entryId")
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission("events:write")
-  public delete(@Param("entryId") entryId: string): void {
-    this.requireEntry(entryId);
-    this.schedule.delete(entryId);
-  }
-
-  private requireEntry(entryId: string): void {
-    if (!this.schedule.findById(entryId)) {
-      throw AppException.notFound("Turno non trovato.");
-    }
+  public async delete(@Param("entryId") entryId: string): Promise<void> {
+    await this.schedule.delete(entryId);
   }
 
   private assertMember(memberId: string | null): void {
