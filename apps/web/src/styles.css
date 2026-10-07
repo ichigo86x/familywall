@@ -3326,3 +3326,66 @@ button.schedule-chip {
   width: auto;
   min-width: 9rem;
 }
+
+/* Dashboard top row: the side block (buttons, birthdays) matches the clock height. */
+.dashboard-grid > .dashboard-clock,
+.dashboard-top-side {
+  align-self: stretch;
+}
+
+.dashboard-top-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-top-side:empty {
+  display: none;
+}
+
+.dashboard-top-side > .action-bar {
+  flex: 1;
+  align-content: center;
+}
+
+/* One row of birthdays: it scrolls sideways instead of making the row taller. */
+.fui-Card.dashboard-birthday-strip.dashboard-birthday-strip {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 8px 12px;
+  gap: 6px;
+  scrollbar-width: none;
+}
+
+.dashboard-birthday-strip .dashboard-birthday-chip {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-size: 0.98rem;
+  white-space: nowrap;
+}
+
+.fui-Card.dashboard-clock {
+  justify-content: center;
+}
+
+/* Tablets in landscape: smaller round buttons so they stay on one row next to the clock. */
+@media (max-width: 1300px) {
+  .action-bar__item {
+    width: 3.3rem;
+    min-height: 3.5rem;
+    border-radius: 18px;
+  }
+
+  .action-bar__icon {
+    font-size: 1.4rem;
+  }
+
+  .action-bar__label {
+    font-size: 0.68rem;
+  }
+
+  .action-bar__state {
+    font-size: 0.6rem;
+  }
+}

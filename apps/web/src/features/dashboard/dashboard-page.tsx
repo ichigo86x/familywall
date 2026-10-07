@@ -143,11 +143,14 @@ export const DashboardPage = () => {
       summaryChip={`${upcoming.length} in programma`}
     >
       <div className="dashboard-grid">
-        <div className="dashboard-main">
-          <WeatherClock now={now} weather={weather.data ?? null} canConfigure={auth.can("settings:manage") && Boolean(settings.data) && !settings.data?.weatherLocation} />
-
+        {/* Top row: clock and weather on the left; buttons and birthdays on the right, as tall as the clock. */}
+        <WeatherClock now={now} weather={weather.data ?? null} canConfigure={auth.can("settings:manage") && Boolean(settings.data) && !settings.data?.weatherLocation} />
+        <div className="dashboard-top-side">
+          <ActionBar canWriteEvents={auth.can("events:write")} canWriteLists={auth.can("lists:write")} />
           <BirthdayStrip birthdays={birthdays} today={today} />
+        </div>
 
+        <div className="dashboard-main">
           <div className="dashboard-pair">
             <Card className="panel-card dashboard-today">
               <div className="panel-card__header">
@@ -262,8 +265,6 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-side-column">
-          <ActionBar canWriteEvents={auth.can("events:write")} canWriteLists={auth.can("lists:write")} />
-
           <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} />
 
           {lists.status === "error" ? (

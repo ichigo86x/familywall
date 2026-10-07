@@ -76,12 +76,22 @@ export class WeatherClient {
     }));
   }
 
+  private fetchOnce(url: string): Promise<Response> {
+    return this.fetchImpl(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(this.timeoutMs) });
+  }
+
   private async get(url: string): Promise<unknown> {
     let response: Response;
     try {
-      response = await this.fetchImpl(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(this.timeoutMs) });
-    } catch (error) {
-      throw new WeatherError(`Servizio meteo non raggiungibile: ${error instanceof Error ? error.message : String(error)}`);
+      response = await this.fetchOnce(url);
+    } catch {
+      // The first connection after start-up sometimes fails (DNS, IPv6 fallback): one quick retry.
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+        response = await this.fetchOnce(url);
+      } catch (error) {
+        throw new WeatherError(`Servizio meteo non raggiungibile: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
     if (!response.ok) {
       throw new WeatherError(`Il servizio meteo ha risposto HTTP ${response.status}.`);

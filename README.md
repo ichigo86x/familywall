@@ -38,7 +38,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 
 È la pagina iniziale, pensata per il pannello a muro. Non ha intestazione di pagina, per lasciare più spazio ai contenuti. Mostra:
 - **Orologio e meteo**: ora e data grandi, su uno sfondo animato che segue il meteo del giorno (sereno, nuvoloso, pioggia, neve, nebbia, temporale, di giorno o di notte). Accanto ci sono la temperatura attuale, minima e massima, la probabilità di pioggia e il meteo di domani.
-- **Compleanni e ricorrenze**: subito sotto l'orologio, solo se ce ne sono nei prossimi 30 giorni; quello di oggi è evidenziato.
+- **Compleanni e ricorrenze**: in alto a destra, sotto i pulsanti e sopra i turni, solo se ce ne sono nei prossimi 30 giorni; quello di oggi è evidenziato. Pulsanti e ricorrenze occupano la stessa altezza del riquadro con orologio e meteo.
 - **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, la riga **In tavola** con i piatti di oggi (da tutti i menu) e sotto gli impegni e i piatti di **domani**. Quando la giornata è conclusa, domani passa in primo piano.
 - **Prossimi giorni**: i cinque giorni dopo domani, con i primi impegni di ogni giorno e l'icona dei pasti.
 - **Turni**: lavoro dei genitori, faccende dei bambini e presenze in casa di oggi. Dalle 18 il lavoro dei genitori mostra già quello di domani.
@@ -237,7 +237,7 @@ Note:
 
 A 1920×1080 la dashboard sta in una sola schermata:
 - a sinistra: orologio con meteo, agenda di oggi e domani, prossimi giorni e note;
-- a destra: barra delle azioni e di Home Assistant, turni, compleanni, pasti e liste.
+- a destra: barra delle azioni e di Home Assistant e ricorrenze (alte come il riquadro del meteo), poi turni e liste.
 
 In verticale (1080×1920) restano due colonne con il testo grande.
 

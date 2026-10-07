@@ -11,6 +11,7 @@ const CACHE_MS = 20 * 60 * 1000;
 export class WeatherService {
   private readonly logger = new Logger(WeatherService.name);
   private cache: { key: string; expiresAt: number; report: WeatherReport } | null = null;
+  private inFlight: Promise<WeatherReport> | null = null;
 
   public constructor(
     private readonly settings: SettingsRepository,
@@ -28,7 +29,9 @@ export class WeatherService {
       return { ...this.cache.report, location: weatherLocation };
     }
     try {
-      const report = await this.client.forecast(weatherLocation, timezone);
+      // Dashboards opening together share one request.
+      this.inFlight ??= this.client.forecast(weatherLocation, timezone).finally(() => (this.inFlight = null));
+      const report = await this.inFlight;
       this.cache = { key, expiresAt: this.now() + CACHE_MS, report };
       return report;
     } catch (error) {
