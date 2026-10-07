@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import type {
   AddCalendarInput,
   CalendarConfig,
@@ -25,9 +25,30 @@ import { buildMemberMatcher } from "./member-matcher";
 import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
 import { OccasionsRepository } from "./occasions.repository";
+import { CalendarCacheRepository } from "./calendar-cache.repository";
+import { SettingsRepository } from "../settings/settings.repository";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_MS = 400 * DAY_MS;
+/** Calendars are synced in the background for this window around today. */
+const SYNC_PAST_DAYS = 31;
+const SYNC_FUTURE_DAYS = 183;
+const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+/** Cached events younger than this are served without asking the provider. */
+const FRESH_MS = 10 * 60 * 1000;
+
+const syncWindow = (now: Date): { from: Date; to: Date } => {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return { from: new Date(today - SYNC_PAST_DAYS * DAY_MS), to: new Date(today + SYNC_FUTURE_DAYS * DAY_MS) };
+};
+
+/** Events overlapping [from, to); zero-length events count when they start inside. */
+const eventsBetween = (events: RemoteEvent[], from: Date, to: Date): RemoteEvent[] =>
+  events.filter((event) => {
+    const start = new Date(event.startAt);
+    const end = new Date(event.endAt);
+    return start < to && (end > from || (end.getTime() === start.getTime() && start >= from));
+  });
 
 export const storedToEvent = (row: StoredEvent): FamilyEvent => ({
   id: row.id,
@@ -107,8 +128,11 @@ export const occasionEvents = (occasions: Occasion[], from: Date, to: Date): Fam
   });
 
 @Injectable()
-export class CalendarsService {
+export class CalendarsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CalendarsService.name);
+  private readonly inFlight = new Map<string, Promise<RemoteEvent[]>>();
+  private syncTimer: ReturnType<typeof setInterval> | undefined;
+  private firstSync: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(
     private readonly calendars: CalendarsRepository,
@@ -119,8 +143,13 @@ export class CalendarsService {
     private readonly members: MembersRepository,
     private readonly cookidoo: CookidooClient,
     private readonly google: GoogleClient,
-    private readonly occasions: OccasionsRepository
+    private readonly occasions: OccasionsRepository,
+    private readonly cache: CalendarCacheRepository,
+    private readonly settings: SettingsRepository
   ) {}
+
+  /** Clock, replaceable in tests. */
+  public now: () => Date = () => new Date();
 
   public async getCalendars(viewer: User, range: CalendarRangeInput): Promise<CalendarResponse> {
     const from = range.from ? new Date(range.from) : new Date(Date.now() - 7 * DAY_MS);
@@ -208,28 +237,106 @@ export class CalendarsService {
     return calendar;
   }
 
-  /** A failing provider must not hide the other calendars: the error is reported per calendar. */
+  /**
+   * Provider events for a range. Ranges inside the sync window come from the cache when it is
+   * fresh; otherwise the whole window is read again. A failing provider never hides a calendar:
+   * the last synced events are shown with the error, which is also reported per calendar.
+   */
   private async fetchRemote(config: CalendarConfig, from: Date, to: Date): Promise<{ events: RemoteEvent[]; error: string | null }> {
-    try {
-      // Inside the try: a key mismatch makes decryption throw, which must stay a per-calendar error.
-      const credentials = this.accounts.credentials(config.accountId);
-      if (!credentials) {
-        return { events: [], error: "Account del calendario mancante." };
-      }
+    const window = syncWindow(this.now());
+    const cached = this.cache.get(config.id);
+    const cacheCovers = cached !== undefined && cached.from <= from && cached.to >= to;
+    if (cacheCovers && this.now().getTime() - cached.syncedAt.getTime() < FRESH_MS) {
+      return { events: eventsBetween(cached.events, from, to), error: null };
+    }
 
-      const events =
-        config.provider === "cookidoo"
-          ? await this.cookidoo.fetchMealPlan(credentials, from, to)
-          : config.provider === "google"
-            ? await this.google.fetchEvents(parseGoogleSecret(credentials.password), config.remoteUrl, from, to)
-            : await this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
-      this.calendars.recordSync(config.id, null);
-      return { events, error: null };
+    const inWindow = from >= window.from && to <= window.to;
+    try {
+      if (inWindow) {
+        const events = await this.syncCalendar(config, window);
+        return { events: eventsBetween(events, from, to), error: null };
+      }
+      return { events: await this.fetchLive(config, from, to), error: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Errore sconosciuto del provider.";
       this.logger.warn(`Fetching calendar ${config.id} failed: ${message}`);
       this.calendars.recordSync(config.id, message);
+      if (cached) {
+        const time = cached.syncedAt.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: this.timezone() });
+        return { events: eventsBetween(cached.events, from, to), error: `${message} Mostro i dati delle ${time}.` };
+      }
       return { events: [], error: message };
     }
+  }
+
+  /** Reads the sync window from the provider and stores it; concurrent requests share one read. */
+  private syncCalendar(config: CalendarConfig, window: { from: Date; to: Date }): Promise<RemoteEvent[]> {
+    const running = this.inFlight.get(config.id);
+    if (running) {
+      return running;
+    }
+    const work = this.fetchLive(config, window.from, window.to)
+      .then((events) => {
+        this.cache.put(config.id, window.from, window.to, events, this.now());
+        this.calendars.recordSync(config.id, null);
+        return events;
+      })
+      .finally(() => this.inFlight.delete(config.id));
+    this.inFlight.set(config.id, work);
+    return work;
+  }
+
+  private async fetchLive(config: CalendarConfig, from: Date, to: Date): Promise<RemoteEvent[]> {
+    // A key mismatch makes decryption throw: it must stay a per-calendar error.
+    const credentials = this.accounts.credentials(config.accountId);
+    if (!credentials) {
+      throw new Error("Account del calendario mancante.");
+    }
+    return config.provider === "cookidoo"
+      ? this.cookidoo.fetchMealPlan(credentials, from, to)
+      : config.provider === "google"
+        ? this.google.fetchEvents(parseGoogleSecret(credentials.password), config.remoteUrl, from, to)
+        : this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);
+  }
+
+  /** Background sync of every visible calendar, so pages open from the cache. */
+  public async syncAll(): Promise<void> {
+    const window = syncWindow(this.now());
+    for (const config of this.calendars.list({ enabledOnly: true })) {
+      const cached = this.cache.get(config.id);
+      if (cached && this.now().getTime() - cached.syncedAt.getTime() < FRESH_MS / 2) {
+        continue;
+      }
+      try {
+        await this.syncCalendar(config, window);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Errore sconosciuto del provider.";
+        this.calendars.recordSync(config.id, message);
+        this.logger.warn(`Sync of calendar ${config.id} failed: ${message}`);
+      }
+    }
+  }
+
+  /** After a write the next read goes to the provider again. */
+  public invalidate(calendarId: string): void {
+    this.cache.invalidate(calendarId);
+  }
+
+  public onModuleInit(): void {
+    if (process.env.VITEST) {
+      return;
+    }
+    const run = () => void this.syncAll().catch((error: unknown) => this.logger.warn(`Calendar sync failed: ${String(error)}`));
+    this.syncTimer = setInterval(run, SYNC_INTERVAL_MS);
+    this.firstSync = setTimeout(run, 5_000);
+  }
+
+  public onModuleDestroy(): void {
+    clearInterval(this.syncTimer);
+    clearTimeout(this.firstSync);
+  }
+
+  private timezone(): string {
+    return this.settings.get().timezone;
   }
 }

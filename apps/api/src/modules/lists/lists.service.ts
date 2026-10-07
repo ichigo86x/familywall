@@ -5,6 +5,7 @@ import type {
   FamilyTaskList,
   ListsResponse,
   RemoteTaskList,
+  TaskItem,
   TaskListConfig,
   UpdateTaskInput,
   UpdateTaskListInput
@@ -24,6 +25,9 @@ const DAV_PREFIX = "dav:";
 @Injectable()
 export class ListsService {
   private readonly logger = new Logger(ListsService.name);
+  /** Last items read for each list: shown (with the error) when a provider fails. */
+  private readonly lastGood = new Map<string, TaskItem[]>();
+  private lastReminderLists: FamilyTaskList[] = [];
 
   public constructor(
     private readonly lists: TaskListsRepository,
@@ -50,15 +54,15 @@ export class ListsService {
         lists.map(async (list): Promise<FamilyTaskList> => {
           const base = { id: DAV_PREFIX + list.name, name: list.displayName, color: list.color ?? "#F97316", source: "reminders" as const };
           try {
-            return { ...base, lastError: null, tasks: await this.dav.tasks(list.name) };
+            return { ...base, lastError: null, tasks: this.remember(base.id, await this.dav.tasks(list.name)) };
           } catch (error) {
-            return { ...base, lastError: error instanceof Error ? error.message : "Errore sconosciuto.", tasks: [] };
+            return { ...base, ...this.fallback(base.id, error) };
           }
         })
-      );
+      ).then((result) => (this.lastReminderLists = result));
     } catch (error) {
       this.logger.warn("Reading reminders lists failed: " + (error instanceof Error ? error.message : String(error)));
-      return [];
+      return this.lastReminderLists.map((list) => ({ ...list, ...this.fallback(list.id, error) }));
     }
   }
 
@@ -68,15 +72,26 @@ export class ListsService {
         try {
           const tasks = await this.google.listTasks(this.secret(config.accountId), config.remoteId);
           this.lists.recordError(config.id, null);
-          return { id: config.id, name: config.name, color: config.color, source: "google", lastError: null, tasks };
+          return { id: config.id, name: config.name, color: config.color, source: "google", lastError: null, tasks: this.remember(config.id, tasks) };
         } catch (error) {
           const message = error instanceof Error ? error.message : "Errore sconosciuto.";
           this.logger.warn(`Reading list ${config.id} failed: ${message}`);
           this.lists.recordError(config.id, message);
-          return { id: config.id, name: config.name, color: config.color, source: "google", lastError: message, tasks: [] };
+          return { id: config.id, name: config.name, color: config.color, source: "google", ...this.fallback(config.id, error) };
         }
       })
     );
+  }
+
+  private remember(listId: string, tasks: TaskItem[]): TaskItem[] {
+    this.lastGood.set(listId, tasks);
+    return tasks;
+  }
+
+  private fallback(listId: string, error: unknown): { lastError: string; tasks: TaskItem[] } {
+    const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+    const tasks = this.lastGood.get(listId);
+    return tasks ? { lastError: `${message} Mostro le ultime voci lette.`, tasks } : { lastError: message, tasks: [] };
   }
 
   public listConfigs(): TaskListConfig[] {

@@ -178,5 +178,15 @@ export const migrations: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+  `,
+  // Last provider events per calendar (background sync and offline fallback).
+  `
+  CREATE TABLE calendar_cache (
+    calendar_id TEXT PRIMARY KEY REFERENCES calendars(id) ON DELETE CASCADE,
+    window_from TEXT NOT NULL,
+    window_to TEXT NOT NULL,
+    events_json TEXT NOT NULL,
+    synced_at TEXT NOT NULL
+  );
   `
 ];

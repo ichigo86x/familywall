@@ -30,6 +30,7 @@ import {
 import { SCALE_OPTIONS, useThemePreference, type ScalePreference, type ThemePreference } from "@/theme/theme-preference";
 import { LiveClock } from "@/components/live-clock";
 import { ScreensaverHost } from "@/components/screensaver-host";
+import { OfflineBanner } from "@/components/offline-banner";
 
 const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactElement }> = {
   auto: { label: "Auto", icon: <DarkThemeRegular /> },
@@ -189,6 +190,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
         </Toolbar>
 
         <main className="shell-main">
+          <OfflineBanner />
           {headless ? (
             <h2 className="visually-hidden">{title}</h2>
           ) : compact ? (

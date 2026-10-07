@@ -3165,3 +3165,19 @@ button.schedule-chip {
   background: linear-gradient(90deg, rgba(219, 39, 119, 0.18), rgba(233, 162, 77, 0.18)) !important;
   font-weight: 700;
 }
+
+.offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  background: #fef3c7;
+  color: #78350f;
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .offline-banner {
+  background: #422006;
+  color: #fde68a;
+}

@@ -10,10 +10,11 @@ import { EventsRepository } from "./events.repository";
 import { EventsService } from "./events.service";
 import { OccasionsController } from "./occasions.controller";
 import { OccasionsRepository } from "./occasions.repository";
+import { CalendarCacheRepository } from "./calendar-cache.repository";
 
 @Module({
   imports: [MembersModule, ProvidersModule, SettingsModule],
   controllers: [CalendarsController, EventsController, OccasionsController],
-  providers: [CalendarsRepository, EventsRepository, OccasionsRepository, CalendarsService, EventsService]
+  providers: [CalendarsRepository, EventsRepository, OccasionsRepository, CalendarCacheRepository, CalendarsService, EventsService]
 })
 export class CalendarsModule {}

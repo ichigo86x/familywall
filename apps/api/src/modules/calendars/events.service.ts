@@ -72,6 +72,7 @@ export class EventsService {
       }
       throw providerError(error);
     }
+    this.calendars.invalidate(calendar.id);
 
     const meta = this.events.upsertRemoteMeta(calendar.id, uid, actor.id, {
       privacy: input.privacy,
@@ -144,6 +145,7 @@ export class EventsService {
       });
     }
 
+    this.calendars.invalidate(calendar.id);
     return { id: eventId };
   }
 
@@ -179,6 +181,7 @@ export class EventsService {
     } catch (error) {
       throw providerError(error);
     }
+    this.calendars.invalidate(calendar.id);
 
     const wholeSeries = scope === "series" || !remote.occurrenceKey;
     this.events.deleteRemoteMeta(calendar.id, remoteMetaKey(remote.uid, remote.occurrenceKey, scope), wholeSeries);

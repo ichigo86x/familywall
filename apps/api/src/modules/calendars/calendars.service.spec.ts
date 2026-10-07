@@ -159,6 +159,22 @@ describe("CalendarsService and EventsService", () => {
     ]);
   });
 
+  it("serves provider events from the cache and falls back to it when the provider fails", async () => {
+    const { ctx, caldav, admin, events } = await setup({ "trip.ics": SCHOOL_TRIP });
+    let clock = new Date("2026-10-01T08:00:00.000Z");
+    ctx.calendars.now = () => clock;
+
+    expect(await events()).toHaveLength(1);
+    expect(await events()).toHaveLength(1);
+    expect(caldav.fetchEvents).toHaveBeenCalledTimes(1);
+
+    clock = new Date(clock.getTime() + 11 * 60 * 1000);
+    vi.mocked(caldav.fetchEvents).mockRejectedValueOnce(new CalDavError("network", "Server del calendario non raggiungibile."));
+    const [calendar] = (await ctx.calendars.getCalendars(admin, range)).calendars;
+    expect(calendar!.events.map((event) => event.title)).toEqual(["Gita scolastica"]);
+    expect(calendar!.lastError).toMatch(/non raggiungibile. Mostro i dati delle 10:00./);
+  });
+
   it("deletes one occurrence or the whole series", async () => {
     const { ctx, admin, server, events } = await setup({ "swim.ics": WEEKLY_SWIM });
     const [, second] = await events();

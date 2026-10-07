@@ -41,6 +41,8 @@ import type {
   User
 } from "@familywall/shared";
 
+import { connection, offlineCache } from "./offline-cache";
+
 const TOKEN_KEY = "familywall.auth.token";
 
 export class ApiError extends Error {
@@ -56,7 +58,10 @@ export class ApiError extends Error {
 export const tokenStore = {
   get: (): string | null => window.localStorage.getItem(TOKEN_KEY),
   set: (token: string): void => window.localStorage.setItem(TOKEN_KEY, token),
-  clear: (): void => window.localStorage.removeItem(TOKEN_KEY)
+  clear: (): void => {
+    window.localStorage.removeItem(TOKEN_KEY);
+    offlineCache.clear();
+  }
 };
 
 let onUnauthorized: () => void = () => undefined;
@@ -79,12 +84,32 @@ const request = async <T>(path: string, init: RequestInit & { json?: unknown } =
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(apiUrl(path), {
-    ...init,
-    headers,
-    body: init.json !== undefined ? JSON.stringify(init.json) : init.body,
-    cache: "no-store"
-  });
+  const isRead = (init.method ?? "GET") === "GET";
+  // Offline or server down: reads fall back to the last answer saved on this device.
+  const fromCache = (failure: Error): T => {
+    const cached = isRead ? offlineCache.load(path) : null;
+    if (!cached) {
+      throw failure;
+    }
+    connection.markOffline(cached.savedAt);
+    return cached.body as T;
+  };
+
+  let response: Response;
+  try {
+    response = await fetch(apiUrl(path), {
+      ...init,
+      headers,
+      body: init.json !== undefined ? JSON.stringify(init.json) : init.body,
+      cache: "no-store"
+    });
+  } catch {
+    return fromCache(new ApiError(isRead ? "Connessione assente." : "Sei offline: riprova quando torna la connessione.", 0, "OFFLINE"));
+  }
+
+  if (isRead && (response.status === 502 || response.status === 503 || response.status === 504)) {
+    return fromCache(new ApiError(`Server non raggiungibile (HTTP ${response.status}).`, response.status, "OFFLINE"));
+  }
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: { message?: string; code?: string } } | null;
@@ -95,7 +120,15 @@ const request = async <T>(path: string, init: RequestInit & { json?: unknown } =
     throw new ApiError(payload?.error?.message ?? `Richiesta fallita (HTTP ${response.status})`, response.status, payload?.error?.code);
   }
 
-  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+  connection.markOnline();
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  const body = (await response.json()) as T;
+  if (isRead) {
+    offlineCache.save(path, body);
+  }
+  return body;
 };
 
 const storeSession = (session: AuthSession): AuthSession => {
