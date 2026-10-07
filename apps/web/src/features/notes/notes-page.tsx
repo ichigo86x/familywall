@@ -14,6 +14,7 @@ import {
 import type { FamilyNote, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { useNewParam } from "@/hooks/use-new-param";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
@@ -32,6 +33,7 @@ export const NotesPage = () => {
   const notes = useAsyncResource(() => api.getNotes(), []);
   const members = useAsyncResource(() => api.getMembers(), []);
   const [editing, setEditing] = useState<FamilyNote | "new" | null>(null);
+  useNewParam(canWrite, () => setEditing("new"));
   const membersById = new Map((members.data ?? []).map((member) => [member.id, member]));
 
   return (

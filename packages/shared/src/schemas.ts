@@ -82,7 +82,15 @@ export const updateSettingsSchema = z
     locale: z.string().trim().min(2).max(20).optional(),
     timezone: z.string().trim().min(1).max(64).optional(),
     wallModeEnabled: z.boolean().optional(),
-    dashboardListIds: z.array(z.string().min(1).max(300)).max(20).optional()
+    dashboardListIds: z.array(z.string().min(1).max(300)).max(20).optional(),
+    weatherLocation: z
+      .object({
+        name: z.string().trim().min(1).max(120),
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180)
+      })
+      .nullable()
+      .optional()
   })
   .strict();
 

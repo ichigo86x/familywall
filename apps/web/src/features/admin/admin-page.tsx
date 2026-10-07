@@ -9,6 +9,7 @@ import { useAsyncResource } from "@/hooks/use-async-resource";
 import { MembersSection } from "./members-section";
 import { ProvidersSection } from "./providers-section";
 import { TaskListsSection } from "./task-lists-section";
+import { WeatherCard } from "./weather-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists] = await Promise.all([
@@ -39,6 +40,7 @@ export const AdminPage = () => {
       ) : admin.data ? (
         <>
           <HouseholdCard householdName={admin.data.settings.householdName} onSaved={admin.reload} />
+          <WeatherCard location={admin.data.settings.weatherLocation} onSaved={admin.reload} />
           <MembersSection members={admin.data.members} onChanged={admin.reload} />
           <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
           <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />

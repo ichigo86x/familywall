@@ -31,17 +31,22 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 ### Dashboard
 
 È la pagina iniziale, pensata per il pannello a muro. Mostra:
-- un orologio grande con la data;
-- gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato;
-- i turni di oggi;
-- le liste scelte;
-- le note scelte.
+- **Orologio e meteo**: ora e data grandi, su uno sfondo animato che segue il meteo del giorno (sereno, nuvoloso, pioggia, neve, nebbia, temporale, di giorno o di notte). Accanto ci sono la temperatura attuale, minima e massima, la probabilità di pioggia e il meteo di domani.
+- **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, e sotto gli impegni di **domani**. Quando la giornata è conclusa, domani passa in primo piano.
+- **Prossimi giorni**: i cinque giorni dopo domani, con i primi impegni di ogni giorno e l'icona dei pasti Cookidoo.
+- **Turni**: lavoro dei genitori, faccende dei bambini e presenze in casa di oggi. Dalle 18 il lavoro dei genitori mostra già quello di domani.
+- **In tavola**: i pasti Cookidoo di oggi e domani, se c'è un calendario Cookidoo.
+- **Liste**: le liste scelte, con un campo per aggiungere subito una voce.
+- **Note**: le note scelte.
+- **Azioni rapide**: nuovo evento, nuovo turno, nuova nota e liste, secondo i permessi dell'utente.
 
-I contenuti si aggiornano da soli ogni 5 minuti.
+Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece di restare vuota. I contenuti si aggiornano da soli ogni 5 minuti.
 
+- **Meteo**: in Admin → Meteo cerca la città e sceglila. Familywall usa Open-Meteo, gratuito e senza account. Al servizio arrivano solo le coordinate della città. La previsione resta in memoria 20 minuti.
 - **Liste in dashboard**: in Liste, tocca la puntina di una lista. Se nessuna lista è scelta, compare la lista della spesa.
 - **Note in dashboard**: apri una nota e attiva "Mostra in dashboard". Se nessuna nota è scelta, compaiono le prime quattro.
-- **Screensaver**: il pulsante "Screensaver" apre a tutto schermo una scena stagionale animata con l'ora (primavera, estate, autunno, inverno). Se il browser lo permette, lo schermo resta acceso. Un tocco chiude lo screensaver. Sugli account Pannello lo screensaver parte da solo dopo 5 minuti senza tocchi sulla dashboard.
+- **Screensaver**: il pulsante "Screensaver" apre a tutto schermo una scena stagionale animata con l'ora e il prossimo impegno. Se il browser lo permette, lo schermo resta acceso. Un tocco chiude lo screensaver.
+- **Screensaver automatico**: sugli account Pannello lo screensaver parte da solo dopo 5 minuti senza tocchi, su ogni pagina tranne Admin (dashboard, calendario, turni, liste, note).
 
 ### Calendario
 
@@ -192,11 +197,11 @@ Note:
    - schermo intero e schermo sempre acceso;
    - in "Web Zoom and Scaling", lascia lo zoom al 100% e disattiva "Load Overview Mode". Familywall regola già la dimensione del testo.
    - riavvio automatico della pagina in caso di errore.
-5. Accedi con l'account Pannello. Il pannello si apre sulla dashboard, e dopo 5 minuti senza tocchi parte lo screensaver.
+5. Accedi con l'account Pannello. Il pannello si apre sulla dashboard. Dopo 5 minuti senza tocchi parte lo screensaver, anche se il pannello è rimasto su calendario, turni, liste o note.
 
 A 1920×1080 la dashboard sta in una sola schermata:
-- a sinistra: orologio, agenda e note;
-- a destra: turni e liste.
+- a sinistra: orologio con meteo, agenda di oggi e domani, prossimi giorni e note;
+- a destra: turni, pasti, liste e azioni rapide.
 
 In verticale (1080×1920) restano due colonne con il testo grande.
 

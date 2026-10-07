@@ -13,6 +13,7 @@ import { NotesModule } from "./modules/notes/notes.module";
 import { ProvidersModule } from "./modules/providers/providers.module";
 import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { WeatherModule } from "./modules/weather/weather.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
     ListsModule,
     NotesModule,
     ScheduleModule,
+    WeatherModule,
     HealthModule
   ],
   providers: [

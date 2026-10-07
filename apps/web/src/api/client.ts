@@ -1,4 +1,6 @@
 import type {
+  WeatherLocation,
+  WeatherResponse,
   ScheduleEntry,
   ScheduleEntryInput,
   AddCalendarInput,
@@ -105,6 +107,10 @@ export const api = {
 
   getSettings: () => request<HouseholdSettings>("settings"),
   updateSettings: (input: UpdateSettingsInput) => request<HouseholdSettings>("settings", { method: "PATCH", json: input }),
+
+  getWeather: async () => (await request<WeatherResponse>("weather")).weather,
+  searchWeatherPlaces: async (query: string) =>
+    (await request<{ places: WeatherLocation[] }>(`weather/places?q=${encodeURIComponent(query)}`)).places,
 
   getMembers: async () => (await request<{ members: User[] }>("members")).members,
   createMember: async (input: CreateMemberInput) => (await request<{ member: User }>("members", { method: "POST", json: input })).member,

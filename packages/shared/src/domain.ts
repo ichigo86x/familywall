@@ -1,3 +1,5 @@
+import type { WeatherLocation } from "./weather";
+
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
 
 export const USER_ROLES: readonly UserRole[] = ["Admin", "Parent", "Child", "Kiosk"];
@@ -73,6 +75,8 @@ export interface HouseholdSettings {
   wallModeEnabled: boolean;
   /** Lists shown on the dashboard (ids from GET /lists); empty = the shopping list. */
   dashboardListIds: string[];
+  /** Place for the dashboard weather; null = no weather. */
+  weatherLocation: WeatherLocation | null;
 }
 
 export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google";

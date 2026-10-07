@@ -12,6 +12,7 @@ import {
 import { isoWeek, scheduleForDay, type ScheduleEntry, type ScheduleEntryInput, type ScheduleKind, type User, type WeekParity } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { useNewParam } from "@/hooks/use-new-param";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
@@ -39,6 +40,7 @@ export const SchedulePage = () => {
   const members = useAsyncResource(() => api.getMembers(), []);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [editing, setEditing] = useState<ScheduleEntry | "new" | null>(null);
+  useNewParam(canWrite, () => setEditing("new"));
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));

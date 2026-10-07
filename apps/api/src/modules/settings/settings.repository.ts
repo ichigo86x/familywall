@@ -7,7 +7,8 @@ const DEFAULTS: HouseholdSettings = {
   locale: "it-IT",
   timezone: "Europe/Rome",
   wallModeEnabled: true,
-  dashboardListIds: []
+  dashboardListIds: [],
+  weatherLocation: null
 };
 
 @Injectable()

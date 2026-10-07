@@ -29,6 +29,7 @@ import {
 } from "@/lib/fluent-icons";
 import { SCALE_OPTIONS, useThemePreference, type ScalePreference, type ThemePreference } from "@/theme/theme-preference";
 import { LiveClock } from "@/components/live-clock";
+import { ScreensaverHost } from "@/components/screensaver-host";
 
 const THEME_OPTIONS: Record<ThemePreference, { label: string; icon: React.ReactElement }> = {
   auto: { label: "Auto", icon: <DarkThemeRegular /> },
@@ -85,142 +86,145 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   ];
 
   return (
-    <div className={fit ? "app-shell app-shell--fit" : "app-shell"}>
-      <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
-        <div className="app-toolbar__brand">
-          <span className="app-toolbar__dot" />
-          <div className="app-toolbar__brand-text">
-            <h1 className="app-toolbar__title">{auth.household?.householdName ?? "Familywall"}</h1>
+    // Wall panels fall back to the screensaver when nobody touches them, on every page except Admin.
+    <ScreensaverHost idleStart={auth.user?.role === "Kiosk" && currentRoute !== "/admin"}>
+      <div className={fit ? "app-shell app-shell--fit" : "app-shell"}>
+        <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
+          <div className="app-toolbar__brand">
+            <span className="app-toolbar__dot" />
+            <div className="app-toolbar__brand-text">
+              <h1 className="app-toolbar__title">{auth.household?.householdName ?? "Familywall"}</h1>
+            </div>
           </div>
-        </div>
 
-        <TabList
-          className="app-toolbar__nav"
-          selectedValue={currentRoute}
-          onTabSelect={(_, data) => {
-            if (typeof data.value === "string") {
-              navigate(data.value);
-            }
-          }}
-        >
-          {tabs.map((tab) => (
-            <Tab key={tab.value} icon={tab.icon} value={tab.value} aria-label={tab.label}>
-              {tab.label}
-            </Tab>
-          ))}
-        </TabList>
-
-        <div className="app-toolbar__meta">
-          <LiveClock />
-          <Badge appearance="filled" color="informative">
-            {summaryChip}
-          </Badge>
-          {auth.user ? (
-            <span
-              className="member-avatar"
-              style={{ background: auth.user.color }}
-              title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
-              aria-label={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
-            >
-              {initials(auth.user.displayName)}
-            </span>
-          ) : null}
-          <Menu
-            checkedValues={{ theme: [theme.preference], scale: [theme.scalePreference] }}
-            onCheckedValueChange={(_, data) => {
-              const value = data.checkedItems[0];
-              if (data.name === "theme") {
-                theme.setPreference(value as ThemePreference);
-              } else if (data.name === "scale") {
-                theme.setScale(value as ScalePreference);
+          <TabList
+            className="app-toolbar__nav"
+            selectedValue={currentRoute}
+            onTabSelect={(_, data) => {
+              if (typeof data.value === "string") {
+                navigate(data.value);
               }
             }}
           >
-            <MenuTrigger disableButtonEnhancement>
-              <Button
-                appearance="subtle"
-                className="theme-toggle"
-                icon={THEME_OPTIONS[theme.preference].icon}
-                title="Tema e dimensione del testo (solo su questo dispositivo)"
-                aria-label="Tema e dimensione del testo"
-              >
-                <span className="button-label">Schermo</span>
-              </Button>
-            </MenuTrigger>
-            <MenuPopover>
-              <MenuList>
-                <MenuGroup>
-                  <MenuGroupHeader>Tema</MenuGroupHeader>
-                  {(Object.keys(THEME_OPTIONS) as ThemePreference[]).map((option) => (
-                    <MenuItemRadio key={option} name="theme" value={option} icon={THEME_OPTIONS[option].icon}>
-                      {THEME_OPTIONS[option].label}
-                    </MenuItemRadio>
-                  ))}
-                </MenuGroup>
-                <MenuGroup>
-                  <MenuGroupHeader>Testo</MenuGroupHeader>
-                  {SCALE_OPTIONS.map((option) => (
-                    <MenuItemRadio key={option} name="scale" value={option}>
-                      {SCALE_LABELS[option]}
-                      {option === "auto" && theme.scalePreference === "auto" ? ` (${Math.round(theme.scale * 100)}%)` : ""}
-                    </MenuItemRadio>
-                  ))}
-                </MenuGroup>
-              </MenuList>
-            </MenuPopover>
-          </Menu>
-          <Button
-            appearance="subtle"
-            className="logout-button"
-            icon={<SignOutRegular />}
-            onClick={() => {
-              auth.logout();
-              navigate("/login");
-            }}
-          >
-            <span className="button-label">Esci</span>
-          </Button>
-        </div>
-      </Toolbar>
+            {tabs.map((tab) => (
+              <Tab key={tab.value} icon={tab.icon} value={tab.value} aria-label={tab.label}>
+                {tab.label}
+              </Tab>
+            ))}
+          </TabList>
 
-      <main className="shell-main">
-        {compact ? (
-          <section className="page-header">
-            <div>
-              <p className="eyebrow">{eyebrow}</p>
-              <h2>{title}</h2>
-            </div>
-            <div className="hero-card__actions">{toolbarActions}</div>
-          </section>
-        ) : (
-          <section className="hero-card">
-            <svg className="hero-mesh" aria-hidden="true" viewBox="0 0 800 400" preserveAspectRatio="none">
-              <defs>
-                <radialGradient id="mesh-one" cx="0%" cy="0%" r="80%">
-                  <stop offset="0%" stopColor="#E9A24D" stopOpacity="0.52" />
-                  <stop offset="100%" stopColor="#E9A24D" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="mesh-two" cx="100%" cy="100%" r="80%">
-                  <stop offset="0%" stopColor="#3A7D6E" stopOpacity="0.7" />
-                  <stop offset="100%" stopColor="#3A7D6E" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <rect width="800" height="400" fill="url(#mesh-one)" />
-              <rect width="800" height="400" fill="url(#mesh-two)" />
-            </svg>
-            <div className="hero-card__content">
+          <div className="app-toolbar__meta">
+            <LiveClock />
+            <Badge appearance="filled" color="informative">
+              {summaryChip}
+            </Badge>
+            {auth.user ? (
+              <span
+                className="member-avatar"
+                style={{ background: auth.user.color }}
+                title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
+                aria-label={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
+              >
+                {initials(auth.user.displayName)}
+              </span>
+            ) : null}
+            <Menu
+              checkedValues={{ theme: [theme.preference], scale: [theme.scalePreference] }}
+              onCheckedValueChange={(_, data) => {
+                const value = data.checkedItems[0];
+                if (data.name === "theme") {
+                  theme.setPreference(value as ThemePreference);
+                } else if (data.name === "scale") {
+                  theme.setScale(value as ScalePreference);
+                }
+              }}
+            >
+              <MenuTrigger disableButtonEnhancement>
+                <Button
+                  appearance="subtle"
+                  className="theme-toggle"
+                  icon={THEME_OPTIONS[theme.preference].icon}
+                  title="Tema e dimensione del testo (solo su questo dispositivo)"
+                  aria-label="Tema e dimensione del testo"
+                >
+                  <span className="button-label">Schermo</span>
+                </Button>
+              </MenuTrigger>
+              <MenuPopover>
+                <MenuList>
+                  <MenuGroup>
+                    <MenuGroupHeader>Tema</MenuGroupHeader>
+                    {(Object.keys(THEME_OPTIONS) as ThemePreference[]).map((option) => (
+                      <MenuItemRadio key={option} name="theme" value={option} icon={THEME_OPTIONS[option].icon}>
+                        {THEME_OPTIONS[option].label}
+                      </MenuItemRadio>
+                    ))}
+                  </MenuGroup>
+                  <MenuGroup>
+                    <MenuGroupHeader>Testo</MenuGroupHeader>
+                    {SCALE_OPTIONS.map((option) => (
+                      <MenuItemRadio key={option} name="scale" value={option}>
+                        {SCALE_LABELS[option]}
+                        {option === "auto" && theme.scalePreference === "auto" ? ` (${Math.round(theme.scale * 100)}%)` : ""}
+                      </MenuItemRadio>
+                    ))}
+                  </MenuGroup>
+                </MenuList>
+              </MenuPopover>
+            </Menu>
+            <Button
+              appearance="subtle"
+              className="logout-button"
+              icon={<SignOutRegular />}
+              onClick={() => {
+                auth.logout();
+                navigate("/login");
+              }}
+            >
+              <span className="button-label">Esci</span>
+            </Button>
+          </div>
+        </Toolbar>
+
+        <main className="shell-main">
+          {compact ? (
+            <section className="page-header">
               <div>
                 <p className="eyebrow">{eyebrow}</p>
                 <h2>{title}</h2>
-                <p>{subtitle}</p>
               </div>
               <div className="hero-card__actions">{toolbarActions}</div>
-            </div>
-          </section>
-        )}
+            </section>
+          ) : (
+            <section className="hero-card">
+              <svg className="hero-mesh" aria-hidden="true" viewBox="0 0 800 400" preserveAspectRatio="none">
+                <defs>
+                  <radialGradient id="mesh-one" cx="0%" cy="0%" r="80%">
+                    <stop offset="0%" stopColor="#E9A24D" stopOpacity="0.52" />
+                    <stop offset="100%" stopColor="#E9A24D" stopOpacity="0" />
+                  </radialGradient>
+                  <radialGradient id="mesh-two" cx="100%" cy="100%" r="80%">
+                    <stop offset="0%" stopColor="#3A7D6E" stopOpacity="0.7" />
+                    <stop offset="100%" stopColor="#3A7D6E" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+                <rect width="800" height="400" fill="url(#mesh-one)" />
+                <rect width="800" height="400" fill="url(#mesh-two)" />
+              </svg>
+              <div className="hero-card__content">
+                <div>
+                  <p className="eyebrow">{eyebrow}</p>
+                  <h2>{title}</h2>
+                  <p>{subtitle}</p>
+                </div>
+                <div className="hero-card__actions">{toolbarActions}</div>
+              </div>
+            </section>
+          )}
 
-        <div className="page-stack">{children}</div>
-      </main>
-    </div>
+          <div className="page-stack">{children}</div>
+        </main>
+      </div>
+    </ScreensaverHost>
   );
 };

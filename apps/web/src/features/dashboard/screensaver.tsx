@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { api } from "@/api/client";
 import { useNow } from "@/components/live-clock";
 
 export type Season = "winter" | "spring" | "summer" | "autumn";
@@ -213,17 +214,58 @@ const SeasonCanvas = ({ season }: { season: Season }) => {
 };
 
 interface ScreensaverProps {
-  /** Short line under the clock, e.g. the next event. */
-  caption?: string;
   onExit: () => void;
 }
+
+const timeOf = (date: Date) => date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+/** "Next: Piscina Sofia alle 17:00", from today's events, refreshed every 5 minutes. */
+const useNextEventCaption = (now: Date): string | null => {
+  const [events, setEvents] = useState<Array<{ title: string; start: Date; end: Date }>>([]);
+  const day = now.toDateString();
+
+  useEffect(() => {
+    let active = true;
+    const load = () => {
+      const from = new Date(new Date(day).setHours(0, 0, 0, 0));
+      const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 1);
+      api
+        .getCalendar(from.toISOString(), to.toISOString())
+        .then((response) => {
+          if (active) {
+            setEvents(
+              response.calendars
+                .filter((calendar) => (calendar.kind ?? "events") === "events")
+                .flatMap((calendar) => calendar.events)
+                .filter((event) => !event.allDay && !event.redacted)
+                .map((event) => ({ title: event.title, start: new Date(event.startAt), end: new Date(event.endAt) }))
+            );
+          }
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const timer = window.setInterval(load, 5 * 60 * 1000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [day]);
+
+  const next = events.filter((event) => event.end > now).sort((left, right) => left.start.getTime() - right.start.getTime())[0];
+  if (!next) {
+    return null;
+  }
+  return next.start <= now ? `Adesso: ${next.title}` : `Prossimo: ${next.title} alle ${timeOf(next.start)}`;
+};
 
 /**
  * Full-screen seasonal screensaver with a large clock. Any tap or key closes it.
  * The clock slowly drifts to avoid burn-in on always-on panels; a wake lock keeps the screen on.
  */
-export const Screensaver = ({ caption, onExit }: ScreensaverProps) => {
+export const Screensaver = ({ onExit }: ScreensaverProps) => {
   const now = useNow();
+  const caption = useNextEventCaption(now);
   const season = seasonOf(now);
   const rootRef = useRef<HTMLDivElement>(null);
 

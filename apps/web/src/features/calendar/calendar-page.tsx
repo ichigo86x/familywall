@@ -12,6 +12,7 @@ import {
 import type { FamilyEvent, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
+import { useNewParam } from "@/hooks/use-new-param";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
@@ -61,6 +62,10 @@ export const CalendarPage = () => {
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  useNewParam(canWrite, () => {
+    setSelectedEventId(null);
+    setCreating(true);
+  });
 
   const days = useMemo(() => plannerDays(plannerMode, anchorDate), [plannerMode, anchorDate]);
   const rangeFrom = days[0]!.toISOString();
