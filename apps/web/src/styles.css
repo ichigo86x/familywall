@@ -3091,3 +3091,77 @@ button.schedule-chip {
   flex-wrap: wrap;
   gap: 4px 12px;
 }
+
+.occasion-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 8px;
+}
+
+.occasion-list button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line-soft);
+  background: var(--color-surface-soft);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.occasion-list button:disabled {
+  cursor: default;
+}
+
+.occasion-list button > span[aria-hidden] {
+  grid-row: span 2;
+  font-size: 1.6rem;
+}
+
+.occasion-list button > span:last-child {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.occasion-date {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) 7rem;
+  gap: 10px;
+}
+
+/* Dashboard birthdays */
+.dashboard-birthdays {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.dashboard-birthdays li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--color-surface-soft);
+  font-size: 1.05rem;
+}
+
+.dashboard-birthdays li span:last-child {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.dashboard-birthdays__today {
+  background: linear-gradient(90deg, rgba(219, 39, 119, 0.18), rgba(233, 162, 77, 0.18)) !important;
+  font-weight: 700;
+}

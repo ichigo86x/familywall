@@ -10,7 +10,7 @@ import type {
   UpdateCalendarInput,
   User
 } from "@familywall/shared";
-import { READ_ONLY_PROVIDERS } from "@familywall/shared";
+import { OCCASIONS_CALENDAR_ID, READ_ONLY_PROVIDERS, occasionDate, occasionTitle, type Occasion } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient } from "../providers/caldav/caldav-client";
 import { CookidooClient } from "../providers/cookidoo/cookidoo-client";
@@ -24,6 +24,7 @@ import { projectEventForViewer } from "./event-visibility";
 import { buildMemberMatcher } from "./member-matcher";
 import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
+import { OccasionsRepository } from "./occasions.repository";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_MS = 400 * DAY_MS;
@@ -76,6 +77,35 @@ const withInferredMembers = (event: FamilyEvent, matchMembers: (title: string) =
   return memberIds.length > 0 ? { ...event, memberIds, membersInferred: true } : event;
 };
 
+/** One all-day event per occasion and year in the range (all-day events travel as UTC midnight). */
+export const occasionEvents = (occasions: Occasion[], from: Date, to: Date): FamilyEvent[] =>
+  occasions.flatMap((occasion) => {
+    const events: FamilyEvent[] = [];
+    for (let year = from.getFullYear(); year <= to.getFullYear(); year += 1) {
+      const date = occasionDate(occasion, year);
+      const start = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const end = new Date(start.getTime() + DAY_MS);
+      if (start < to && end > from) {
+        events.push({
+          id: `occ_${occasion.id}_${year}`,
+          calendarId: OCCASIONS_CALENDAR_ID,
+          title: occasionTitle(occasion, year),
+          startAt: start.toISOString(),
+          endAt: end.toISOString(),
+          allDay: true,
+          memberIds: [],
+          tagMemberId: null,
+          privacy: "shared",
+          source: "local",
+          membersInferred: false,
+          recurring: false,
+          redacted: false
+        });
+      }
+    }
+    return events;
+  });
+
 @Injectable()
 export class CalendarsService {
   private readonly logger = new Logger(CalendarsService.name);
@@ -88,7 +118,8 @@ export class CalendarsService {
     private readonly caldav: CalDavClient,
     private readonly members: MembersRepository,
     private readonly cookidoo: CookidooClient,
-    private readonly google: GoogleClient
+    private readonly google: GoogleClient,
+    private readonly occasions: OccasionsRepository
   ) {}
 
   public async getCalendars(viewer: User, range: CalendarRangeInput): Promise<CalendarResponse> {
@@ -118,12 +149,25 @@ export class CalendarsService {
           .sort((left, right) => left.startAt.localeCompare(right.startAt));
 
         return { id: config.id, name: config.name, color: config.color, readOnly: READ_ONLY_PROVIDERS.includes(config.provider),
-          kind: config.provider === "cookidoo" ? "meals" : "events",
+          kind: config.provider === "cookidoo" ? "meals" : config.purpose === "birthdays" ? "birthdays" : "events",
           lastError: error,
           events
         };
       })
     );
+
+    const occasions = this.occasions.list();
+    if (occasions.length > 0) {
+      calendars.push({
+        id: OCCASIONS_CALENDAR_ID,
+        name: "Compleanni e ricorrenze",
+        color: "#DB2777",
+        readOnly: true,
+        kind: "birthdays",
+        lastError: null,
+        events: occasionEvents(occasions, from, to).map((event) => withInferredMembers(event, matchMembers))
+      });
+    }
 
     return { range: { from: from.toISOString(), to: to.toISOString() }, calendars };
   }

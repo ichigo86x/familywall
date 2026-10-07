@@ -20,7 +20,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular } from "@/lib/fluent-icons";
 import { EventEditor, type CalendarOption } from "./event-editor";
-import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode } from "./calendar-time";
+import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode, birthdayTitle } from "./calendar-time";
 
 /** Wall panels stay open for days: refresh periodically so provider changes show up. */
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -104,8 +104,15 @@ export const CalendarPage = () => {
   const events = useMemo<PlannerEvent[]>(
     () =>
       calendars
-        .filter((entry) => (entry.kind ?? "events") === "events")
-        .flatMap((entry) => entry.events.map((event) => ({ ...event, calendarColor: entry.color, calendarName: entry.name })))
+        .filter((entry) => (entry.kind ?? "events") !== "meals")
+        .flatMap((entry) =>
+          entry.events.map((event) => ({
+            ...event,
+            title: entry.kind === "birthdays" ? birthdayTitle(event.title) : event.title,
+            calendarColor: entry.color,
+            calendarName: entry.name
+          }))
+        )
         .sort((left, right) => Number(right.allDay) - Number(left.allDay) || left.startAt.localeCompare(right.startAt)),
     [calendars]
   );

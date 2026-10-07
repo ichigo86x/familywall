@@ -8,10 +8,12 @@ import { CalendarsService } from "./calendars.service";
 import { EventsController } from "./events.controller";
 import { EventsRepository } from "./events.repository";
 import { EventsService } from "./events.service";
+import { OccasionsController } from "./occasions.controller";
+import { OccasionsRepository } from "./occasions.repository";
 
 @Module({
   imports: [MembersModule, ProvidersModule, SettingsModule],
-  controllers: [CalendarsController, EventsController],
-  providers: [CalendarsRepository, EventsRepository, CalendarsService, EventsService]
+  controllers: [CalendarsController, EventsController, OccasionsController],
+  providers: [CalendarsRepository, EventsRepository, OccasionsRepository, CalendarsService, EventsService]
 })
 export class CalendarsModule {}

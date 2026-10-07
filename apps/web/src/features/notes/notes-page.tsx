@@ -15,6 +15,7 @@ import type { FamilyNote, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { useNewParam } from "@/hooks/use-new-param";
+import { OccasionsCard } from "./occasions-card";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
@@ -65,6 +66,8 @@ export const NotesPage = () => {
           ))}
         </div>
       )}
+
+      <OccasionsCard canWrite={auth.can("events:write")} />
 
       {editing ? (
         <NoteDialog

@@ -163,5 +163,20 @@ export const migrations: string[] = [
   // Wall panels in write mode.
   `
   ALTER TABLE members ADD COLUMN panel_write INTEGER NOT NULL DEFAULT 0;
+  `,
+  // Birthdays: calendars marked as birthday calendars, and occasions kept in Familywall.
+  `
+  ALTER TABLE calendars ADD COLUMN purpose TEXT NOT NULL DEFAULT 'events' CHECK (purpose IN ('events', 'birthdays'));
+
+  CREATE TABLE occasions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('birthday', 'anniversary', 'other')),
+    month INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    year INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
   `
 ];

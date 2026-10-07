@@ -214,6 +214,13 @@ const CalendarRow = ({
         </div>
       </div>
       <div className="row-actions">
+        {calendar.provider === "cookidoo" ? null : (
+          <Switch
+            label="Compleanni"
+            checked={calendar.purpose === "birthdays"}
+            onChange={(_, data) => void onAction(() => api.updateCalendar(calendar.id, { purpose: data.checked ? "birthdays" : "events" }))}
+          />
+        )}
         <Switch
           label={calendar.enabled ? "Visibile" : "Nascosto"}
           checked={calendar.enabled}

@@ -9,7 +9,7 @@ import { useAuth } from "@/components/auth/use-auth";
 import { useNow } from "@/components/live-clock";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
-import { addDays, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
+import { addDays, birthdayTitle, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
 import { ScheduleChip } from "@/features/schedule/schedule-page";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
@@ -21,6 +21,8 @@ const LIST_ITEMS = 10;
 const NOTES_SHOWN = 4;
 /** Days covered by the dashboard: today, tomorrow and the "next days" card. */
 const DAYS_AHEAD = 7;
+/** Birthdays and anniversaries are announced this many days ahead. */
+const BIRTHDAY_DAYS = 30;
 /** From this hour the parents' work shows tomorrow's plan instead of today's. */
 const WORK_TOMORROW_HOUR = 18;
 const TOMORROW_ROWS = 5;
@@ -68,7 +70,7 @@ export const DashboardPage = () => {
   const tomorrow = addDays(today, 1);
 
   const from = today.toISOString();
-  const to = addDays(today, DAYS_AHEAD).toISOString();
+  const to = addDays(today, BIRTHDAY_DAYS + 1).toISOString();
   const calendar = useAsyncResource(() => api.getCalendar(from, to), [from, to]);
   const members = useAsyncResource(() => api.getMembers(), []);
   const lists = useAsyncResource(() => api.getLists(), []);
@@ -103,13 +105,20 @@ export const DashboardPage = () => {
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
 
-  const { events, meals } = useMemo(() => {
-    const entries: Array<PlannerEvent & { kind: "events" | "meals" }> = (calendar.data?.calendars ?? []).flatMap((entry) =>
-      entry.events.map((event) => ({ ...event, calendarColor: entry.color, calendarName: entry.name, kind: entry.kind ?? "events" }))
+  const { events, meals, birthdays } = useMemo(() => {
+    const entries: Array<PlannerEvent & { kind: "events" | "meals" | "birthdays" }> = (calendar.data?.calendars ?? []).flatMap((entry) =>
+      entry.events.map((event) => ({
+        ...event,
+        title: entry.kind === "birthdays" ? birthdayTitle(event.title) : event.title,
+        calendarColor: entry.color,
+        calendarName: entry.name,
+        kind: entry.kind ?? "events"
+      }))
     );
     return {
-      events: entries.filter((event) => event.kind === "events").sort(byStart),
-      meals: entries.filter((event) => event.kind === "meals")
+      events: entries.filter((event) => event.kind !== "meals").sort(byStart),
+      meals: entries.filter((event) => event.kind === "meals"),
+      birthdays: entries.filter((event) => event.kind === "birthdays").sort(byStart)
     };
   }, [calendar.data]);
 
@@ -253,6 +262,8 @@ export const DashboardPage = () => {
 
           <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} />
 
+          <BirthdaysCard birthdays={birthdays} today={today} />
+
           {meals.length > 0 ? <MealsCard today={mealsOn(today)} tomorrow={mealsOn(tomorrow)} /> : null}
 
           {lists.status === "error" ? (
@@ -329,6 +340,42 @@ const HomeCard = ({ entries, now, membersById }: { entries: ScheduleEntry[]; now
             </div>
           </div>
         ))
+      )}
+    </Card>
+  );
+};
+
+const BirthdaysCard = ({ birthdays, today }: { birthdays: PlannerEvent[]; today: Date }) => {
+  const upcoming = birthdays.filter((event) => eventBounds(event).end > today).slice(0, 6);
+  const daysUntil = (event: PlannerEvent) => Math.round((eventBounds(event).start.getTime() - today.getTime()) / 86_400_000);
+  const when = (days: number, event: PlannerEvent) =>
+    days <= 0 ? "oggi 🎉" : days === 1 ? "domani" : days < 7 ? `tra ${days} giorni` : eventBounds(event).start.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+  return (
+    <Card className="panel-card dashboard-side">
+      <div className="panel-card__header">
+        <div>
+          <p className="eyebrow">Prossimi {BIRTHDAY_DAYS} giorni</p>
+          <h3>Compleanni e ricorrenze</h3>
+        </div>
+        <Link to="/notes" className="dashboard-link">Gestisci →</Link>
+      </div>
+      {upcoming.length === 0 ? (
+        <p className="dashboard-empty">
+          <span aria-hidden="true">🎂</span>
+          Nessun compleanno in arrivo.
+        </p>
+      ) : (
+        <ul className="dashboard-birthdays">
+          {upcoming.map((event) => {
+            const days = daysUntil(event);
+            return (
+              <li key={event.id} className={days <= 0 ? "dashboard-birthdays__today" : ""}>
+                <span>{event.title}</span>
+                <span>{when(days, event)}</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </Card>
   );

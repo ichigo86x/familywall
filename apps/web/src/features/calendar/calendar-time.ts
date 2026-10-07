@@ -27,6 +27,9 @@ export const plannerDays = (mode: PlannerMode, anchor: Date): Date[] => {
   return Array.from({ length: mode === "week" ? 7 : 14 }, (_, index) => addDays(start, index));
 };
 
+/** Birthday calendars from providers have plain titles: they get the cake that Familywall occasions already carry. */
+export const birthdayTitle = (title: string): string => (/^\p{Extended_Pictographic}/u.test(title) ? title : `🎂 ${title}`);
+
 export const dayKey = (value: Date) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 
 /**

@@ -153,6 +153,8 @@ export interface CalendarConfig {
   name: string;
   color: string;
   enabled: boolean;
+  /** "birthdays": events of this calendar are birthdays and anniversaries. */
+  purpose: "events" | "birthdays";
   lastSyncedAt: string | null;
   lastError: string | null;
 }
@@ -194,8 +196,8 @@ export interface FamilyCalendar {
   color: string;
   /** Events cannot be created or changed here (e.g. Cookidoo meal plan). */
   readOnly: boolean;
-  /** "meals": planned recipes, shown as a chef hat on the day instead of event cards. */
-  kind: "events" | "meals";
+  /** "meals": planned recipes, shown as a chef hat on the day; "birthdays": birthdays and anniversaries, shown as a cake. */
+  kind: "events" | "meals" | "birthdays";
   lastError: string | null;
   events: FamilyEvent[];
 }

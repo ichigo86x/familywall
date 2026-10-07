@@ -145,7 +145,8 @@ export const updateCalendarSchema = z
   .object({
     name: z.string().trim().min(1).max(80).optional(),
     color: hexColor.optional(),
-    enabled: z.boolean().optional()
+    enabled: z.boolean().optional(),
+    purpose: z.enum(["events", "birthdays"]).optional()
   })
   .strict();
 

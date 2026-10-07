@@ -1,4 +1,6 @@
 import type {
+  Occasion,
+  OccasionInput,
   HomeButtonsResponse,
   HomeEntity,
   WeatherLocation,
@@ -109,6 +111,11 @@ export const api = {
 
   getSettings: () => request<HouseholdSettings>("settings"),
   updateSettings: (input: UpdateSettingsInput) => request<HouseholdSettings>("settings", { method: "PATCH", json: input }),
+
+  getOccasions: async () => (await request<{ occasions: Occasion[] }>("occasions")).occasions,
+  createOccasion: (input: OccasionInput) => request<{ occasion: Occasion }>("occasions", { method: "POST", json: input }),
+  updateOccasion: (id: string, input: OccasionInput) => request<{ occasion: Occasion }>(`occasions/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
+  deleteOccasion: (id: string) => request<void>(`occasions/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
   runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),

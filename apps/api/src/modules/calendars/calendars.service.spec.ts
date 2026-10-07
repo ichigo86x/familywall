@@ -146,6 +146,19 @@ describe("CalendarsService and EventsService", () => {
     await expect(ctx.events.delete(panel, trip!.id)).rejects.toThrow(/app dei genitori/);
   });
 
+  it("shows birthdays kept in Familywall and marks birthday calendars", async () => {
+    const { ctx, admin, child, calendar } = await setup({ "trip.ics": SCHOOL_TRIP });
+    ctx.occasions.insert({ name: "Luca", kind: "birthday", month: 10, day: 20, year: 2017 });
+    ctx.occasions.insert({ name: "Nonni", kind: "anniversary", month: 3, day: 1, year: null });
+    ctx.calendars.update(calendar.id, { purpose: "birthdays" });
+
+    const { calendars } = await ctx.calendars.getCalendars(admin, range);
+    expect(calendars.map((entry) => [entry.id, entry.kind])).toEqual([[calendar.id, "birthdays"], ["occasions", "birthdays"]]);
+    expect(calendars[1]!.events).toMatchObject([
+      { title: "🎂 Luca (9)", allDay: true, startAt: "2026-10-20T00:00:00.000Z", endAt: "2026-10-21T00:00:00.000Z", memberIds: [child.id], membersInferred: true }
+    ]);
+  });
+
   it("deletes one occurrence or the whole series", async () => {
     const { ctx, admin, server, events } = await setup({ "swim.ics": WEEKLY_SWIM });
     const [, second] = await events();
