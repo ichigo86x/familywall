@@ -26,7 +26,7 @@ interface GeocodingPayload {
 export class WeatherClient {
   public constructor(
     private readonly fetchImpl: FetchLike = (input, init) => fetch(input, init),
-    private readonly timeoutMs = 10_000
+    private readonly timeoutMs = 15_000
   ) {}
 
   public async forecast(location: WeatherLocation, timezone: string): Promise<WeatherReport> {

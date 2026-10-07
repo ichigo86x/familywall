@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedHomeService } from "./home";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #RRGGBB color");
 const username = z
@@ -76,6 +77,18 @@ export const setPasswordSchema = z.object({
 
 export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
 
+export const homeButtonSchema = z
+  .object({
+    id: z.string().trim().min(1).max(64),
+    label: z.string().trim().min(1).max(40),
+    icon: z.string().trim().min(1).max(16),
+    entityId: z.string().trim().regex(/^[a-z_]+\.[a-z0-9_]+$/, "Entità non valida"),
+    service: z.string().trim().min(1).max(40),
+    confirm: z.boolean().default(false),
+    roles: z.array(roleSchema).max(4).default(["Admin", "Parent", "Kiosk"])
+  })
+  .refine((button) => isAllowedHomeService(button.entityId, button.service), { path: ["service"], message: "Azione non consentita per questa entità" });
+
 export const updateSettingsSchema = z
   .object({
     householdName: z.string().trim().min(2).max(80).optional(),
@@ -90,6 +103,7 @@ export const updateSettingsSchema = z
         end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa HH:MM")
       })
       .optional(),
+    homeButtons: z.array(homeButtonSchema).max(16).optional(),
     weatherLocation: z
       .object({
         name: z.string().trim().min(1).max(120),

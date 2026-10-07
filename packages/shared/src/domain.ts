@@ -1,3 +1,4 @@
+import type { HomeButton } from "./home";
 import type { WeatherLocation } from "./weather";
 
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
@@ -79,6 +80,8 @@ export interface HouseholdSettings {
   weatherLocation: WeatherLocation | null;
   /** Night mode of wall panels: dark screen with a dim clock between start and end (HH:MM, may cross midnight). */
   panelNight: PanelNight;
+  /** Home Assistant shortcuts on the dashboard. */
+  homeButtons: HomeButton[];
 }
 
 export interface PanelNight {

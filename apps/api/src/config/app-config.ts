@@ -14,6 +14,8 @@ export interface AppConfig {
   /** Built-in CalDAV server (Radicale) for iOS Reminders; disabled when empty. */
   radicaleCommand: string;
   radicalePort: number;
+  /** Home Assistant REST API: the Supervisor proxy inside the add-on, or HA_URL with a long-lived HA_TOKEN. */
+  homeAssistant: { url: string; token: string } | null;
 }
 
 const readList = (value: string | undefined): string[] =>
@@ -41,7 +43,12 @@ export const loadAppConfig = (): AppConfig => {
         : [],
     // e.g. "python3 -m radicale" in the add-on; set RADICALE_COMMAND="" to disable.
     radicaleCommand: process.env.RADICALE_COMMAND ?? "python3 -m radicale",
-    radicalePort: Number(process.env.RADICALE_PORT ?? 5232)
+    radicalePort: Number(process.env.RADICALE_PORT ?? 5232),
+    homeAssistant: process.env.SUPERVISOR_TOKEN
+      ? { url: "http://supervisor/core/api", token: process.env.SUPERVISOR_TOKEN }
+      : process.env.HA_URL && process.env.HA_TOKEN
+        ? { url: `${process.env.HA_URL.replace(/\/+$/, "")}/api`, token: process.env.HA_TOKEN }
+        : null
   };
 };
 

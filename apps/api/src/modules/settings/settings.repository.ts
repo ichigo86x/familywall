@@ -9,7 +9,8 @@ const DEFAULTS: HouseholdSettings = {
   wallModeEnabled: true,
   dashboardListIds: [],
   weatherLocation: null,
-  panelNight: { enabled: false, start: "23:00", end: "06:30" }
+  panelNight: { enabled: false, start: "23:00", end: "06:30" },
+  homeButtons: []
 };
 
 @Injectable()

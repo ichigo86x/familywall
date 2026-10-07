@@ -1,4 +1,6 @@
 import type {
+  HomeButtonsResponse,
+  HomeEntity,
   WeatherLocation,
   WeatherResponse,
   ScheduleEntry,
@@ -107,6 +109,10 @@ export const api = {
 
   getSettings: () => request<HouseholdSettings>("settings"),
   updateSettings: (input: UpdateSettingsInput) => request<HouseholdSettings>("settings", { method: "PATCH", json: input }),
+
+  getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
+  runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),
+  getHomeEntities: async () => (await request<{ entities: HomeEntity[] }>("home/entities")).entities,
 
   getWeather: async () => (await request<WeatherResponse>("weather")).weather,
   searchWeatherPlaces: async (query: string) =>

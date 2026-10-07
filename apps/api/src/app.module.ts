@@ -14,6 +14,7 @@ import { ProvidersModule } from "./modules/providers/providers.module";
 import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { WeatherModule } from "./modules/weather/weather.module";
+import { HomeModule } from "./modules/home/home.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { WeatherModule } from "./modules/weather/weather.module";
     NotesModule,
     ScheduleModule,
     WeatherModule,
+    HomeModule,
     HealthModule
   ],
   providers: [

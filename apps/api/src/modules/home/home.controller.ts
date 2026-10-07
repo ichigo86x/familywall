@@ -1,0 +1,30 @@
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from "@nestjs/common";
+import type { HomeButtonsResponse, HomeEntity } from "@familywall/shared";
+import { RequirePermission } from "../../common/auth/permissions.decorator";
+import type { RequestWithUser } from "../../common/types/request-with-user";
+import { HomeService } from "./home.service";
+
+/** Home Assistant shortcuts: each button lists the roles allowed to use it. */
+@Controller("home")
+export class HomeController {
+  public constructor(private readonly home: HomeService) {}
+
+  @Get("buttons")
+  @RequirePermission("calendar:read")
+  public buttons(@Req() request: RequestWithUser): Promise<HomeButtonsResponse> {
+    return this.home.buttons(request.user);
+  }
+
+  @Post("buttons/:id/run")
+  @RequirePermission("calendar:read")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  public run(@Req() request: RequestWithUser, @Param("id") id: string): Promise<void> {
+    return this.home.run(request.user, id);
+  }
+
+  @Get("entities")
+  @RequirePermission("settings:manage")
+  public async entities(): Promise<{ entities: HomeEntity[] }> {
+    return { entities: await this.home.entities() };
+  }
+}

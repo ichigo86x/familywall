@@ -13,6 +13,7 @@ import { addDays, eventBounds, occursOnDay, startOfDay } from "@/features/calend
 import { ScheduleChip } from "@/features/schedule/schedule-page";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
+import { ActionBar } from "./action-bar";
 import { WeatherClock } from "./weather-clock";
 
 const REFRESH_MS = 5 * 60 * 1000;
@@ -89,6 +90,16 @@ export const DashboardPage = () => {
     const timer = window.setInterval(reloadAll, REFRESH_MS);
     return () => window.clearInterval(timer);
   }, [reloadAll]);
+
+  // A failed forecast (slow network at boot) is retried after a minute instead of waiting for the next refresh.
+  const weatherMissing = Boolean(settings.data?.weatherLocation) && weather.status !== "loading" && !weather.data;
+  useEffect(() => {
+    if (!weatherMissing) {
+      return;
+    }
+    const timer = window.setTimeout(weather.reload, 60 * 1000);
+    return () => window.clearTimeout(timer);
+  }, [weatherMissing, weather.reload]);
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
 
@@ -238,6 +249,8 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-side-column">
+          <ActionBar canWriteEvents={auth.can("events:write")} canWriteLists={auth.can("lists:write")} />
+
           <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} />
 
           {meals.length > 0 ? <MealsCard today={mealsOn(today)} tomorrow={mealsOn(tomorrow)} /> : null}
@@ -257,49 +270,9 @@ export const DashboardPage = () => {
             shownLists.map((list) => <DashboardList key={list.id} list={list} canWrite={auth.can("lists:write")} onChanged={lists.reload} />)
           )}
 
-          <QuickActions canWriteEvents={auth.can("events:write")} canWriteLists={auth.can("lists:write")} />
         </div>
       </div>
     </AppShell>
-  );
-};
-
-/** Big shortcuts, handy on the wall panel in write mode. */
-const QuickActions = ({ canWriteEvents, canWriteLists }: { canWriteEvents: boolean; canWriteLists: boolean }) => {
-  const actions = [
-    ...(canWriteEvents
-      ? [
-          { to: "/calendar?new=1", icon: "📅", label: "Nuovo evento" },
-          { to: "/schedule?new=1", icon: "🏡", label: "Nuovo turno" }
-        ]
-      : []),
-    ...(canWriteLists
-      ? [
-          { to: "/notes?new=1", icon: "📝", label: "Nuova nota" },
-          { to: "/lists", icon: "🛒", label: "Liste" }
-        ]
-      : [])
-  ];
-  if (actions.length === 0) {
-    return null;
-  }
-  return (
-    <Card className="panel-card dashboard-side">
-      <div className="panel-card__header">
-        <div>
-          <p className="eyebrow">Scorciatoie</p>
-          <h3>Azioni rapide</h3>
-        </div>
-      </div>
-      <div className="dashboard-actions">
-        {actions.map((action) => (
-          <Link key={action.to} to={action.to} className="dashboard-action">
-            <span aria-hidden="true">{action.icon}</span>
-            {action.label}
-          </Link>
-        ))}
-      </div>
-    </Card>
   );
 };
 

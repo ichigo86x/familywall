@@ -2849,36 +2849,6 @@ button.schedule-chip {
   opacity: 1;
 }
 
-.dashboard-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.dashboard-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  padding: 10px 14px;
-  border-radius: 18px;
-  background: var(--color-surface-soft);
-  border: 1px solid var(--line-soft);
-  color: inherit;
-  font-weight: 600;
-  font-size: 1.05rem;
-  text-decoration: none;
-}
-
-.dashboard-action span {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-.dashboard-action:active {
-  transform: scale(0.98);
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -2949,4 +2919,175 @@ button.schedule-chip {
 
 .night-screen__clock span {
   font-size: clamp(1rem, 2vw, 1.4rem);
+}
+
+/* Dashboard action bar: round shortcuts and Home Assistant buttons */
+.action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 28px;
+  background: var(--glass);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.action-bar__item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 4.1rem;
+  min-height: 4.1rem;
+  padding: 6px 4px;
+  border-radius: 22px;
+  border: 1px solid var(--line-soft);
+  background: var(--color-surface-soft);
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action-bar__item:active {
+  transform: scale(0.96);
+}
+
+.action-bar__item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.action-bar__item--home {
+  background: linear-gradient(var(--today-bg), var(--today-bg)), var(--color-surface-soft);
+}
+
+.action-bar__item--active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent) inset;
+}
+
+.action-bar__icon {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.action-bar__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.action-bar__state {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  color: var(--color-muted);
+}
+
+.action-bar__state--error {
+  color: #c2410c;
+  white-space: normal;
+}
+
+.action-bar__divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.home-buttons-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.home-buttons-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+}
+
+.home-buttons-list__icon {
+  font-size: 1.6rem;
+}
+
+.home-buttons-list li > span {
+  display: grid;
+  min-width: 0;
+}
+
+.home-entity-picker {
+  display: grid;
+  gap: 6px;
+}
+
+.home-entity-picker ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.home-entity-picker button {
+  display: grid;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-entity-picker button span {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.home-entity-picker__selected {
+  background: var(--today-bg) !important;
+}
+
+.icon-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.icon-swatch--selected {
+  border: 2px solid var(--color-primary);
+}
+
+.icon-input {
+  width: 5rem;
+}
+
+.home-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
