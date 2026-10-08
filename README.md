@@ -430,6 +430,7 @@ npm run build
 4. Installa e avvia l'add-on. La prima build richiede qualche minuto.
 5. Apri Familywall dalla barra laterale (ingress) e completa la configurazione iniziale.
 
+- **Aggiornare**: ripeti `npm run addon:stage` e copia di nuovo la cartella in `/addons/familywall`, poi in Home Assistant usa **Ricostruisci** (o Aggiorna, se la versione è cambiata). Copiando sopra la cartella vecchia, i file eliminati nelle nuove versioni restano in `/addons/familywall/app`: la build li cancella da sola, perché `addon:stage` scrive l'elenco dei file (`app/staged-files.txt`) e la build rimuove gli altri. Copia sempre anche `Dockerfile` e `prune-stale.mjs`.
 - La porta `3001` è esposta per il reverse proxy esterno. Se non ti serve, svuotala nella scheda **Rete** dell'add-on.
 - L'immagine include Radicale, che tiene liste, menu, compleanni, turni e note.
 - Aggiornando dalla 0.3, i dati vengono spostati da soli sul server CalDAV (vedi [Aggiornamento dalla versione 0.3](#aggiornamento-dalla-versione-03)).
