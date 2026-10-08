@@ -3,7 +3,9 @@
 FROM node:24-alpine AS build
 WORKDIR /src
 COPY app/ ./
-RUN npm ci \
+COPY prune-stale.mjs /prune-stale.mjs
+RUN node /prune-stale.mjs \
+  && npm ci \
   && npm run build --workspace @familywall/shared \
   && npm run build --workspace @familywall/api \
   && npm run build --workspace @familywall/web

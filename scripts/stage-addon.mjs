@@ -1,6 +1,6 @@
 // Copies the sources the add-on image needs into homeassistant/familywall/app,
 // because Home Assistant builds local add-ons with the add-on folder as Docker context.
-import { cpSync, rmSync } from "node:fs";
+import { cpSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,4 +17,13 @@ for (const entry of entries) {
   });
 }
 
-console.log(`Add-on sources staged in ${path.relative(root, target)}`);
+// List of the staged files: the image deletes any other file found in app/. When the add-on folder is
+// copied over an older one, files removed since then would otherwise stay and break the build.
+const listFiles = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+    entry.isDirectory() ? listFiles(path.join(dir, entry.name)) : [path.relative(target, path.join(dir, entry.name)).split(path.sep).join("/")]
+  );
+const files = [...listFiles(target), "staged-files.txt"].sort();
+writeFileSync(path.join(target, "staged-files.txt"), `${files.join("\n")}\n`);
+
+console.log(`Add-on sources staged in ${path.relative(root, target)} (${files.length} files)`);
