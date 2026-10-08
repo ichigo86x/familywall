@@ -1,4 +1,4 @@
-import type { HomeButton } from "./home";
+import type { HomeButton, HomeList } from "./home";
 import type { WeatherLocation } from "./weather";
 
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
@@ -82,6 +82,8 @@ export interface HouseholdSettings {
   panelNight: PanelNight;
   /** Home Assistant shortcuts on the dashboard. */
   homeButtons: HomeButton[];
+  /** Home Assistant to-do lists shown in Liste. */
+  homeLists: HomeList[];
 }
 
 export interface PanelNight {
@@ -256,7 +258,7 @@ export interface FamilyTaskList {
   name: string;
   color: string;
   /** "reminders": family lists on the built-in CalDAV server, synced with iOS Reminders. */
-  source: "google" | "reminders";
+  source: "google" | "reminders" | "homeassistant";
   lastError: string | null;
   tasks: TaskItem[];
 }

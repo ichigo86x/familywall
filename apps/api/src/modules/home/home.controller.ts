@@ -22,6 +22,12 @@ export class HomeController {
     return this.home.run(request.user, id);
   }
 
+  @Get("todo-entities")
+  @RequirePermission("settings:manage")
+  public async todoEntities(): Promise<{ entities: HomeEntity[] }> {
+    return { entities: await this.home.todoEntities() };
+  }
+
   @Get("entities")
   @RequirePermission("settings:manage")
   public async entities(): Promise<{ entities: HomeEntity[] }> {

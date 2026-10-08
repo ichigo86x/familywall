@@ -16,6 +16,7 @@ import { HomeService } from "./home.service";
       useFactory: (settings: SettingsRepository, client: HomeAssistantClient) => new HomeService(settings, client),
       inject: [SettingsRepository, HomeAssistantClient]
     }
-  ]
+  ],
+  exports: [HomeAssistantClient]
 })
 export class HomeModule {}

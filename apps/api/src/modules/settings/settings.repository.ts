@@ -10,7 +10,8 @@ const DEFAULTS: HouseholdSettings = {
   dashboardListIds: [],
   weatherLocation: null,
   panelNight: { enabled: false, start: "23:00", end: "06:30" },
-  homeButtons: []
+  homeButtons: [],
+  homeLists: []
 };
 
 @Injectable()

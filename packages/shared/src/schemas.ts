@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isAllowedHomeService } from "./home";
+import { homeListSchema, isAllowedHomeService } from "./home";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #RRGGBB color");
 const username = z
@@ -104,6 +104,7 @@ export const updateSettingsSchema = z
       })
       .optional(),
     homeButtons: z.array(homeButtonSchema).max(16).optional(),
+    homeLists: z.array(homeListSchema).max(20).optional(),
     weatherLocation: z
       .object({
         name: z.string().trim().min(1).max(120),

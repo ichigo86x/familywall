@@ -185,6 +185,7 @@ export const api = {
 
   getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
   runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),
+  getHomeTodoEntities: async () => (await request<{ entities: HomeEntity[] }>("home/todo-entities")).entities,
   getHomeEntities: async () => (await request<{ entities: HomeEntity[] }>("home/entities")).entities,
 
   getWeather: async () => (await request<WeatherResponse>("weather")).weather,

@@ -3,7 +3,7 @@
 Familywall è l'organizzazione della famiglia su un'unica schermata:
 - calendari condivisi (iCloud, CalDAV, Google);
 - menu della settimana (di casa, Cookidoo e calendari "menu") con gli ingredienti da mandare nella lista della spesa;
-- liste sincronizzate con i Promemoria di iPhone o con Google Tasks;
+- liste sincronizzate con i Promemoria di iPhone, Google Tasks o le liste di Home Assistant (anche i Promemoria iCloud);
 - bacheca di note;
 - turni di casa;
 - compleanni e ricorrenze;
@@ -28,6 +28,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - [Installazione come add-on di Home Assistant](#installazione-come-add-on-di-home-assistant)
 - [Accesso esterno con nginx](#accesso-esterno-con-nginx)
 - [Pulsanti Home Assistant](#pulsanti-home-assistant)
+- [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)
 - [Sincronizzazione, cache e offline](#sincronizzazione-cache-e-offline)
 - [Backup e ripristino](#backup-e-ripristino)
 - [Dati e chiavi](#dati-e-chiavi)
@@ -105,7 +106,7 @@ I turni di oggi compaiono anche in dashboard ("Oggi in casa"). Stanno nel calend
 
 ### Liste
 
-- Le liste vengono da due fonti: i Promemoria di iPhone (server CalDAV integrato) e Google Tasks.
+- Le liste vengono da tre fonti: i Promemoria di iPhone (server CalDAV integrato), Google Tasks e le liste `todo` di Home Assistant (vedi [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)).
 - Puoi aggiungere, spuntare ed eliminare le voci. Le liste si aggiornano da sole ogni 2 minuti.
 - La puntina sceglie quali liste compaiono in dashboard.
 
@@ -289,6 +290,20 @@ Il pulsante mostra lo stato di serrature, tapparelle e interruttori (aggiornato 
 Collegamento a Home Assistant:
 - **Add-on**: automatico tramite il Supervisor (`homeassistant_api: true` in `config.yaml`). Non serve nessun token.
 - **Fuori dall'add-on** (sviluppo o Docker): imposta `HA_URL` (per esempio `http://homeassistant.local:8123`) e `HA_TOKEN` con un token di lunga durata creato nel profilo utente di Home Assistant. Non salvare il token nel repository.
+
+### Liste di Home Assistant e Promemoria iCloud
+
+Familywall mostra le liste `todo.*` di Home Assistant, con la stessa connessione dei pulsanti. Così arrivano anche i **Promemoria di iCloud** già condivisi in famiglia, tramite l'integrazione ufficiale **Apple iCloud** di Home Assistant. Vanno bene anche Bring!, Todoist, Google Tasks o le liste locali di Home Assistant.
+
+1. In Home Assistant: Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **Apple iCloud**. Ogni lista dei Promemoria diventa un'entità `todo.*`.
+2. In Familywall: Admin → **Liste di Home Assistant** → Scegli liste → scegli la lista → Aggiungi.
+3. La lista compare in Liste con l'etichetta "Home Assistant": si aggiungono, spuntano, rinominano ed eliminano le voci. Si può mostrare in dashboard e usare per gli ingredienti del menu.
+
+Da sapere:
+- L'integrazione Apple iCloud di Home Assistant **non accetta le password per app**: chiede la password normale dell'Apple ID e il codice di verifica a due fattori. Le credenziali restano in Home Assistant; Familywall non le vede. Usa le API web di iCloud, non pubbliche: Apple può chiedere di nuovo il codice o bloccare temporaneamente l'accesso dopo troppi tentativi.
+- Con la **Protezione avanzata dei dati** attiva su iCloud, Home Assistant non può leggere i Promemoria.
+- Con una password per app restano disponibili i **calendari** iCloud, collegati direttamente in Familywall (CalDAV). I Promemoria iCloud non sono più raggiungibili via CalDAV.
+- Home Assistant non dice quando una voce è stata completata: Familywall mostra le voci aperte e, per due giorni, quelle spuntate da Familywall.
 
 ## Web app su iPhone e iPad
 

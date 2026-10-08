@@ -47,6 +47,21 @@ export class HomeService {
     this.logger.log(`${viewer.username} ran "${button.label}" (${button.service} ${button.entityId})`);
   }
 
+  /** To-do lists of Home Assistant (Apple Reminders through the iCloud integration, Bring!, Todoist, local lists...). */
+  public async todoEntities(): Promise<HomeEntity[]> {
+    if (!this.client.available) {
+      return [];
+    }
+    try {
+      return (await this.client.states())
+        .filter((entity) => homeDomain(entity.entity_id) === "todo")
+        .map((entity) => ({ entityId: entity.entity_id, name: entity.attributes?.friendly_name ?? entity.entity_id, state: entity.state }))
+        .sort((left, right) => left.name.localeCompare(right.name));
+    } catch (error) {
+      throw AppException.providerError(error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.");
+    }
+  }
+
   /** Entities an Admin can turn into buttons (only domains with allowed services). */
   public async entities(): Promise<HomeEntity[]> {
     if (!this.client.available) {

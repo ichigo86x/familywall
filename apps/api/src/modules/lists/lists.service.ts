@@ -13,13 +13,19 @@ import type {
 import { AppException } from "../../common/errors/app-exception";
 import { DavGatewayService } from "../dav/dav-gateway.service";
 import { DavTasksClient } from "../dav/dav-tasks.client";
+import { HomeAssistantClient, HomeAssistantError } from "../home/home-assistant.client";
 import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "../providers/google/google-client";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { toAppException } from "../providers/providers.service";
+import { SettingsRepository } from "../settings/settings.repository";
 import { TaskListsRepository } from "./task-lists.repository";
 
 /** Lists on the built-in CalDAV server have ids "dav:<collection>". */
 const DAV_PREFIX = "dav:";
+/** Home Assistant to-do lists have ids "ha:<entity id>". */
+const HA_PREFIX = "ha:";
+/** Home Assistant does not say when an item was completed: the ones ticked here stay visible for two days. */
+const COMPLETED_VISIBLE_MS = 2 * 24 * 60 * 60 * 1000;
 
 /** Shared lists (shopping, chores...): Google Tasks lists and the family Reminders lists (CalDAV). */
 @Injectable()
@@ -28,19 +34,69 @@ export class ListsService {
   /** Last items read for each list: shown (with the error) when a provider fails. */
   private readonly lastGood = new Map<string, TaskItem[]>();
   private lastReminderLists: FamilyTaskList[] = [];
+  private readonly completedHere = new Map<string, number>();
 
   public constructor(
     private readonly lists: TaskListsRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly google: GoogleClient,
     private readonly dav: DavTasksClient,
-    private readonly davGateway: DavGatewayService
+    private readonly davGateway: DavGatewayService,
+    private readonly homeAssistant: HomeAssistantClient,
+    private readonly settings: SettingsRepository
   ) {}
 
   /** A failing list must not hide the others: the error is reported per list. */
   public async getLists(): Promise<ListsResponse> {
-    const [googleLists, reminderLists] = await Promise.all([this.googleLists(), this.reminderLists()]);
-    return { lists: [...reminderLists, ...googleLists] };
+    const [googleLists, reminderLists, homeLists] = await Promise.all([this.googleLists(), this.reminderLists(), this.homeLists()]);
+    return { lists: [...reminderLists, ...googleLists, ...homeLists] };
+  }
+
+  /** To-do lists of Home Assistant chosen in Admin (for example Apple Reminders through the iCloud integration). */
+  private async homeLists(): Promise<FamilyTaskList[]> {
+    const configs = this.settings.get().homeLists;
+    return Promise.all(
+      configs.map(async (config): Promise<FamilyTaskList> => {
+        const base = { id: HA_PREFIX + config.entityId, name: config.name, color: config.color, source: "homeassistant" as const };
+        try {
+          const items = await this.homeAssistant.todoItems(config.entityId);
+          const now = Date.now();
+          const tasks = items
+            .filter((item) => item.summary.trim() !== "")
+            .filter((item) => item.status !== "completed" || now - (this.completedHere.get(`${config.entityId}/${item.uid}`) ?? 0) < COMPLETED_VISIBLE_MS)
+            .map(
+              (item): TaskItem => ({
+                id: item.uid,
+                title: item.summary.trim(),
+                notes: item.description ?? null,
+                completed: item.status === "completed",
+                completedAt: item.status === "completed" ? new Date(this.completedHere.get(`${config.entityId}/${item.uid}`) ?? now).toISOString() : null,
+                due: item.due ? new Date(item.due).toISOString() : null
+              })
+            );
+          return { ...base, lastError: null, tasks: this.remember(base.id, tasks) };
+        } catch (error) {
+          this.logger.warn(`Reading Home Assistant list ${config.entityId} failed: ${error instanceof Error ? error.message : String(error)}`);
+          return { ...base, ...this.fallback(base.id, error) };
+        }
+      })
+    );
+  }
+
+  private homeEntity(listId: string): string {
+    const entityId = listId.slice(HA_PREFIX.length);
+    if (!this.settings.get().homeLists.some((list) => list.entityId === entityId)) {
+      throw AppException.notFound("Lista non trovata.");
+    }
+    return entityId;
+  }
+
+  private async homeCall(action: () => Promise<void>): Promise<void> {
+    try {
+      await action();
+    } catch (error) {
+      throw AppException.providerError(error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.");
+    }
   }
 
   /** Family lists on the built-in CalDAV server (the ones iPhones see in Reminders). */
@@ -136,6 +192,11 @@ export class ListsService {
   }
 
   public async createTask(listId: string, input: CreateTaskInput): Promise<{ id: string }> {
+    if (listId.startsWith(HA_PREFIX)) {
+      const entityId = this.homeEntity(listId);
+      await this.homeCall(() => this.homeAssistant.callService("todo", "add_item", entityId, { item: input.title }));
+      return { id: "" };
+    }
     if (listId.startsWith(DAV_PREFIX)) {
       return { id: await this.davCall(() => this.dav.createTask(listId.slice(DAV_PREFIX.length), input.title)) };
     }
@@ -148,6 +209,23 @@ export class ListsService {
   }
 
   public async updateTask(listId: string, taskId: string, input: UpdateTaskInput): Promise<void> {
+    if (listId.startsWith(HA_PREFIX)) {
+      const entityId = this.homeEntity(listId);
+      const data: Record<string, unknown> = { item: taskId };
+      if (input.title !== undefined) {
+        data.rename = input.title;
+      }
+      if (input.completed !== undefined) {
+        data.status = input.completed ? "completed" : "needs_action";
+        if (input.completed) {
+          this.completedHere.set(`${entityId}/${taskId}`, Date.now());
+        } else {
+          this.completedHere.delete(`${entityId}/${taskId}`);
+        }
+      }
+      await this.homeCall(() => this.homeAssistant.callService("todo", "update_item", entityId, data));
+      return;
+    }
     if (listId.startsWith(DAV_PREFIX)) {
       await this.davCall(() => this.dav.updateTask(listId.slice(DAV_PREFIX.length), taskId, input));
       return;
@@ -161,6 +239,11 @@ export class ListsService {
   }
 
   public async deleteTask(listId: string, taskId: string): Promise<void> {
+    if (listId.startsWith(HA_PREFIX)) {
+      const entityId = this.homeEntity(listId);
+      await this.homeCall(() => this.homeAssistant.callService("todo", "remove_item", entityId, { item: [taskId] }));
+      return;
+    }
     if (listId.startsWith(DAV_PREFIX)) {
       await this.davCall(() => this.dav.deleteTask(listId.slice(DAV_PREFIX.length), taskId));
       return;

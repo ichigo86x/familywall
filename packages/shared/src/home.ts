@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { UserRole } from "./domain";
 
 /** Services a dashboard button may call, per Home Assistant domain (anything else is refused). */
@@ -89,3 +90,16 @@ export const HOME_STATE_LABELS: Record<string, string> = {
   jammed: "inceppato",
   unavailable: "non disponibile"
 };
+
+/** A Home Assistant to-do list (todo.* entity) shown among the family lists: Apple Reminders via the iCloud integration, Bring!, Todoist... */
+export interface HomeList {
+  entityId: string;
+  name: string;
+  color: string;
+}
+
+export const homeListSchema = z.object({
+  entityId: z.string().trim().regex(/^todo\.[a-z0-9_]+$/, "Scegli una lista todo.*"),
+  name: z.string().trim().min(1).max(80),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
+});
