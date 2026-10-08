@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "pretypecheck": "npm --prefix ../../packages/shared run build",
-    "pretest": "npm --prefix ../../packages/shared run build"
+    "pretest": "npm --prefix ../../packages/shared run build",
+    "start:dev:watch": "tsc-watch -p tsconfig.build.json --onSuccess \"node --disable-warning=ExperimentalWarning dist/main.js\""
   },
   "dependencies": {
     "@familywall/shared": "file:../../packages/shared",

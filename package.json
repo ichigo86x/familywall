@@ -12,7 +12,7 @@
     "build:api": "npm run build --workspace @familywall/api",
     "build:web": "npm run build --workspace @familywall/web",
     "typecheck": "npm run typecheck --workspace @familywall/shared && npm run typecheck --workspace @familywall/api && npm run typecheck --workspace @familywall/web",
-    "dev:api": "npm --prefix apps/api run start:dev",
+    "dev:api": "node scripts/dev-api.mjs",
     "dev:web": "npm --prefix apps/web run dev",
     "addon:stage": "node scripts/stage-addon.mjs",
     "test": "npm test --workspace @familywall/api"

@@ -368,11 +368,12 @@ Serve Node.js 24 o superiore, per `node:sqlite`.
 
 ```bash
 npm install
-npm run dev:api   # API su http://localhost:3001, dati in apps/api/data
+npm run dev:api   # API su http://localhost:3001, dati in apps/api/data (ricompila anche packages/shared)
 npm run dev:web   # web su http://localhost:5173, /api e /dav inoltrati all'API
 ```
 
 - Al primo accesso la web app chiede di creare la famiglia e l'account Admin.
+- `dev:api` tiene d'occhio sia l'API sia `packages/shared`: una modifica a uno dei due ricompila e riavvia l'API. Dopo un aggiornamento del codice (git pull) riavvia comunque `dev:api`: all'avvio applica le migrazioni del database.
 - Se la porta 3001 è occupata l'API si ferma con "Port 3001 is already in use". Attenzione: se sulla 3001 risponde un altro programma (per esempio un'altra app in sviluppo), la web app riceve le sue risposte e mostra la pagina "Qualcosa non ha funzionato". Ferma l'altro programma, oppure:
   - avvia l'API con `PORT=3002 npm run dev:api`;
   - avvia il web con `API_PROXY_TARGET=http://localhost:3002 npm run dev:web`.
