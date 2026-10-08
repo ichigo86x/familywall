@@ -9,7 +9,7 @@ import {
   DialogSurface,
   Field
 } from "@fluentui/react-components";
-import { isoWeek, scheduleForDay, type ScheduleEntry, type ScheduleEntryInput, type ScheduleKind, type User, type WeekParity } from "@familywall/shared";
+import { canTickChore, isoWeek, scheduleForDay, weekStars, type ScheduleEntry, type ScheduleEntryInput, type ScheduleKind, type User, type WeekParity } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { useNewParam } from "@/hooks/use-new-param";
@@ -19,7 +19,7 @@ import { useAuth } from "@/components/auth/use-auth";
 import { ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { AddRegular, ArrowLeftRegular, ArrowRightRegular } from "@/lib/fluent-icons";
-import { addDays, dayKey, startOfWeek } from "@/features/calendar/calendar-time";
+import { addDays, dayKey, startOfDay, startOfWeek } from "@/features/calendar/calendar-time";
 import {
   CHORE_SUGGESTIONS,
   KIND_LABELS,
@@ -46,6 +46,11 @@ export const SchedulePage = () => {
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const todayKey = dayKey(new Date());
   const parity = isoWeek(weekStart) % 2 === 0 ? "pari" : "dispari";
+  const toggleDone = useChoreToggle(schedule.reload);
+  const mayTick = (entry: ScheduleEntry, day: Date) => {
+    const daysBack = Math.round((startOfDay(new Date()).getTime() - startOfDay(day).getTime()) / 86_400_000);
+    return Boolean(auth.user && canTickChore(auth.user, entry)) && daysBack >= 0 && daysBack <= 6;
+  };
 
   return (
     <AppShell
@@ -81,6 +86,7 @@ export const SchedulePage = () => {
               Nessun turno. Aggiungi lo smart working dei genitori, chi apparecchia e sparecchia, o quando viene la donna delle pulizie.
             </p>
           ) : null}
+          <StarsLine entries={schedule.data ?? []} day={weekStart} membersById={membersById} />
           <div className="schedule-week">
             {days.map((day) => {
               const entries = scheduleForDay(schedule.data ?? [], day);
@@ -93,7 +99,14 @@ export const SchedulePage = () => {
                   </header>
                   {entries.length === 0 ? <p className="calendar-detail-hint">—</p> : null}
                   {entries.map((entry) => (
-                    <ScheduleChip key={entry.id} entry={entry} membersById={membersById} onOpen={canWrite ? () => setEditing(entry) : undefined} />
+                    <ScheduleChip
+                      key={entry.id}
+                      entry={entry}
+                      membersById={membersById}
+                      onOpen={canWrite ? () => setEditing(entry) : undefined}
+                      done={entry.done.includes(dayKey(day))}
+                      onToggleDone={mayTick(entry, day) ? () => void toggleDone(entry, dayKey(day)) : undefined}
+                    />
                   ))}
                 </section>
               );
@@ -117,7 +130,59 @@ export const SchedulePage = () => {
   );
 };
 
-export const ScheduleChip = ({ entry, membersById, onOpen }: { entry: ScheduleEntry; membersById: Map<string, User>; onOpen?: () => void }) => {
+/** Ticks a chore for a day, then reloads; errors are shown in an alert (the wall has no room for more). */
+export const useChoreToggle = (reload: () => void) => {
+  const [busy, setBusy] = useState(false);
+  return async (entry: ScheduleEntry, date: string) => {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.setChoreDone(entry.id, date, !entry.done.includes(date));
+      reload();
+    } catch (error) {
+      window.alert(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+};
+
+/** "⭐ Luca 4 · Sofia 6": chores done this week by each child. */
+export const StarsLine = ({ entries, day, membersById }: { entries: ScheduleEntry[]; day: Date; membersById: Map<string, User> }) => {
+  const stars = [...weekStars(entries, day)].filter(([memberId]) => membersById.has(memberId));
+  if (stars.length === 0) {
+    return null;
+  }
+  return (
+    <div className="chore-stars" aria-label="Stelline della settimana">
+      <span className="eyebrow">Stelline della settimana</span>
+      {stars.map(([memberId, count]) => (
+        <span key={memberId} className="chore-stars__member" style={{ borderColor: membersById.get(memberId)!.color }}>
+          {membersById.get(memberId)!.displayName}
+          <strong>
+            {"⭐"} {count}
+          </strong>
+        </span>
+      ))}
+    </div>
+  );
+};
+
+export const ScheduleChip = ({
+  entry,
+  membersById,
+  onOpen,
+  done = false,
+  onToggleDone
+}: {
+  entry: ScheduleEntry;
+  membersById: Map<string, User>;
+  onOpen?: () => void;
+  done?: boolean;
+  onToggleDone?: () => void;
+}) => {
   const who = entryWho(entry, membersById);
   const time = entryTime(entry);
   const content = (
@@ -133,15 +198,33 @@ export const ScheduleChip = ({ entry, membersById, onOpen }: { entry: ScheduleEn
       </span>
     </>
   );
-  const className = `schedule-chip schedule-chip--${entry.kind}`;
+  const className = `schedule-chip schedule-chip--${entry.kind} ${done ? "schedule-chip--done" : ""}`.trim();
   const style = who.color ? { borderLeftColor: who.color } : undefined;
-  return onOpen ? (
+  const chip = onOpen ? (
     <button type="button" className={className} style={style} onClick={onOpen}>
       {content}
     </button>
   ) : (
     <div className={className} style={style}>
       {content}
+    </div>
+  );
+  if (entry.kind !== "chore" || (!onToggleDone && !done)) {
+    return chip;
+  }
+  return (
+    <div className="schedule-chip-row">
+      {chip}
+      <button
+        type="button"
+        className={`chore-check ${done ? "chore-check--done" : ""}`.trim()}
+        aria-pressed={done}
+        aria-label={done ? `${entry.title}: fatto (tocca per annullare)` : `Segna fatto: ${entry.title}`}
+        disabled={!onToggleDone}
+        onClick={onToggleDone}
+      >
+        {done ? "⭐" : "✓"}
+      </button>
     </div>
   );
 };

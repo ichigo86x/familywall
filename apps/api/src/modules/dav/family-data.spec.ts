@@ -70,7 +70,9 @@ describe("family data on the CalDAV server", () => {
     expect(ics).toContain("RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE");
 
     const [read] = await ctx.schedule.list();
-    expect(read).toEqual({ ...fields, id: entry.id });
+    expect(read).toEqual({ ...fields, id: entry.id, done: [] });
+    expect((await ctx.schedule.setDone(entry.id, "2026-10-12", true)).done).toEqual(["2026-10-12"]);
+    expect((await ctx.schedule.setDone(entry.id, "2026-10-12", false)).done).toEqual([]);
     expect(scheduleForDay([read!], new Date(2026, 9, 12))).toHaveLength(1);
     expect(scheduleForDay([read!], new Date(2026, 9, 5))).toHaveLength(0);
 

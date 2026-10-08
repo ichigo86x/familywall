@@ -49,6 +49,9 @@ const X_COLOR = "x-familywall-color";
 const X_PINNED = "x-familywall-pinned";
 const X_DASHBOARD = "x-familywall-dashboard";
 const X_CREATED_BY = "x-familywall-created-by";
+const X_DONE = "x-familywall-done";
+/** Chore completions older than this are dropped when a new one is written. */
+const DONE_KEEP_DAYS = 62;
 
 /** Year written for occasions whose year is unknown (a leap year, so 29 February fits). */
 const NO_YEAR = 2000;
@@ -198,7 +201,27 @@ export const menuMapper: IcsMapper<MenuMeal, MenuMealFields> = {
 
 /* ---------- Shifts: weekly events ("Mario: Ufficio"), every other week with INTERVAL=2. ---------- */
 
-export type ScheduleFields = Omit<ScheduleEntry, "id">;
+export type ScheduleFields = Omit<ScheduleEntry, "id" | "done">;
+
+const doneDates = (component: ICAL.Component): string[] =>
+  text(component, X_DONE)
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))
+    .sort();
+
+/** Marks a chore done (or not) on a local date; old dates are dropped. */
+export const setChoreDone = (component: ICAL.Component, date: string, done: boolean): void => {
+  const [year, month, day] = date.split("-").map(Number) as [number, number, number];
+  const oldest = localDate(new Date(year, month - 1, day - DONE_KEEP_DAYS));
+  const dates = new Set(doneDates(component).filter((value) => value >= oldest));
+  if (done) {
+    dates.add(date);
+  } else {
+    dates.delete(date);
+  }
+  setText(component, X_DONE, [...dates].sort().join(","));
+};
 
 /** Shifts are written with the name of who they belong to, so phones show it. */
 export interface ScheduleWriteFields extends ScheduleFields {
@@ -261,7 +284,8 @@ export const scheduleMapper: IcsMapper<ScheduleEntry, ScheduleWriteFields> = {
       date,
       startTime: begin.time,
       endTime: begin.time && end && end.date === begin.date && end.time! > begin.time ? end.time : null,
-      note: text(component, "description") || null
+      note: text(component, "description") || null,
+      done: doneDates(component)
     };
   },
   write(component, fields, context) {

@@ -249,6 +249,8 @@ export const api = {
   createScheduleEntry: async (input: ScheduleEntryInput) => (await request<{ entry: ScheduleEntry }>("schedule", { method: "POST", json: input })).entry,
   updateScheduleEntry: async (id: string, input: ScheduleEntryInput) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).entry,
+  setChoreDone: async (id: string, date: string, done: boolean) =>
+    (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}/done`, { method: "POST", json: { date, done } })).entry,
   deleteScheduleEntry: (id: string) => request<void>(`schedule/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,

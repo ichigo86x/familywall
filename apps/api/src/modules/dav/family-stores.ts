@@ -8,6 +8,7 @@ import {
   noteMapper,
   occasionMapper,
   scheduleMapper,
+  setChoreDone,
   type MenuMealFields,
   type NoteFields,
   type OccasionFields,
@@ -108,6 +109,10 @@ export class ScheduleStore {
 
   public delete(id: string): Promise<void> {
     return this.objects.delete(id);
+  }
+
+  public setDone(id: string, date: string, done: boolean): Promise<ScheduleEntry> {
+    return this.objects.patch(id, (component) => setChoreDone(component, date, done));
   }
 
   private withWho(fields: ScheduleFields): ScheduleWriteFields {

@@ -3389,3 +3389,78 @@ button.schedule-chip {
     font-size: 0.6rem;
   }
 }
+
+/* Chores ticked on the panel, and the stars of the week. */
+.schedule-chip-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.schedule-chip-row > .schedule-chip {
+  flex: 1;
+}
+
+.chore-check {
+  flex: none;
+  width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: center;
+}
+
+.chore-check--done {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.chore-check:disabled {
+  cursor: default;
+}
+
+.schedule-chip--done .schedule-chip__text strong {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.chore-stars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dashboard-home .chore-stars {
+  margin: 10px 0 0;
+}
+
+.chore-stars__member {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: var(--color-surface-soft);
+  font-weight: 600;
+}
+
+.schedule-day .chore-check {
+  width: 2.1rem;
+  min-height: 2.1rem;
+  font-size: 0.95rem;
+}
+
+.schedule-day .schedule-chip-row {
+  gap: 4px;
+}

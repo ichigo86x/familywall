@@ -88,6 +88,25 @@ export class FamilyObjects<T extends { id: string }, F> {
     }
   }
 
+  /** Changes one object in place (properties Familywall keeps outside the fields, e.g. chores done). */
+  public async patch(id: string, mutate: (component: ICAL.Component) => void): Promise<T> {
+    const now = new Date();
+    try {
+      const current = await this.store.get(this.collection, id);
+      const root = current ? new ICAL.Component(ICAL.parse(current.ics)) : null;
+      const component = root?.getFirstSubcomponent(this.mapper.component);
+      if (!current || !root || !component) {
+        throw AppException.notFound(this.notFound);
+      }
+      mutate(component);
+      this.stamp(component, now);
+      await this.store.put(this.collection, id, root.toString(), { etag: current.etag });
+      return this.read({ id, ics: root.toString(), etag: null }, this.context())!;
+    } catch (error) {
+      throw davFailure(error);
+    }
+  }
+
   public async delete(id: string): Promise<void> {
     try {
       if (!(await this.store.get(this.collection, id))) {

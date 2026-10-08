@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isoWeek, scheduleEntrySchema, scheduleForDay, type ScheduleEntry } from "@familywall/shared";
+import { canTickChore, isoWeek, scheduleEntrySchema, scheduleForDay, weekStars, type ScheduleEntry } from "@familywall/shared";
 
 const entry = (patch: Partial<ScheduleEntry>): ScheduleEntry => ({
   id: patch.title ?? "x",
@@ -13,6 +13,7 @@ const entry = (patch: Partial<ScheduleEntry>): ScheduleEntry => ({
   startTime: null,
   endTime: null,
   note: null,
+  done: [],
   ...patch
 });
 
@@ -51,5 +52,23 @@ describe("scheduleEntrySchema", () => {
     expect(scheduleEntrySchema.safeParse({ kind: "presence", title: "Pulizie", weekdays: [2] }).success).toBe(false);
     expect(scheduleEntrySchema.safeParse({ kind: "presence", title: "Pulizie", person: "Maria", weekdays: [2], startTime: "09:00", endTime: "12:00" }).success).toBe(true);
     expect(scheduleEntrySchema.safeParse({ kind: "work", title: "Ufficio", memberId: "anna", weekdays: [1], startTime: "18:00", endTime: "09:00" }).success).toBe(false);
+  });
+});
+
+describe("weekStars", () => {
+  it("counts the chores done in the week of a day, by member", () => {
+    const entries = [
+      entry({ title: "Apparecchiare", weekdays: [1, 2, 3], done: ["2026-10-04", "2026-10-05", "2026-10-06"] }),
+      entry({ title: "Letto", memberId: "sofia", weekdays: [1], done: ["2026-10-05"] }),
+      entry({ title: "Ufficio", kind: "work", memberId: "anna", weekdays: [1], done: ["2026-10-05"] })
+    ];
+    expect(weekStars(entries, new Date(2026, 9, 7))).toEqual(new Map([["luca", 2], ["sofia", 1]]));
+  });
+
+  it("lets a child tick only its own chores", () => {
+    expect(canTickChore({ id: "luca", role: "Child" }, entry({}))).toBe(true);
+    expect(canTickChore({ id: "sofia", role: "Child" }, entry({}))).toBe(false);
+    expect(canTickChore({ id: "wall", role: "Kiosk" }, entry({}))).toBe(true);
+    expect(canTickChore({ id: "mario", role: "Parent" }, entry({ kind: "work" }))).toBe(false);
   });
 });

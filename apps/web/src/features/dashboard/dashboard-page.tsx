@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
-import { scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
+import { canTickChore, scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -9,8 +9,8 @@ import { useAuth } from "@/components/auth/use-auth";
 import { useNow } from "@/components/live-clock";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
-import { addDays, birthdayTitle, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
-import { ScheduleChip } from "@/features/schedule/schedule-page";
+import { addDays, birthdayTitle, dayKey, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
+import { ScheduleChip, StarsLine, useChoreToggle } from "@/features/schedule/schedule-page";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
 import { ActionBar } from "./action-bar";
@@ -265,7 +265,7 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-side-column">
-          <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} />
+          <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} viewer={auth.user} onChanged={schedule.reload} />
 
           {lists.status === "error" ? (
             <Card className="panel-card dashboard-side">
@@ -309,7 +309,21 @@ const MenuLine = ({ label, meals }: { label: string; meals: PlannerEvent[] }) =>
   ) : null;
 
 /** Parents' work, kids' chores and visits; in the evening the work plan switches to tomorrow. */
-const HomeCard = ({ entries, now, membersById }: { entries: ScheduleEntry[]; now: Date; membersById: Map<string, User> }) => {
+const HomeCard = ({
+  entries,
+  now,
+  membersById,
+  viewer,
+  onChanged
+}: {
+  entries: ScheduleEntry[];
+  now: Date;
+  membersById: Map<string, User>;
+  viewer: User | null;
+  onChanged: () => void;
+}) => {
+  const toggleDone = useChoreToggle(onChanged);
+  const todayKey = dayKey(now);
   const todayEntries = scheduleForDay(entries, now);
   const tomorrowEntries = scheduleForDay(entries, addDays(startOfDay(now), 1));
   const evening = now.getHours() >= WORK_TOMORROW_HOUR;
@@ -340,12 +354,19 @@ const HomeCard = ({ entries, now, membersById }: { entries: ScheduleEntry[]; now
             <span className="eyebrow">{group.label}</span>
             <div className="dashboard-home__chips">
               {group.entries.map((entry) => (
-                <ScheduleChip key={entry.id} entry={entry} membersById={membersById} />
+                <ScheduleChip
+                  key={entry.id}
+                  entry={entry}
+                  membersById={membersById}
+                  done={entry.done.includes(todayKey)}
+                  onToggleDone={group.key === "chore" && viewer && canTickChore(viewer, entry) ? () => void toggleDone(entry, todayKey) : undefined}
+                />
               ))}
             </div>
           </div>
         ))
       )}
+      <StarsLine entries={entries} day={now} membersById={membersById} />
     </Card>
   );
 };

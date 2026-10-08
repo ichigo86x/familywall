@@ -102,6 +102,8 @@ Ogni turno vale in uno di due modi:
 - **Ricorrente**: nei giorni della settimana scelti, ogni settimana oppure solo nelle settimane pari o dispari (utile per alternare due figli);
 - **Una volta**: in una data precisa.
 
+**Faccende fatte e stelline**: accanto a ogni faccenda c'è un pulsante ✓. Toccalo quando la faccenda è fatta: diventa una ⭐ e il titolo viene barrato; un altro tocco la annulla. Si spunta la faccenda di oggi o dei 6 giorni prima. Possono spuntare il bambino a cui appartiene, i genitori e il pannello a muro (anche senza modalità scrittura). Sopra i turni, "Stelline della settimana" conta le faccende fatte da lunedì a domenica da ogni bambino, per esempio per la paghetta. Le date fatte stanno nell'evento del calendario Turni (proprietà `X-FAMILYWALL-DONE`, ultimi due mesi).
+
 I turni di oggi compaiono anche in dashboard ("Oggi in casa"). Stanno nel calendario "Turni" del server CalDAV integrato: sul telefono compaiono come eventi ripetuti, per esempio "Luca: Apparecchiare".
 
 ### Liste

@@ -35,6 +35,8 @@ export interface ScheduleEntry {
   startTime: string | null;
   endTime: string | null;
   note: string | null;
+  /** Chores: local dates (YYYY-MM-DD) on which it was done, last two months. */
+  done: string[];
 }
 
 export interface ScheduleResponse {
@@ -68,6 +70,32 @@ export const scheduleEntrySchema = z
 
 export type ScheduleEntryInput = z.input<typeof scheduleEntrySchema>;
 
+export const choreDoneSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida"),
+  done: z.boolean()
+});
+
+export type ChoreDoneInput = z.infer<typeof choreDoneSchema>;
+
+/** Stars of the week (Monday to Sunday around a day): one per chore done, by member id. */
+export const weekStars = (entries: ScheduleEntry[], day: Date): Map<string, number> => {
+  const monday = new Date(day.getFullYear(), day.getMonth(), day.getDate() - ((day.getDay() + 6) % 7));
+  const from = localDateKey(monday);
+  const to = localDateKey(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6));
+  const stars = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.kind !== "chore" || !entry.memberId) {
+      continue;
+    }
+    const count = entry.done.filter((date) => date >= from && date <= to).length;
+    stars.set(entry.memberId, (stars.get(entry.memberId) ?? 0) + count);
+  }
+  return stars;
+};
+
+/** Whether an entry applies on a local day. */
+export const scheduleAppliesOn = (entry: ScheduleEntry, day: Date): boolean => scheduleForDay([entry], day).length === 1;
+
 /** ISO week number of a local date. */
 export const isoWeek = (date: Date): number => {
   const day = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -77,7 +105,7 @@ export const isoWeek = (date: Date): number => {
   return Math.ceil(((day.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
 };
 
-const localDateKey = (date: Date): string =>
+export const localDateKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 /** Entries that apply on a given local day, sorted by kind, then time, then title. */
@@ -97,3 +125,7 @@ export const scheduleForDay = (entries: ScheduleEntry[], day: Date): ScheduleEnt
         left.title.localeCompare(right.title)
     );
 };
+
+/** Chores are ticked by the child they belong to, by parents and on the wall panel. */
+export const canTickChore = (user: { id: string; role: string }, entry: Pick<ScheduleEntry, "kind" | "memberId">): boolean =>
+  entry.kind === "chore" && (user.role !== "Child" || entry.memberId === user.id);
