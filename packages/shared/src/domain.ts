@@ -175,12 +175,14 @@ export const isNightTime = (night: PanelNight, now: Date): boolean => {
   return start <= end ? current >= start && current < end : current >= start || current < end;
 };
 
-export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google";
+/** "icloudweb": Apple ID login through pyicloud, for iCloud Reminders (the "icloud" accounts use CalDAV with an app password). */
+export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google" | "icloudweb";
 
 /** Providers Familywall can only read from (no event writes). */
 export const READ_ONLY_PROVIDERS: readonly CalendarProvider[] = ["cookidoo"];
 
-export type ConnectionStatus = "ok" | "error" | "unknown";
+/** "verify": iCloud waits for the two-factor code sent to the trusted devices. */
+export type ConnectionStatus = "ok" | "error" | "unknown" | "verify";
 
 export interface ProviderAccount {
   id: string;
@@ -325,7 +327,7 @@ export interface FamilyTaskList {
   name: string;
   color: string;
   /** "reminders": family lists on the built-in CalDAV server, synced with iOS Reminders. */
-  source: "google" | "reminders" | "homeassistant";
+  source: "google" | "reminders" | "homeassistant" | "icloud";
   lastError: string | null;
   tasks: TaskItem[];
 }

@@ -6,6 +6,7 @@ import { GoogleClient } from "./google/google-client";
 import { ProviderAccountsRepository } from "./provider-accounts.repository";
 import { ProvidersController } from "./providers.controller";
 import { ProvidersService } from "./providers.service";
+import { IcloudBridge } from "./icloud-web/icloud-bridge";
 
 @Module({
   controllers: [ProvidersController, GoogleAuthController],
@@ -14,8 +15,9 @@ import { ProvidersService } from "./providers.service";
     ProvidersService,
     { provide: CalDavClient, useFactory: () => new CalDavClient() },
     { provide: CookidooClient, useFactory: () => new CookidooClient() },
-    { provide: GoogleClient, useFactory: () => new GoogleClient() }
+    { provide: GoogleClient, useFactory: () => new GoogleClient() },
+    { provide: IcloudBridge, useFactory: () => new IcloudBridge() }
   ],
-  exports: [ProviderAccountsRepository, ProvidersService, CalDavClient, CookidooClient, GoogleClient]
+  exports: [ProviderAccountsRepository, ProvidersService, CalDavClient, CookidooClient, GoogleClient, IcloudBridge]
 })
 export class ProvidersModule {}

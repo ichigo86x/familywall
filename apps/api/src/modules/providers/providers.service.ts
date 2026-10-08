@@ -13,6 +13,10 @@ import { CalDavClient, CalDavError, ICLOUD_CALDAV_URL, type CalDavCredentials } 
 import { CookidooClient, DEFAULT_COOKIDOO_URL, parseCookidooSite } from "./cookidoo/cookidoo-client";
 import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "./google/google-client";
 import { ProviderAccountsRepository } from "./provider-accounts.repository";
+import { IcloudBridge, IcloudBridgeError } from "./icloud-web/icloud-bridge";
+import { rmSync } from "node:fs";
+import path from "node:path";
+import { appConfig } from "../../config/app-config";
 
 const COOKIDOO_COLOR = "#36A936";
 /** An authorisation started in the Admin page must be completed within this time. */
@@ -31,6 +35,9 @@ export const toAppException = (error: unknown): AppException => {
   if (error instanceof CalDavError) {
     return error.kind === "auth" ? AppException.validation(error.message) : AppException.providerError(error.message);
   }
+  if (error instanceof IcloudBridgeError) {
+    return ["login_failed", "bad_code", "2sa_unsupported"].includes(error.code) ? AppException.validation(error.message) : AppException.providerError(error.message);
+  }
   return AppException.providerError("Server del calendario non raggiungibile.");
 };
 
@@ -47,7 +54,8 @@ export class ProvidersService {
     private readonly accounts: ProviderAccountsRepository,
     private readonly caldav: CalDavClient,
     private readonly cookidoo: CookidooClient,
-    private readonly google: GoogleClient
+    private readonly google: GoogleClient,
+    private readonly icloud: IcloudBridge
   ) {}
 
   public list(): ProviderAccount[] {
@@ -56,6 +64,9 @@ export class ProvidersService {
 
   /** Credentials are verified against the server before anything is stored. */
   public async create(input: CreateProviderAccountInput): Promise<ProviderAccount> {
+    if (input.provider === "icloudweb") {
+      return this.createIcloudWeb(input);
+    }
     const serverUrl =
       input.provider === "icloud" ? null : input.provider === "cookidoo" ? (input.serverUrl ?? DEFAULT_COOKIDOO_URL) : input.serverUrl!;
     try {
@@ -79,6 +90,75 @@ export class ProvidersService {
       password: input.password,
       serverUrl
     });
+  }
+
+  /**
+   * iCloud Reminders: the Apple ID login happens in the pyicloud bridge. The account is kept when
+   * Apple asks the two-factor code (status "verify"), and dropped when the password is refused.
+   */
+  private async createIcloudWeb(input: CreateProviderAccountInput): Promise<ProviderAccount> {
+    const account = this.accounts.insert({ provider: "icloudweb", label: input.label, username: input.username, password: input.password, serverUrl: null });
+    try {
+      const { status } = await this.icloud.login(account.id, { appleId: input.username, password: input.password });
+      this.accounts.recordStatus(account.id, status === "2fa" ? "verify" : "ok", status === "2fa" ? "Inserisci il codice di verifica mostrato sui dispositivi Apple." : null);
+    } catch (error) {
+      this.accounts.delete(account.id);
+      throw toAppException(error);
+    }
+    return this.accounts.findById(account.id)!;
+  }
+
+  /** The two-factor code shown on the Apple devices; afterwards the session is trusted for a while. */
+  public async verifyIcloud(accountId: string, code: string): Promise<ProviderAccount> {
+    const account = this.requireIcloudWeb(accountId);
+    try {
+      try {
+        await this.icloud.verify(account.id, code);
+      } catch (error) {
+        // The bridge restarted since the login: open the session again, then check the code.
+        if (!(error instanceof IcloudBridgeError) || error.code !== "auth_required") {
+          throw error;
+        }
+        await this.icloud.login(account.id, this.icloudCredentials(account.id));
+        await this.icloud.verify(account.id, code);
+      }
+      this.accounts.recordStatus(account.id, "ok", null);
+    } catch (error) {
+      throw toAppException(error);
+    }
+    return this.accounts.findById(account.id)!;
+  }
+
+  /** Opens the session again (Apple sends a new code to the devices when it wants one). */
+  public async reconnectIcloud(accountId: string): Promise<ProviderAccount> {
+    const account = this.requireIcloudWeb(accountId);
+    try {
+      const { status } = await this.icloud.login(account.id, this.icloudCredentials(account.id));
+      if (status === "2fa") {
+        await this.icloud.requestCode(account.id).catch(() => undefined);
+      }
+      this.accounts.recordStatus(account.id, status === "2fa" ? "verify" : "ok", status === "2fa" ? "Inserisci il codice di verifica mostrato sui dispositivi Apple." : null);
+    } catch (error) {
+      this.accounts.recordStatus(account.id, "error", error instanceof Error ? error.message : "Errore iCloud.");
+      throw toAppException(error);
+    }
+    return this.accounts.findById(account.id)!;
+  }
+
+  public icloudCredentials(accountId: string): { appleId: string; password: string } {
+    const credentials = this.accounts.credentials(accountId);
+    if (!credentials) {
+      throw AppException.notFound("Account non trovato.");
+    }
+    return { appleId: credentials.username, password: credentials.password };
+  }
+
+  private requireIcloudWeb(accountId: string): ProviderAccount {
+    const account = this.accounts.findById(accountId);
+    if (!account || account.provider !== "icloudweb") {
+      throw AppException.notFound("Account Promemoria iCloud non trovato.");
+    }
+    return account;
   }
 
   /** Step 1 of the Google OAuth flow: returns the consent page URL (PKCE + state). */
@@ -148,6 +228,10 @@ export class ProvidersService {
       throw AppException.notFound("Account non trovato.");
     }
 
+    if (this.accounts.findById(accountId)?.provider === "icloudweb") {
+      // Calendars of iCloud come through CalDAV with an app password ("iCloud" accounts).
+      return [];
+    }
     try {
       const provider = this.accounts.findById(accountId)?.provider;
       const calendars =
@@ -171,10 +255,16 @@ export class ProvidersService {
   }
 
   public delete(accountId: string): void {
-    if (!this.accounts.findById(accountId)) {
+    const account = this.accounts.findById(accountId);
+    if (!account) {
       throw AppException.notFound("Account non trovato.");
     }
     this.accounts.delete(accountId);
+    if (account.provider === "icloudweb") {
+      // The pyicloud session (cookies, trusted device) goes with the account.
+      void this.icloud.forget(accountId);
+      rmSync(path.join(appConfig.dataDir, "icloud", accountId), { recursive: true, force: true });
+    }
   }
 
   private async discoverCookidoo(credentials: CalDavCredentials) {

@@ -208,6 +208,10 @@ export const api = {
   deleteMember: (id: string) => request<void>(`members/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getProviderAccounts: async () => (await request<{ accounts: ProviderAccount[] }>("providers/accounts")).accounts,
+  verifyIcloud: async (accountId: string, code: string) =>
+    (await request<{ account: ProviderAccount }>(`providers/accounts/${encodeURIComponent(accountId)}/icloud/verify`, { method: "POST", json: { code } })).account,
+  reconnectIcloud: async (accountId: string) =>
+    (await request<{ account: ProviderAccount }>(`providers/accounts/${encodeURIComponent(accountId)}/icloud/reconnect`, { method: "POST", json: {} })).account,
   createProviderAccount: async (input: CreateProviderAccountInput) =>
     (await request<{ account: ProviderAccount }>("providers/accounts", { method: "POST", json: input })).account,
   deleteProviderAccount: (id: string) => request<void>(`providers/accounts/${encodeURIComponent(id)}`, { method: "DELETE" }),

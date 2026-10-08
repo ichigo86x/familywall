@@ -151,7 +151,7 @@ export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 export const createProviderAccountSchema = z
   .object({
-    provider: z.enum(["icloud", "caldav", "cookidoo"]),
+    provider: z.enum(["icloud", "caldav", "cookidoo", "icloudweb"]),
     label: z.string().trim().min(1).max(80),
     username: z.string().trim().min(1).max(200),
     password: z.string().min(1).max(200),
@@ -163,6 +163,10 @@ export const createProviderAccountSchema = z
   });
 
 export type CreateProviderAccountInput = z.infer<typeof createProviderAccountSchema>;
+
+/** The code Apple shows on the trusted devices. */
+export const icloudCodeSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, "Inserisci le 6 cifre") });
+export type IcloudCodeInput = z.infer<typeof icloudCodeSchema>;
 
 export const addCalendarSchema = z.object({
   accountId: z.string().min(1),

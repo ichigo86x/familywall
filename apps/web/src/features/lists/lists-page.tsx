@@ -220,7 +220,7 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
       <div className="task-list-card__header">
         <span className="legend-chip__swatch" style={{ background: list.color }} />
         <h3>{list.name}</h3>
-        <span className={`list-source list-source--${list.source}`}>{list.source === "reminders" ? "Promemoria" : list.source === "homeassistant" ? "Home Assistant" : "Google"}</span>
+        <span className={`list-source list-source--${list.source}`}>{list.source === "reminders" ? "Promemoria" : list.source === "homeassistant" ? "Home Assistant" : list.source === "icloud" ? "iCloud" : "Google"}</span>
         {canWrite ? (
           <Button
             size="small"

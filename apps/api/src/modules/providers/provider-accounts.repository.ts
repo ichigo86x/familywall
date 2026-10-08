@@ -94,6 +94,10 @@ export class ProviderAccountsRepository {
       .run(error ? "error" : "ok", error, nowIso(), id);
   }
 
+  public recordStatus(id: string, status: ConnectionStatus, error: string | null): void {
+    this.db.prepare("UPDATE provider_accounts SET status = ?, last_error = ?, last_checked_at = ? WHERE id = ?").run(status, error, nowIso(), id);
+  }
+
   public delete(id: string): void {
     this.db.prepare("DELETE FROM provider_accounts WHERE id = ?").run(id);
   }

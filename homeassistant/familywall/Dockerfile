@@ -22,6 +22,14 @@ RUN apk add --no-cache python3 \
   && /opt/radicale/bin/pip install --no-cache-dir "radicale==3.8.1"
 ENV RADICALE_COMMAND="/opt/radicale/bin/python -m radicale"
 
+# pyicloud (the library of Home Assistant's iCloud integration) for iCloud Reminders with the Apple ID login.
+# Build tools are only needed when a dependency has no wheel for Alpine, and are removed afterwards.
+RUN apk add --no-cache --virtual .icloud-build gcc musl-dev libffi-dev \
+  && python3 -m venv /opt/icloud \
+  && /opt/icloud/bin/pip install --no-cache-dir "pyicloud==2.6.5" \
+  && apk del .icloud-build
+ENV ICLOUD_PYTHON="/opt/icloud/bin/python"
+
 # Every workspace manifest is needed for `npm ci`, but only the API's runtime dependencies are installed.
 COPY --from=build /src/package.json /src/package-lock.json ./
 COPY --from=build /src/apps/api/package.json apps/api/
@@ -31,6 +39,7 @@ RUN npm ci --omit=dev --workspace @familywall/api --ignore-scripts && npm cache 
 
 COPY --from=build /src/packages/shared/dist packages/shared/dist
 COPY --from=build /src/apps/api/dist apps/api/dist
+COPY --from=build /src/apps/api/python apps/api/python
 COPY --from=build /src/apps/web/dist web
 
 EXPOSE 3001

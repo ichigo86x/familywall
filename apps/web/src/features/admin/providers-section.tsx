@@ -25,7 +25,7 @@ import { AddRegular, CalendarRegular, ClipboardTaskRegular, DeleteRegular } from
 import { GoogleConnect } from "./google-connect";
 import { DiscoverListsDialog } from "./task-lists-section";
 
-const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google" };
+const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google", icloudweb: "Promemoria iCloud" };
 
 /** Localized Cookidoo sites (country and language come from the URL). */
 const COOKIDOO_SITES = [
@@ -55,6 +55,7 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
   const [addingAccount, setAddingAccount] = useState(false);
   const [discoverAccount, setDiscoverAccount] = useState<ProviderAccount | null>(null);
   const [listsAccount, setListsAccount] = useState<ProviderAccount | null>(null);
+  const [codeAccount, setCodeAccount] = useState<ProviderAccount | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const run = async (action: () => Promise<unknown>) => {
@@ -109,12 +110,35 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
                   <h4>
                     {account.label} <Badge appearance="outline">{PROVIDER_LABELS[account.provider]}</Badge>{" "}
                     {account.status === "error" ? <Badge color="danger">errore</Badge> : null}
+                    {account.status === "verify" ? <Badge color="warning">codice richiesto</Badge> : null}
                   </h4>
                   <p>{account.username}{account.serverUrl ? ` · ${account.serverUrl}` : ""}</p>
                   {account.lastError ? <p className="form-error">{account.lastError}</p> : null}
                 </div>
                 <div className="row-actions">
-                  <Button icon={<CalendarRegular />} onClick={() => setDiscoverAccount(account)}>Scegli calendari</Button>
+                  {account.provider === "icloudweb" ? (
+                    <>
+                      {account.status === "verify" ? (
+                        <Button appearance="primary" onClick={() => setCodeAccount(account)}>Inserisci codice</Button>
+                      ) : (
+                        <Button icon={<ClipboardTaskRegular />} onClick={() => setListsAccount(account)}>Scegli liste</Button>
+                      )}
+                      <Button
+                        onClick={() =>
+                          void run(async () => {
+                            const updated = await api.reconnectIcloud(account.id);
+                            if (updated.status === "verify") {
+                              setCodeAccount(updated);
+                            }
+                          })
+                        }
+                      >
+                        Riconnetti
+                      </Button>
+                    </>
+                  ) : (
+                    <Button icon={<CalendarRegular />} onClick={() => setDiscoverAccount(account)}>Scegli calendari</Button>
+                  )}
                   {account.provider === "google" ? (
                     <Button icon={<ClipboardTaskRegular />} onClick={() => setListsAccount(account)}>Scegli liste</Button>
                   ) : null}
@@ -153,7 +177,26 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
           onCreated={(account) => {
             setAddingAccount(false);
             onChanged();
-            setDiscoverAccount(account);
+            if (account.provider === "icloudweb") {
+              if (account.status === "verify") {
+                setCodeAccount(account);
+              } else {
+                setListsAccount(account);
+              }
+            } else {
+              setDiscoverAccount(account);
+            }
+          }}
+        />
+      ) : null}
+      {codeAccount ? (
+        <IcloudCodeDialog
+          account={codeAccount}
+          onClose={() => setCodeAccount(null)}
+          onVerified={(account) => {
+            setCodeAccount(null);
+            onChanged();
+            setListsAccount(account);
           }}
         />
       ) : null}
@@ -238,6 +281,49 @@ const CalendarRow = ({
   );
 };
 
+/** The six-digit code Apple shows on the trusted devices after the iCloud login. */
+const IcloudCodeDialog = ({ account, onClose, onVerified }: { account: ProviderAccount; onClose: () => void; onVerified: (account: ProviderAccount) => void }) => {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onVerified(await api.verifyIcloud(account.id, code.trim()));
+    } catch (caught) {
+      setError(errorText(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
+      <DialogSurface>
+        <DialogBody>
+          <CloseableDialogTitle>Codice di verifica iCloud</CloseableDialogTitle>
+          <DialogContent className="dialog-form">
+            <p>
+              Apple ha mostrato un codice di 6 cifre su iPhone, iPad o Mac collegati a <strong>{account.username}</strong>. Tocca "Consenti" e
+              scrivilo qui. Dopo la verifica la sessione resta attiva per settimane; se Apple la chiude, usa "Riconnetti".
+            </p>
+            <Field label="Codice">
+              <Input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(_, data) => setCode(data.value)} />
+            </Field>
+            {error ? <p className="form-error">{error}</p> : null}
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="secondary" onClick={onClose}>Più tardi</Button>
+            <Button appearance="primary" disabled={busy || !/^\d{6}$/.test(code.trim())} onClick={() => void submit()}>
+              {busy ? "Verifica..." : "Verifica"}
+            </Button>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
+  );
+};
+
 const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreated: (account: ProviderAccount) => void }) => {
   const [form, setForm] = useState({
     provider: "icloud" as CalendarProvider,
@@ -283,11 +369,23 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
               <Radio value="caldav" label="Altro server CalDAV" />
               <Radio value="cookidoo" label="Cookidoo (Bimby)" />
               <Radio value="google" label="Google" />
+              <Radio value="icloudweb" label="Promemoria iCloud" />
             </RadioGroup>
 
             {form.provider === "google" ? <GoogleConnect onLinked={onCreated} onDone={onClose} /> : null}
 
-            {form.provider === "google" ? null : form.provider === "icloud" ? (
+            {form.provider === "icloudweb" ? (
+              <MessageBar intent="warning">
+                <MessageBarBody>
+                  Le liste dei <strong>Promemoria di iCloud</strong> non sono raggiungibili con la password per app: Familywall usa pyicloud (la stessa
+                  libreria dell'integrazione iCloud di Home Assistant) con la <strong>password dell'Apple ID</strong> e il codice di verifica mostrato
+                  sui dispositivi Apple. La password resta cifrata in Familywall. Sono API non ufficiali: Apple può chiedere di nuovo il codice o
+                  bloccare l'accesso per un po' dopo troppi tentativi. Con la Protezione avanzata dei dati i Promemoria non sono leggibili.
+                </MessageBarBody>
+              </MessageBar>
+            ) : null}
+
+            {form.provider === "google" || form.provider === "icloudweb" ? null : form.provider === "icloud" ? (
               <MessageBar intent="info">
                 <MessageBarBody>
                   iCloud richiede una <strong>password specifica per app</strong>, non la password dell'Apple ID: generala su
@@ -323,10 +421,10 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
                 <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
                   <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
                 </Field>
-                <Field label={form.provider === "icloud" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
+                <Field label={form.provider === "icloud" || form.provider === "icloudweb" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
                   <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
                 </Field>
-                <Field label={form.provider === "icloud" ? "Password specifica per app" : "Password"} required>
+                <Field label={form.provider === "icloud" ? "Password specifica per app" : form.provider === "icloudweb" ? "Password dell'Apple ID" : "Password"} required>
                   <Input type="password" autoComplete="off" placeholder={form.provider === "icloud" ? "xxxx-xxxx-xxxx-xxxx" : ""} value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />
                 </Field>
                   </>

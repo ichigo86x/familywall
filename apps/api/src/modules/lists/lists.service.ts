@@ -15,6 +15,7 @@ import { AppException } from "../../common/errors/app-exception";
 import { DavGatewayService } from "../dav/dav-gateway.service";
 import { DavTasksClient } from "../dav/dav-tasks.client";
 import { HomeAssistantClient, HomeAssistantError } from "../home/home-assistant.client";
+import { IcloudBridge, IcloudBridgeError, type IcloudReminder } from "../providers/icloud-web/icloud-bridge";
 import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "../providers/google/google-client";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { toAppException } from "../providers/providers.service";
@@ -47,7 +48,8 @@ export class ListsService {
     private readonly dav: DavTasksClient,
     private readonly davGateway: DavGatewayService,
     private readonly homeAssistant: HomeAssistantClient,
-    private readonly settings: SettingsRepository
+    private readonly settings: SettingsRepository,
+    private readonly icloud: IcloudBridge
   ) {}
 
   /** A failing list must not hide the others: the error is reported per list. */
@@ -127,9 +129,59 @@ export class ListsService {
     }
   }
 
+  private provider(config: TaskListConfig): string | undefined {
+    return this.accounts.findById(config.accountId)?.provider;
+  }
+
+  private icloudCredentials(accountId: string) {
+    return () => {
+      const credentials = this.accounts.credentials(accountId);
+      if (!credentials) {
+        throw new IcloudBridgeError("auth_required", "Account iCloud mancante.");
+      }
+      return { appleId: credentials.username, password: credentials.password };
+    };
+  }
+
+  /** Open reminders plus the ones completed in the last two days; subtasks are left out. */
+  private toTasks(reminders: IcloudReminder[]): TaskItem[] {
+    const threshold = Date.now() - COMPLETED_VISIBLE_MS;
+    return reminders
+      .filter((reminder) => !reminder.parent && reminder.title.trim() !== "")
+      .filter((reminder) => !reminder.completed || (reminder.completed_date !== null && Date.parse(reminder.completed_date) >= threshold))
+      .map((reminder) => ({
+        id: reminder.id,
+        title: reminder.title.trim(),
+        notes: reminder.desc || null,
+        completed: reminder.completed,
+        completedAt: reminder.completed_date,
+        due: reminder.due_date
+      }));
+  }
+
+  /** iCloud errors that need the Admin (code, password) are recorded on the account. */
+  private icloudFailure(config: TaskListConfig, error: unknown): void {
+    if (error instanceof IcloudBridgeError && ["2fa_required", "login_failed"].includes(error.code)) {
+      this.accounts.recordStatus(config.accountId, error.code === "2fa_required" ? "verify" : "error", error.message);
+    }
+  }
+
   private async googleLists(): Promise<FamilyTaskList[]> {
     return Promise.all(
       this.lists.list({ enabledOnly: true }).map(async (config): Promise<FamilyTaskList> => {
+        if (this.provider(config) === "icloudweb") {
+          try {
+            const tasks = this.toTasks(await this.icloud.reminders(config.accountId, this.icloudCredentials(config.accountId), config.remoteId));
+            this.lists.recordError(config.id, null);
+            return { id: config.id, name: config.name, color: config.color, source: "icloud", lastError: null, tasks: this.remember(config.id, tasks) };
+          } catch (error) {
+            this.icloudFailure(config, error);
+            const message = error instanceof Error ? error.message : "Errore iCloud.";
+            this.logger.warn(`Reading iCloud list ${config.id} failed: ${message}`);
+            this.lists.recordError(config.id, message);
+            return { id: config.id, name: config.name, color: config.color, source: "icloud", ...this.fallback(config.id, error) };
+          }
+        }
         try {
           const tasks = await this.google.listTasks(this.secret(config.accountId), config.remoteId);
           this.lists.recordError(config.id, null);
@@ -168,6 +220,13 @@ export class ListsService {
           title: task.title,
           completed: task.completed,
           at: task.completedAt ? Date.parse(task.completedAt) : 0
+        }));
+      } else if (this.lists.findById(listId) && this.provider(this.lists.findById(listId)!) === "icloudweb") {
+        const list = this.lists.findById(listId)!;
+        history = (await this.icloud.reminders(list.accountId, this.icloudCredentials(list.accountId), list.remoteId)).map((reminder) => ({
+          title: reminder.title,
+          completed: reminder.completed,
+          at: reminder.completed_date ? Date.parse(reminder.completed_date) : 0
         }));
       } else if (listId.startsWith(HA_PREFIX)) {
         history = (await this.homeAssistant.todoItems(this.homeEntity(listId))).map((item) => ({ title: item.summary, completed: item.status === "completed", at: 0 }));
@@ -213,10 +272,18 @@ export class ListsService {
     if (!account) {
       throw AppException.notFound("Account non trovato.");
     }
-    if (account.provider !== "google") {
-      throw AppException.validation("Le liste sono disponibili solo per gli account Google.");
+    if (account.provider !== "google" && account.provider !== "icloudweb") {
+      throw AppException.validation("Le liste sono disponibili solo per gli account Google e Promemoria iCloud.");
     }
     const added = this.lists.remoteIdsForAccount(accountId);
+    if (account.provider === "icloudweb") {
+      try {
+        const remote = await this.icloud.lists(accountId, this.icloudCredentials(accountId));
+        return remote.map((list) => ({ remoteId: list.id, name: list.title, alreadyAdded: added.has(list.id) }));
+      } catch (error) {
+        throw toAppException(error);
+      }
+    }
     try {
       const remote = await this.google.listTaskLists(this.secret(accountId));
       return remote.map((list) => ({ ...list, alreadyAdded: added.has(list.remoteId) }));
@@ -226,8 +293,8 @@ export class ListsService {
   }
 
   public add(input: AddTaskListInput): TaskListConfig {
-    if (this.accounts.findById(input.accountId)?.provider !== "google") {
-      throw AppException.notFound("Account Google non trovato.");
+    if (!["google", "icloudweb"].includes(this.accounts.findById(input.accountId)?.provider ?? "")) {
+      throw AppException.notFound("Account non trovato.");
     }
     if (this.lists.remoteIdsForAccount(input.accountId).has(input.remoteId)) {
       throw AppException.conflict("Questa lista è già stata aggiunta.");
@@ -255,6 +322,9 @@ export class ListsService {
       return { id: await this.davCall(() => this.dav.createTask(listId.slice(DAV_PREFIX.length), input.title)) };
     }
     const list = this.requireList(listId);
+    if (this.provider(list) === "icloudweb") {
+      return this.icloudCall(async () => ({ id: (await this.icloud.create(list.accountId, this.icloudCredentials(list.accountId), list.remoteId, input.title)).id }));
+    }
     try {
       return { id: await this.google.createTask(this.secret(list.accountId), list.remoteId, input.title) };
     } catch (error) {
@@ -285,6 +355,10 @@ export class ListsService {
       return;
     }
     const list = this.requireList(listId);
+    if (this.provider(list) === "icloudweb") {
+      await this.icloudCall(() => this.icloud.update(list.accountId, this.icloudCredentials(list.accountId), taskId, input));
+      return;
+    }
     try {
       await this.google.updateTask(this.secret(list.accountId), list.remoteId, taskId, input);
     } catch (error) {
@@ -303,8 +377,20 @@ export class ListsService {
       return;
     }
     const list = this.requireList(listId);
+    if (this.provider(list) === "icloudweb") {
+      await this.icloudCall(() => this.icloud.delete(list.accountId, this.icloudCredentials(list.accountId), taskId));
+      return;
+    }
     try {
       await this.google.deleteTask(this.secret(list.accountId), list.remoteId, taskId);
+    } catch (error) {
+      throw toAppException(error);
+    }
+  }
+
+  private async icloudCall<T>(action: () => Promise<T>): Promise<T> {
+    try {
+      return await action();
     } catch (error) {
       throw toAppException(error);
     }

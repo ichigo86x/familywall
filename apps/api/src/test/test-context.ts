@@ -19,6 +19,7 @@ import { ProviderAccountsRepository } from "../modules/providers/provider-accoun
 import { ProvidersService } from "../modules/providers/providers.service";
 import { SettingsRepository } from "../modules/settings/settings.repository";
 import { MemoryDavStore } from "./memory-dav-store";
+import { IcloudBridge } from "../modules/providers/icloud-web/icloud-bridge";
 import { HomeAssistantClient } from "../modules/home/home-assistant.client";
 
 /** Wires the services by hand on an in-memory database, mirroring the Nest modules. */
@@ -34,7 +35,7 @@ export const createTestContext = (
   const accounts = new ProviderAccountsRepository(db, secrets);
   const calendarsRepository = new CalendarsRepository(db);
   const eventsRepository = new EventsRepository(db);
-  const providers = new ProvidersService(accounts, caldav, cookidoo, google);
+  const providers = new ProvidersService(accounts, caldav, cookidoo, google, new IcloudBridge({ python: "", port: 0, sessionDir: "" }));
   const dav = new MemoryDavStore();
   const homeAssistant = new HomeAssistantClient(null);
   const occasions = new OccasionsStore(dav, settings);

@@ -23,7 +23,7 @@ const LIST_COLORS = ["#F97316", "#2563EB", "#14B8A6", "#DB2777", "#8B5CF6", "#65
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
-/** Google Tasks lists shown in the "Liste" page, with name, color and visibility. */
+/** Google Tasks and iCloud Reminders lists shown in the "Liste" page, with name, color and visibility. */
 export const TaskListsSection = ({ lists, onChanged }: { lists: TaskListConfig[]; onChanged: () => void }) => {
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export const TaskListsSection = ({ lists, onChanged }: { lists: TaskListConfig[]
       <div className="panel-card__header">
         <div>
           <p className="eyebrow">Liste</p>
-          <h3>Liste Google visibili</h3>
+          <h3>Liste Google e iCloud visibili</h3>
         </div>
       </div>
       {feedback ? (
@@ -51,7 +51,7 @@ export const TaskListsSection = ({ lists, onChanged }: { lists: TaskListConfig[]
         </MessageBar>
       ) : null}
       {lists.length === 0 ? (
-        <p className="calendar-detail-hint">Nessuna lista aggiunta. Usa "Scegli liste" su un account Google.</p>
+        <p className="calendar-detail-hint">Nessuna lista aggiunta. Usa "Scegli liste" su un account Google o Promemoria iCloud.</p>
       ) : (
         <div className="stack-list">
           {lists.map((list) => (
@@ -60,7 +60,7 @@ export const TaskListsSection = ({ lists, onChanged }: { lists: TaskListConfig[]
               list={list}
               onAction={run}
               onRemove={() => {
-                if (window.confirm(`Rimuovere ${list.name} da Familywall? La lista su Google non viene toccata.`)) {
+                if (window.confirm(`Rimuovere ${list.name} da Familywall? La lista originale non viene toccata.`)) {
                   void run(() => api.deleteTaskList(list.id));
                 }
               }}
@@ -98,7 +98,7 @@ const TaskListRow = ({
             onChange={(_, data) => setName(data.value)}
             onBlur={() => (name.trim() && name !== list.name ? void onAction(() => api.updateTaskList(list.id, { name: name.trim() })) : undefined)}
           />
-          <p>{list.accountLabel} · Google Tasks</p>
+          <p>{list.accountLabel}</p>
         </div>
       </div>
       <div className="row-actions">
@@ -145,9 +145,9 @@ export const DiscoverListsDialog = ({ account, onClose }: { account: ProviderAcc
         <DialogBody>
           <CloseableDialogTitle>Liste di {account.label}</CloseableDialogTitle>
           <DialogContent className="dialog-form">
-            {state.status === "loading" ? <Spinner label="Lettura delle liste da Google..." /> : null}
+            {state.status === "loading" ? <Spinner label="Lettura delle liste..." /> : null}
             {state.status === "error" ? <p className="form-error">{state.error}</p> : null}
-            {state.status === "ready" && state.lists.length === 0 ? <p className="calendar-detail-hint">Nessuna lista trovata in Google Tasks.</p> : null}
+            {state.status === "ready" && state.lists.length === 0 ? <p className="calendar-detail-hint">Nessuna lista trovata nell'account.</p> : null}
             {state.lists.map((list, index) => {
               const isAdded = list.alreadyAdded || added.has(list.remoteId);
               return (

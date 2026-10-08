@@ -318,6 +318,23 @@ Collegamento a Home Assistant:
 - **Add-on**: automatico tramite il Supervisor (`homeassistant_api: true` in `config.yaml`). Non serve nessun token.
 - **Fuori dall'add-on** (sviluppo o Docker): imposta `HA_URL` (per esempio `http://homeassistant.local:8123`) e `HA_TOKEN` con un token di lunga durata creato nel profilo utente di Home Assistant. Non salvare il token nel repository.
 
+### Promemoria iCloud con l'Apple ID (pyicloud)
+
+Le liste dei Promemoria di iCloud non si leggono con la password per app (CalDAV): servono le API web di iCloud. Familywall le usa con **pyicloud 2.6.5**, la stessa libreria dell'integrazione iCloud di Home Assistant, in un piccolo processo Python avviato da Familywall solo su `127.0.0.1`.
+
+1. Admin → Account calendario → **Collega account** → **Promemoria iCloud**.
+2. Scrivi l'Apple ID e la **password dell'Apple ID** (non quella per app).
+3. Apple mostra un codice di 6 cifre su iPhone, iPad o Mac: tocca "Consenti" e scrivilo in Familywall (**Inserisci codice**).
+4. **Scegli liste**: le liste scelte compaiono in Liste con l'etichetta "iCloud". Si aggiungono, spuntano ed eliminano le voci, anche dal pannello; funzionano dashboard, "Comprati spesso" e ingredienti del menu.
+
+Da sapere:
+- La password è cifrata nel database con `secret.key`. La sessione di iCloud (cookie e dispositivo "fidato") sta in `DATA_DIR/icloud`, così dopo un riavvio non serve un nuovo codice. Scollegando l'account la sessione viene cancellata.
+- Quando Apple chiude la sessione (di solito dopo qualche settimana) l'account mostra "codice richiesto": tocca **Riconnetti**, poi **Inserisci codice**.
+- Sono API non ufficiali: Apple può cambiarle o bloccare l'accesso per un po' dopo troppi tentativi. Familywall riapre la sessione una volta sola per richiesta e non riprova in ciclo.
+- Con la **Protezione avanzata dei dati** attiva su iCloud i Promemoria non sono leggibili.
+- Le sotto-voci dei Promemoria non vengono mostrate.
+- Nell'add-on pyicloud è già installato. In sviluppo: `pip install pyicloud==2.6.5` e `ICLOUD_PYTHON` con il Python da usare (predefinito `python3`; vuoto per disattivare). Il processo ascolta su `ICLOUD_BRIDGE_PORT` (predefinita 5234), solo in locale e con un token casuale.
+
 ### Liste di Home Assistant e Promemoria iCloud
 
 Familywall mostra le liste `todo.*` di Home Assistant, con la stessa connessione dei pulsanti. Così arrivano anche i **Promemoria di iCloud** già condivisi in famiglia, tramite l'integrazione ufficiale **Apple iCloud** di Home Assistant. Vanno bene anche Bring!, Todoist, Google Tasks o le liste locali di Home Assistant.
@@ -327,7 +344,7 @@ Familywall mostra le liste `todo.*` di Home Assistant, con la stessa connessione
 3. La lista compare in Liste con l'etichetta "Home Assistant": si aggiungono, spuntano, rinominano ed eliminano le voci. Si può mostrare in dashboard e usare per gli ingredienti del menu.
 
 Da sapere:
-- L'integrazione Apple iCloud di Home Assistant **non accetta le password per app**: chiede la password normale dell'Apple ID e il codice di verifica a due fattori. Le credenziali restano in Home Assistant; Familywall non le vede. Usa le API web di iCloud, non pubbliche: Apple può chiedere di nuovo il codice o bloccare temporaneamente l'accesso dopo troppi tentativi.
+- L'integrazione Apple iCloud di Home Assistant **non accetta le password per app**: chiede la password normale dell'Apple ID e il codice di verifica a due fattori. Le credenziali restano in Home Assistant; Familywall non le vede. In alternativa Familywall si collega direttamente (vedi [Promemoria iCloud con l'Apple ID](#promemoria-icloud-con-lapple-id-pyicloud)).
 - Con la **Protezione avanzata dei dati** attiva su iCloud, Home Assistant non può leggere i Promemoria.
 - Con una password per app restano disponibili i **calendari** iCloud, collegati direttamente in Familywall (CalDAV). I Promemoria iCloud non sono più raggiungibili via CalDAV.
 - Home Assistant non dice quando una voce è stata completata: Familywall mostra le voci aperte e, per due giorni, quelle spuntate da Familywall.
@@ -356,7 +373,7 @@ npm run dev:web   # web su http://localhost:5173, /api e /dav inoltrati all'API
 ```
 
 - Al primo accesso la web app chiede di creare la famiglia e l'account Admin.
-- Se la porta 3001 è occupata:
+- Se la porta 3001 è occupata l'API si ferma con "Port 3001 is already in use". Attenzione: se sulla 3001 risponde un altro programma (per esempio un'altra app in sviluppo), la web app riceve le sue risposte e mostra la pagina "Qualcosa non ha funzionato". Ferma l'altro programma, oppure:
   - avvia l'API con `PORT=3002 npm run dev:api`;
   - avvia il web con `API_PROXY_TARGET=http://localhost:3002 npm run dev:web`.
 

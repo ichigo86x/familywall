@@ -3,6 +3,7 @@ import { openDatabase } from "../../database/database";
 import { DavGatewayService } from "../dav/dav-gateway.service";
 import { DavTasksClient } from "../dav/dav-tasks.client";
 import { HomeAssistantClient } from "../home/home-assistant.client";
+import type { IcloudBridge } from "../providers/icloud-web/icloud-bridge";
 import { GoogleClient } from "../providers/google/google-client";
 import { ProviderAccountsRepository } from "../providers/provider-accounts.repository";
 import { SettingsRepository } from "../settings/settings.repository";
@@ -41,7 +42,8 @@ describe("Home Assistant to-do lists", () => {
       {} as DavTasksClient,
       davGateway,
       new HomeAssistantClient({ url: "http://supervisor/core/api", token: "t" }, fetchImpl),
-      settings
+      settings,
+      {} as IcloudBridge
     );
     return { service, calls };
   };
