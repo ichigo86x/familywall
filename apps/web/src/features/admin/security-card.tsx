@@ -8,7 +8,7 @@ import { useAuth } from "@/components/auth/use-auth";
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
-/** Two-step sign-in of the signed-in Admin: authenticator app, recovery codes, turning it off. */
+/** Two-step sign-in of the signed-in member: authenticator app, recovery codes, turning it off. */
 export const SecurityCard = () => {
   const auth = useAuth();
   const enabled = Boolean(auth.user?.totpEnabled);
@@ -53,7 +53,7 @@ export const SecurityCard = () => {
       </div>
       <p>
         Dopo la password Familywall chiede il codice di 6 cifre di un'app di autenticazione (Password di iPhone, Google Authenticator, Microsoft
-        Authenticator, 1Password...). Così una password rubata non basta per entrare come Admin.
+        Authenticator, 1Password...). Così una password rubata non basta per entrare nel tuo account.
       </p>
       {error ? (
         <MessageBar intent="error">

@@ -49,6 +49,7 @@ import type {
   User
 } from "@familywall/shared";
 
+import { clearResourceMemory } from "@/hooks/use-async-resource";
 import { connection, offlineCache } from "./offline-cache";
 
 const TOKEN_KEY = "familywall.auth.token";
@@ -65,10 +66,15 @@ export class ApiError extends Error {
 
 export const tokenStore = {
   get: (): string | null => window.localStorage.getItem(TOKEN_KEY),
-  set: (token: string): void => window.localStorage.setItem(TOKEN_KEY, token),
+  set: (token: string): void => {
+    // Another member may sign in on this device: nothing of the previous session is shown.
+    clearResourceMemory();
+    window.localStorage.setItem(TOKEN_KEY, token);
+  },
   clear: (): void => {
     window.localStorage.removeItem(TOKEN_KEY);
     offlineCache.clear();
+    clearResourceMemory();
   }
 };
 

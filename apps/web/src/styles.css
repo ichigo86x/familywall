@@ -3925,3 +3925,77 @@ button.schedule-chip {
   color: var(--color-muted);
   font-size: 0.85rem;
 }
+
+/* Admin sections. */
+.admin-sections {
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.admin-section-hint {
+  margin: -8px 0 0;
+}
+
+.dashboard-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2px 12px;
+}
+
+.dashboard-lists__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-lists__label small {
+  color: var(--color-muted);
+}
+
+/* Profile. */
+.member-avatar--button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.member-avatar--button:focus-visible,
+.member-avatar--current {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.member-avatar--inline {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+}
+
+.profile-password {
+  max-width: 420px;
+}
+
+.phone-setup__platform {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.phone-setup__platform h4 {
+  margin: 0;
+}
+
+.phone-setup__platform ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.phone-setup__platform code {
+  overflow-wrap: anywhere;
+}

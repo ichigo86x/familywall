@@ -8,7 +8,6 @@ import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { AddRegular, ArrowClockwiseRegular, DismissRegular, PinRegular } from "@/lib/fluent-icons";
-import { RemindersSetup } from "./reminders-setup";
 
 /** Lists change from phones too: refresh periodically like the calendar. */
 const AUTO_REFRESH_MS = 2 * 60 * 1000;
@@ -42,8 +41,8 @@ const byAisle = (tasks: TaskItem[]) => {
 export const ListsPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("lists:write");
-  const lists = useAsyncResource(() => api.getLists(), []);
-  const settings = useAsyncResource(() => api.getSettings(), []);
+  const lists = useAsyncResource(() => api.getLists(), [], "lists");
+  const settings = useAsyncResource(() => api.getSettings(), [], "settings");
   const dashboardIds = settings.data?.dashboardListIds ?? [];
   const toggleDashboard = async (listId: string) => {
     const next = dashboardIds.includes(listId) ? dashboardIds.filter((id) => id !== listId) : [...dashboardIds, listId];
@@ -73,19 +72,17 @@ export const ListsPage = () => {
       }
     >
       {lists.status === "loading" && !lists.data ? (
-        <LoadingState title="Caricamento liste" message="Lettura delle liste da Google." />
+        <LoadingState title="Caricamento liste" message="Lettura delle liste." />
       ) : lists.status === "error" ? (
         <ErrorState title="Liste non disponibili" message={lists.error.message} actionLabel="Riprova" onAction={lists.reload} />
       ) : (lists.data?.lists.length ?? 0) === 0 ? (
         <EmptyState
           title="Nessuna lista"
-          message={auth.can("providers:manage") ? 'Collega un account Google e usa "Scegli liste" nella sezione Admin.' : "Chiedi all'amministratore di aggiungere le liste."}
+          message={auth.can("providers:manage") ? "Crea una lista nell'app Promemoria di un telefono collegato a Familywall (Profilo → Telefono e tablet), oppure collega un account in Admin → Calendari e liste e usa \"Scegli liste\"." : "Chiedi all'amministratore di aggiungere le liste."}
           actionLabel="Ricarica"
           onAction={lists.reload}
         />
       ) : (
-        <>
-        {canWrite ? <RemindersSetup /> : null}
         <div className="task-lists-grid">
           {lists.data!.lists.map((list) => (
             <TaskListCard
@@ -98,7 +95,6 @@ export const ListsPage = () => {
             />
           ))}
         </div>
-        </>
       )}
     </AppShell>
   );

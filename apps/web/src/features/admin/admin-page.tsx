@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Card, Field, Input, MessageBar, MessageBarBody } from "@fluentui/react-components";
+import { Button, Card, Field, Input, MessageBar, MessageBarBody, Tab, TabList } from "@fluentui/react-components";
+import { useSearchParams } from "react-router-dom";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -14,7 +15,8 @@ import { PanelSettingsCard } from "./panel-settings-card";
 import { HomeButtonsCard } from "./home-buttons-card";
 import { BackupCard } from "./backup-card";
 import { HomeAssistantHintCard, HomeCalendarsCard, HomeListsCard } from "./home-lists-card";
-import { AuditCard, SecurityCard } from "./security-card";
+import { AuditCard } from "./security-card";
+import { DashboardListsCard } from "./dashboard-lists-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
@@ -28,48 +30,99 @@ const loadAdminData = async () => {
   return { members, accounts, calendars, settings, taskLists, homeAvailable: home.available };
 };
 
+type AdminSection = "family" | "dashboard" | "accounts" | "home" | "security";
+
+const SECTIONS: Array<{ value: AdminSection; label: string; hint: string }> = [
+  { value: "family", label: "Famiglia", hint: "Nome della famiglia, membri e permessi." },
+  { value: "dashboard", label: "Dashboard e pannelli", hint: "Cosa mostra la dashboard, meteo, notte e impostazioni di ogni pannello a muro." },
+  { value: "accounts", label: "Calendari e liste", hint: "Account collegati (iCloud, Google, CalDAV, Cookidoo), calendari visibili e liste." },
+  { value: "home", label: "Home Assistant", hint: "Pulsanti, liste e calendari di Home Assistant." },
+  { value: "security", label: "Backup e sicurezza", hint: "Backup, ripristino e registro delle attività." }
+];
+
+const isSection = (value: string | null): value is AdminSection => SECTIONS.some((section) => section.value === value);
+
 export const AdminPage = () => {
-  const admin = useAsyncResource(loadAdminData, []);
+  const admin = useAsyncResource(loadAdminData, [], "admin");
+  // The section is in the address (#/admin?sezione=...), so a link or a reload opens the same one.
+  const [params, setParams] = useSearchParams();
+  const requested = params.get("sezione");
+  const section: AdminSection = isSection(requested) ? requested : "family";
+  const current = SECTIONS.find((entry) => entry.value === section)!;
 
   return (
     <AppShell
+      compact
       currentRoute="/admin"
       eyebrow="Amministrazione"
-      title="Famiglia e calendari"
-      subtitle="Gestisci i membri e i loro permessi, collega gli account iCloud e scegli quali calendari mostrare."
+      title={current.label}
+      subtitle={current.hint}
       summaryChip={admin.data ? `${admin.data.members.length} membri · ${admin.data.calendars.length} calendari` : "Admin"}
     >
+      <TabList
+        className="admin-sections"
+        selectedValue={section}
+        onTabSelect={(_, data) => setParams({ sezione: String(data.value) }, { replace: true })}
+        aria-label="Sezioni dell'amministrazione"
+      >
+        {SECTIONS.map((entry) => (
+          <Tab key={entry.value} value={entry.value}>
+            {entry.label}
+          </Tab>
+        ))}
+      </TabList>
+      <p className="calendar-detail-hint admin-section-hint">{current.hint}</p>
+
       {admin.status === "loading" && !admin.data ? (
         <LoadingState title="Caricamento" message="Lettura della configurazione della famiglia." />
       ) : admin.status === "error" ? (
         <ErrorState title="Admin non disponibile" message={admin.error.message} actionLabel="Riprova" onAction={admin.reload} />
       ) : admin.data ? (
         <>
-          <HouseholdCard householdName={admin.data.settings.householdName} onSaved={admin.reload} />
-          <WeatherCard location={admin.data.settings.weatherLocation} onSaved={admin.reload} />
-          <PanelSettingsCard
-            night={admin.data.settings.panelNight}
-            panels={admin.data.members.filter((member) => member.role === "Kiosk")}
-            profiles={admin.data.settings.panelProfiles ?? {}}
-            buttons={admin.data.settings.homeButtons}
-            onSaved={admin.reload}
-          />
-          {/* Home Assistant cards only where Familywall can reach it: add-on (Supervisor) or HA_URL + long-lived HA_TOKEN. */}
-          {admin.data.homeAvailable ? <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} /> : null}
-          <MembersSection members={admin.data.members} onChanged={admin.reload} />
-          <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
-          <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
-          {admin.data.homeAvailable ? (
+          {section === "family" ? (
             <>
-              <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
-              <HomeCalendarsCard calendars={admin.data.settings.homeCalendars ?? []} onSaved={admin.reload} />
+              <HouseholdCard householdName={admin.data.settings.householdName} onSaved={admin.reload} />
+              <MembersSection members={admin.data.members} onChanged={admin.reload} />
             </>
-          ) : (
-            <HomeAssistantHintCard />
-          )}
-          <SecurityCard />
-          <BackupCard />
-          <AuditCard />
+          ) : null}
+          {section === "dashboard" ? (
+            <>
+              <DashboardListsCard listIds={admin.data.settings.dashboardListIds} onSaved={admin.reload} />
+              <WeatherCard location={admin.data.settings.weatherLocation} onSaved={admin.reload} />
+              <PanelSettingsCard
+                night={admin.data.settings.panelNight}
+                panels={admin.data.members.filter((member) => member.role === "Kiosk")}
+                profiles={admin.data.settings.panelProfiles ?? {}}
+                buttons={admin.data.settings.homeButtons}
+                onSaved={admin.reload}
+              />
+            </>
+          ) : null}
+          {section === "accounts" ? (
+            <>
+              <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
+              <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
+            </>
+          ) : null}
+          {/* Home Assistant cards only where Familywall can reach it: add-on (Supervisor) or HA_URL + long-lived HA_TOKEN. */}
+          {section === "home" ? (
+            admin.data.homeAvailable ? (
+              <>
+                <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} />
+                <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
+                <HomeCalendarsCard calendars={admin.data.settings.homeCalendars ?? []} onSaved={admin.reload} />
+              </>
+            ) : (
+              <HomeAssistantHintCard />
+            )
+          ) : null}
+          {section === "security" ? (
+            <>
+              <BackupCard />
+              <AuditCard />
+              <p className="calendar-detail-hint">La verifica in due passaggi del tuo account è nel Profilo (tocca il tuo cerchio in alto).</p>
+            </>
+          ) : null}
         </>
       ) : null}
     </AppShell>

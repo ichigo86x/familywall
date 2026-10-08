@@ -74,8 +74,8 @@ export const CalendarPage = () => {
   const rangeFrom = days[0]!.toISOString();
   const rangeTo = addDays(days[days.length - 1]!, 1).toISOString();
 
-  const calendar = useAsyncResource(() => api.getCalendar(rangeFrom, rangeTo), [rangeFrom, rangeTo]);
-  const members = useAsyncResource(() => api.getMembers(), []);
+  const calendar = useAsyncResource(() => api.getCalendar(rangeFrom, rangeTo), [rangeFrom, rangeTo], `calendar:${rangeFrom}:${rangeTo}`);
+  const members = useAsyncResource(() => api.getMembers(), [], "members");
 
   // Phones show days in one column: start from today instead of the past days above it.
   const hasData = Boolean(calendar.data);

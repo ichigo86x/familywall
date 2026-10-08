@@ -63,6 +63,8 @@ describe("Home Assistant to-do lists", () => {
       { url: "http://supervisor/core/api/services/todo/remove_item", body: { item: ["a1"], entity_id: "todo.spesa_icloud" } }
     ]);
     // Ticked here: stays visible (struck through) although Home Assistant does not say when.
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    await service.refreshAll();
     expect((await service.getLists()).lists[0]!.tasks.map((task) => [task.title, task.completed])).toEqual([["Latte", false], ["Pane", true]]);
     await expect(service.createTask("ha:todo.altro", { title: "X" })).rejects.toThrow(/non trovata/);
     expect(await service.suggestions("ha:todo.spesa_icloud")).toEqual(["Pane"]);

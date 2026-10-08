@@ -64,6 +64,30 @@ describe("iCloud Reminders lists (pyicloud)", () => {
     expect(await service.suggestions(config.id)).toEqual(["Pane"]);
   });
 
+  it("serves the lists from memory, shows writes at once and refreshes old copies in the background", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const { config, bridge, service } = setup();
+      await service.getLists();
+      await service.getLists();
+      expect(bridge.reminders).toHaveBeenCalledTimes(1);
+
+      await service.createTask(config.id, { title: "Uova" });
+      await service.updateTask(config.id, "a", { completed: true });
+      const afterWrites = (await service.getLists()).lists[0]!.tasks;
+      expect(afterWrites.map((task) => [task.title, task.completed])).toContainEqual(["Uova", false]);
+      expect(afterWrites.find((task) => task.id === "a")!.completed).toBe(true);
+
+      // The copy changed by the writes is old: the next page gets it and a reading starts in the background.
+      await new Promise((resolve) => setImmediate(resolve));
+      vi.advanceTimersByTime(31_000);
+      await service.getLists();
+      expect(bridge.reminders.mock.calls.length).toBeGreaterThanOrEqual(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("marks the account when iCloud asks the code again", async () => {
     const { ctx, account, bridge, service } = setup();
     bridge.reminders.mockRejectedValueOnce(new IcloudBridgeError("2fa_required", "iCloud chiede il codice di verifica."));

@@ -72,14 +72,14 @@ export const DashboardPage = () => {
 
   const from = today.toISOString();
   const to = addDays(today, BIRTHDAY_DAYS + 1).toISOString();
-  const calendar = useAsyncResource(() => api.getCalendar(from, to), [from, to]);
-  const members = useAsyncResource(() => api.getMembers(), []);
-  const lists = useAsyncResource(() => api.getLists(), []);
-  const notes = useAsyncResource(() => api.getNotes(), []);
-  const schedule = useAsyncResource(() => api.getSchedule(), []);
-  const routines = useAsyncResource(() => api.getRoutines().catch(() => []), []);
-  const settings = useAsyncResource(() => api.getSettings(), []);
-  const weather = useAsyncResource(() => api.getWeather().catch(() => null), []);
+  const calendar = useAsyncResource(() => api.getCalendar(from, to), [from, to], `calendar:${from}:${to}`);
+  const members = useAsyncResource(() => api.getMembers(), [], "members");
+  const lists = useAsyncResource(() => api.getLists(), [], "lists");
+  const notes = useAsyncResource(() => api.getNotes(), [], "notes");
+  const schedule = useAsyncResource(() => api.getSchedule(), [], "schedule");
+  const routines = useAsyncResource(() => api.getRoutines().catch(() => []), [], "routines");
+  const settings = useAsyncResource(() => api.getSettings(), [], "settings");
+  const weather = useAsyncResource(() => api.getWeather().catch(() => null), [], "weather");
 
   const reloadAll = useCallback(() => {
     calendar.reload();

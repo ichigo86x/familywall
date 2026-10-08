@@ -31,8 +31,8 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 export const NotesPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("lists:write");
-  const notes = useAsyncResource(() => api.getNotes(), []);
-  const members = useAsyncResource(() => api.getMembers(), []);
+  const notes = useAsyncResource(() => api.getNotes(), [], "notes");
+  const members = useAsyncResource(() => api.getMembers(), [], "members");
   const [editing, setEditing] = useState<FamilyNote | "new" | null>(null);
   useNewParam(canWrite, () => setEditing("new"));
   const membersById = new Map((members.data ?? []).map((member) => [member.id, member]));

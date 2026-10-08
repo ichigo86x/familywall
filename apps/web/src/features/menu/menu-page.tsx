@@ -56,7 +56,8 @@ export const MenuPage = () => {
       const [calendar, meals] = await Promise.all([api.getCalendar(weekStart.toISOString(), addDays(weekStart, 7).toISOString()), api.getMenu(from, to)]);
       return { calendar, meals };
     },
-    [from, to]
+    [from, to],
+    `menu:${from}`
   );
 
   const dishes = useMemo<Dish[]>(() => {

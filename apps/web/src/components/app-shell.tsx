@@ -47,7 +47,7 @@ const SCALE_LABELS: Record<ScalePreference, string> = {
   "150": "Enorme"
 };
 
-export type AppRoute = "/" | "/calendar" | "/menu" | "/schedule" | "/lists" | "/notes" | "/admin";
+export type AppRoute = "/" | "/calendar" | "/menu" | "/schedule" | "/lists" | "/notes" | "/admin" | "/profile";
 
 interface AppShellProps {
   currentRoute: AppRoute;
@@ -124,14 +124,23 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
               {summaryChip}
             </Badge>
             {auth.user ? (
-              <span
-                className="member-avatar"
-                style={{ background: auth.user.color }}
-                title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
-                aria-label={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}
-              >
-                {initials(auth.user.displayName)}
-              </span>
+              auth.user.role === "Kiosk" ? (
+                <span className="member-avatar" style={{ background: auth.user.color }} title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}>
+                  {initials(auth.user.displayName)}
+                </span>
+              ) : (
+                // The member's own page: password, phone setup, two-step sign-in.
+                <button
+                  type="button"
+                  className={`member-avatar member-avatar--button${currentRoute === "/profile" ? " member-avatar--current" : ""}`}
+                  style={{ background: auth.user.color }}
+                  title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]} · Profilo`}
+                  aria-label={`Profilo di ${auth.user.displayName}`}
+                  onClick={() => navigate("/profile")}
+                >
+                  {initials(auth.user.displayName)}
+                </button>
+              )
             ) : null}
             <Menu
               checkedValues={{ theme: [theme.preference], scale: [theme.scalePreference] }}

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import { ingredientKey } from "@familywall/shared";
 import type {
   AddTaskListInput,
@@ -31,11 +31,27 @@ const COMPLETED_VISIBLE_MS = 2 * 24 * 60 * 60 * 1000;
 /** Suggestions look at what was bought in the last months. */
 const SUGGESTION_WINDOW_MS = 180 * 24 * 60 * 60 * 1000;
 const MAX_SUGGESTIONS = 12;
+/** Remote lists (Google, iCloud, Home Assistant) read within this time are served from memory without asking again. */
+const FRESH_MS = 30 * 1000;
+/** Background reading of the remote lists, so pages open from memory. */
+const SYNC_INTERVAL_MS = 2 * 60 * 1000;
+
+interface CachedList {
+  list: FamilyTaskList;
+  readAt: number;
+}
 
 /** Shared lists (shopping, chores...): Google Tasks lists and the family Reminders lists (CalDAV). */
 @Injectable()
-export class ListsService {
+export class ListsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ListsService.name);
+  /** Last reading of every remote list: pages get it at once while a background read refreshes it. */
+  private readonly cache = new Map<string, CachedList>();
+  private readonly reading = new Map<string, Promise<FamilyTaskList>>();
+  /** Time of the last write made here on each list. */
+  private readonly writtenAt = new Map<string, number>();
+  private syncTimer: ReturnType<typeof setInterval> | undefined;
+  private firstSync: ReturnType<typeof setTimeout> | undefined;
   /** Last items read for each list: shown (with the error) when a provider fails. */
   private readonly lastGood = new Map<string, TaskItem[]>();
   private lastReminderLists: FamilyTaskList[] = [];
@@ -54,40 +70,140 @@ export class ListsService {
 
   /** A failing list must not hide the others: the error is reported per list. */
   public async getLists(): Promise<ListsResponse> {
-    const [googleLists, reminderLists, homeLists] = await Promise.all([this.googleLists(), this.reminderLists(), this.homeLists()]);
-    return { lists: [...reminderLists, ...googleLists, ...homeLists] };
+    const [remoteLists, reminderLists] = await Promise.all([
+      Promise.all(this.remoteReaders().map(({ id, read, name, color }) => this.cached(id, read).then((list) => ({ ...list, name, color })))),
+      this.reminderLists()
+    ]);
+    return { lists: [...reminderLists, ...remoteLists] };
   }
 
-  /** To-do lists of Home Assistant chosen in Admin (for example Apple Reminders through the iCloud integration). */
-  private async homeLists(): Promise<FamilyTaskList[]> {
+  public onModuleInit(): void {
+    if (process.env.VITEST) {
+      return;
+    }
+    const run = () => void this.refreshAll();
+    this.syncTimer = setInterval(run, SYNC_INTERVAL_MS);
+    this.firstSync = setTimeout(run, 5_000);
+  }
+
+  public onModuleDestroy(): void {
+    clearInterval(this.syncTimer);
+    clearTimeout(this.firstSync);
+  }
+
+  /** Background reading of every remote list; failures are already reported on each list. */
+  public async refreshAll(): Promise<void> {
+    await Promise.all(this.remoteReaders().map(({ id, read }) => this.refresh(id, read)));
+  }
+
+  /** Google, iCloud and Home Assistant lists, in display order, with the function that reads each one. */
+  private remoteReaders(): Array<{ id: string; name: string; color: string; read: () => Promise<FamilyTaskList> }> {
+    const configured = this.lists.list({ enabledOnly: true }).map((config) => ({
+      id: config.id,
+      name: config.name,
+      color: config.color,
+      read: () => (this.provider(config) === "icloudweb" ? this.icloudList(config) : this.googleList(config))
+    }));
     // Without the add-on or a long-lived token Home Assistant lists are not shown at all.
-    const configs = this.homeAssistant.available ? this.settings.get().homeLists : [];
-    return Promise.all(
-      configs.map(async (config): Promise<FamilyTaskList> => {
-        const base = { id: HA_PREFIX + config.entityId, name: config.name, color: config.color, source: "homeassistant" as const };
-        try {
-          const items = await this.homeAssistant.todoItems(config.entityId);
-          const now = Date.now();
-          const tasks = items
-            .filter((item) => item.summary.trim() !== "")
-            .filter((item) => item.status !== "completed" || now - (this.completedHere.get(`${config.entityId}/${item.uid}`) ?? 0) < COMPLETED_VISIBLE_MS)
-            .map(
-              (item): TaskItem => ({
-                id: item.uid,
-                title: item.summary.trim(),
-                notes: item.description ?? null,
-                completed: item.status === "completed",
-                completedAt: item.status === "completed" ? new Date(this.completedHere.get(`${config.entityId}/${item.uid}`) ?? now).toISOString() : null,
-                due: item.due ? new Date(item.due).toISOString() : null
-              })
-            );
-          return { ...base, lastError: null, tasks: this.remember(base.id, tasks) };
-        } catch (error) {
-          this.logger.warn(`Reading Home Assistant list ${config.entityId} failed: ${error instanceof Error ? error.message : String(error)}`);
-          return { ...base, ...this.fallback(base.id, error) };
+    const home = (this.homeAssistant.available ? this.settings.get().homeLists : []).map((config) => ({
+      id: HA_PREFIX + config.entityId,
+      name: config.name,
+      color: config.color,
+      read: () => this.homeList(config)
+    }));
+    return [...configured, ...home];
+  }
+
+  /** The copy in memory when there is one (refreshed in the background when old), otherwise a reading now. */
+  private async cached(id: string, read: () => Promise<FamilyTaskList>): Promise<FamilyTaskList> {
+    const entry = this.cache.get(id);
+    if (!entry) {
+      return this.refresh(id, read);
+    }
+    if (Date.now() - entry.readAt >= FRESH_MS) {
+      void this.refresh(id, read);
+    }
+    return entry.list;
+  }
+
+  /** One reading at a time per list; the readers never throw (errors become lastError). */
+  private refresh(id: string, read: () => Promise<FamilyTaskList>): Promise<FamilyTaskList> {
+    const running = this.reading.get(id);
+    if (running) {
+      return running;
+    }
+    const startedAt = Date.now();
+    const reading = read()
+      .then((list) => {
+        // A reading started before a write made here may miss it: keep the updated copy and read again later.
+        if ((this.writtenAt.get(id) ?? 0) > startedAt && this.cache.has(id)) {
+          return this.cache.get(id)!.list;
         }
+        this.cache.set(id, { list, readAt: Date.now() });
+        return list;
       })
+      .finally(() => this.reading.delete(id));
+    this.reading.set(id, reading);
+    return reading;
+  }
+
+  /**
+   * After a write the copy in memory shows the change at once and the next request reads the list
+   * again in the background.
+   */
+  private changed(listId: string, change: (tasks: TaskItem[]) => TaskItem[]): void {
+    this.writtenAt.set(listId, Date.now());
+    const entry = this.cache.get(listId);
+    if (!entry) {
+      return;
+    }
+    const tasks = change(entry.list.tasks);
+    this.lastGood.set(listId, tasks);
+    this.cache.set(listId, { list: { ...entry.list, tasks }, readAt: 0 });
+  }
+
+  private changedTask(listId: string, taskId: string, input: UpdateTaskInput): void {
+    this.changed(listId, (tasks) =>
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              ...(input.title !== undefined ? { title: input.title } : {}),
+              ...(input.completed !== undefined ? { completed: input.completed, completedAt: input.completed ? new Date().toISOString() : null } : {})
+            }
+          : task
+      )
     );
+  }
+
+  private newTask(id: string, title: string): TaskItem {
+    return { id, title, notes: null, completed: false, completedAt: null, due: null };
+  }
+
+  /** A to-do list of Home Assistant chosen in Admin. */
+  private async homeList(config: { entityId: string; name: string; color: string }): Promise<FamilyTaskList> {
+    const base = { id: HA_PREFIX + config.entityId, name: config.name, color: config.color, source: "homeassistant" as const };
+    try {
+      const items = await this.homeAssistant.todoItems(config.entityId);
+      const now = Date.now();
+      const tasks = items
+        .filter((item) => item.summary.trim() !== "")
+        .filter((item) => item.status !== "completed" || now - (this.completedHere.get(`${config.entityId}/${item.uid}`) ?? 0) < COMPLETED_VISIBLE_MS)
+        .map(
+          (item): TaskItem => ({
+            id: item.uid,
+            title: item.summary.trim(),
+            notes: item.description ?? null,
+            completed: item.status === "completed",
+            completedAt: item.status === "completed" ? new Date(this.completedHere.get(`${config.entityId}/${item.uid}`) ?? now).toISOString() : null,
+            due: item.due ? new Date(item.due).toISOString() : null
+          })
+        );
+      return { ...base, lastError: null, tasks: this.remember(base.id, tasks) };
+    } catch (error) {
+      this.logger.warn(`Reading Home Assistant list ${config.entityId} failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { ...base, ...this.fallback(base.id, error) };
+    }
   }
 
   private homeEntity(listId: string): string {
@@ -166,34 +282,31 @@ export class ListsService {
     }
   }
 
-  private async googleLists(): Promise<FamilyTaskList[]> {
-    return Promise.all(
-      this.lists.list({ enabledOnly: true }).map(async (config): Promise<FamilyTaskList> => {
-        if (this.provider(config) === "icloudweb") {
-          try {
-            const tasks = this.toTasks(await this.icloud.reminders(config.accountId, this.icloudCredentials(config.accountId), config.remoteId));
-            this.lists.recordError(config.id, null);
-            return { id: config.id, name: config.name, color: config.color, source: "icloud", lastError: null, tasks: this.remember(config.id, tasks) };
-          } catch (error) {
-            this.icloudFailure(config, error);
-            const message = error instanceof Error ? error.message : "Errore iCloud.";
-            this.logger.warn(`Reading iCloud list ${config.id} failed: ${message}`);
-            this.lists.recordError(config.id, message);
-            return { id: config.id, name: config.name, color: config.color, source: "icloud", ...this.fallback(config.id, error) };
-          }
-        }
-        try {
-          const tasks = await this.google.listTasks(this.secret(config.accountId), config.remoteId);
-          this.lists.recordError(config.id, null);
-          return { id: config.id, name: config.name, color: config.color, source: "google", lastError: null, tasks: this.remember(config.id, tasks) };
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Errore sconosciuto.";
-          this.logger.warn(`Reading list ${config.id} failed: ${message}`);
-          this.lists.recordError(config.id, message);
-          return { id: config.id, name: config.name, color: config.color, source: "google", ...this.fallback(config.id, error) };
-        }
-      })
-    );
+  private async icloudList(config: TaskListConfig): Promise<FamilyTaskList> {
+    try {
+      const tasks = this.toTasks(await this.icloud.reminders(config.accountId, this.icloudCredentials(config.accountId), config.remoteId));
+      this.lists.recordError(config.id, null);
+      return { id: config.id, name: config.name, color: config.color, source: "icloud", lastError: null, tasks: this.remember(config.id, tasks) };
+    } catch (error) {
+      this.icloudFailure(config, error);
+      const message = error instanceof Error ? error.message : "Errore iCloud.";
+      this.logger.warn(`Reading iCloud list ${config.id} failed: ${message}`);
+      this.lists.recordError(config.id, message);
+      return { id: config.id, name: config.name, color: config.color, source: "icloud", ...this.fallback(config.id, error) };
+    }
+  }
+
+  private async googleList(config: TaskListConfig): Promise<FamilyTaskList> {
+    try {
+      const tasks = await this.google.listTasks(this.secret(config.accountId), config.remoteId);
+      this.lists.recordError(config.id, null);
+      return { id: config.id, name: config.name, color: config.color, source: "google", lastError: null, tasks: this.remember(config.id, tasks) };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore sconosciuto.";
+      this.logger.warn(`Reading list ${config.id} failed: ${message}`);
+      this.lists.recordError(config.id, message);
+      return { id: config.id, name: config.name, color: config.color, source: "google", ...this.fallback(config.id, error) };
+    }
   }
 
   private remember(listId: string, tasks: TaskItem[]): TaskItem[] {
@@ -310,26 +423,32 @@ export class ListsService {
   public delete(listId: string): void {
     this.requireList(listId);
     this.lists.delete(listId);
+    this.cache.delete(listId);
   }
 
   public async createTask(listId: string, input: CreateTaskInput): Promise<{ id: string }> {
     if (listId.startsWith(HA_PREFIX)) {
       const entityId = this.homeEntity(listId);
       await this.homeCall(() => this.homeAssistant.callService("todo", "add_item", entityId, { item: input.title }));
+      this.changed(listId, (tasks) => [this.newTask(`pending-${Date.now()}`, input.title), ...tasks]);
       return { id: "" };
     }
     if (listId.startsWith(DAV_PREFIX)) {
       return { id: await this.davCall(() => this.dav.createTask(listId.slice(DAV_PREFIX.length), input.title)) };
     }
     const list = this.requireList(listId);
+    let id: string;
     if (this.provider(list) === "icloudweb") {
-      return this.icloudCall(async () => ({ id: (await this.icloud.create(list.accountId, this.icloudCredentials(list.accountId), list.remoteId, input.title)).id }));
+      id = await this.icloudCall(async () => (await this.icloud.create(list.accountId, this.icloudCredentials(list.accountId), list.remoteId, input.title)).id);
+    } else {
+      try {
+        id = await this.google.createTask(this.secret(list.accountId), list.remoteId, input.title);
+      } catch (error) {
+        throw toAppException(error);
+      }
     }
-    try {
-      return { id: await this.google.createTask(this.secret(list.accountId), list.remoteId, input.title) };
-    } catch (error) {
-      throw toAppException(error);
-    }
+    this.changed(listId, (tasks) => [this.newTask(id, input.title), ...tasks]);
+    return { id };
   }
 
   public async updateTask(listId: string, taskId: string, input: UpdateTaskInput): Promise<void> {
@@ -348,6 +467,7 @@ export class ListsService {
         }
       }
       await this.homeCall(() => this.homeAssistant.callService("todo", "update_item", entityId, data));
+      this.changedTask(listId, taskId, input);
       return;
     }
     if (listId.startsWith(DAV_PREFIX)) {
@@ -357,19 +477,21 @@ export class ListsService {
     const list = this.requireList(listId);
     if (this.provider(list) === "icloudweb") {
       await this.icloudCall(() => this.icloud.update(list.accountId, this.icloudCredentials(list.accountId), taskId, input));
-      return;
+    } else {
+      try {
+        await this.google.updateTask(this.secret(list.accountId), list.remoteId, taskId, input);
+      } catch (error) {
+        throw toAppException(error);
+      }
     }
-    try {
-      await this.google.updateTask(this.secret(list.accountId), list.remoteId, taskId, input);
-    } catch (error) {
-      throw toAppException(error);
-    }
+    this.changedTask(listId, taskId, input);
   }
 
   public async deleteTask(listId: string, taskId: string): Promise<void> {
     if (listId.startsWith(HA_PREFIX)) {
       const entityId = this.homeEntity(listId);
       await this.homeCall(() => this.homeAssistant.callService("todo", "remove_item", entityId, { item: [taskId] }));
+      this.changed(listId, (tasks) => tasks.filter((task) => task.id !== taskId));
       return;
     }
     if (listId.startsWith(DAV_PREFIX)) {
@@ -379,13 +501,14 @@ export class ListsService {
     const list = this.requireList(listId);
     if (this.provider(list) === "icloudweb") {
       await this.icloudCall(() => this.icloud.delete(list.accountId, this.icloudCredentials(list.accountId), taskId));
-      return;
+    } else {
+      try {
+        await this.google.deleteTask(this.secret(list.accountId), list.remoteId, taskId);
+      } catch (error) {
+        throw toAppException(error);
+      }
     }
-    try {
-      await this.google.deleteTask(this.secret(list.accountId), list.remoteId, taskId);
-    } catch (error) {
-      throw toAppException(error);
-    }
+    this.changed(listId, (tasks) => tasks.filter((task) => task.id !== taskId));
   }
 
   private async icloudCall<T>(action: () => Promise<T>): Promise<T> {

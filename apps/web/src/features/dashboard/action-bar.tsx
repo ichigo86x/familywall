@@ -19,7 +19,7 @@ interface ActionBarProps {
  * and the Home Assistant buttons chosen by the Admin (door opener, intercom, lights...).
  */
 export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => {
-  const home = useAsyncResource(() => api.getHomeButtons().catch(() => null), []);
+  const home = useAsyncResource(() => api.getHomeButtons().catch(() => null), [], "home-buttons");
   const [confirming, setConfirming] = useState<HomeButtonView | null>(null);
   const [running, setRunning] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ id: string; ok: boolean; text: string } | null>(null);

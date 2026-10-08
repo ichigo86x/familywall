@@ -13,7 +13,7 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 
 /** Birthdays and anniversaries ("Compleanni" on the built-in CalDAV server): they appear in the calendar and on the dashboard. */
 export const OccasionsCard = ({ canWrite }: { canWrite: boolean }) => {
-  const occasions = useAsyncResource(() => api.getOccasions(), []);
+  const occasions = useAsyncResource(() => api.getOccasions(), [], "occasions");
   const [editing, setEditing] = useState<Occasion | "new" | null>(null);
 
   return (

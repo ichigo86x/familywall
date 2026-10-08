@@ -37,9 +37,9 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 export const SchedulePage = () => {
   const auth = useAuth();
   const canWrite = auth.can("events:write");
-  const schedule = useAsyncResource(() => api.getSchedule(), []);
-  const members = useAsyncResource(() => api.getMembers(), []);
-  const routines = useAsyncResource(() => api.getRoutines(), []);
+  const schedule = useAsyncResource(() => api.getSchedule(), [], "schedule");
+  const members = useAsyncResource(() => api.getMembers(), [], "members");
+  const routines = useAsyncResource(() => api.getRoutines(), [], "routines-all");
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [editing, setEditing] = useState<ScheduleEntry | "new" | null>(null);
   useNewParam(canWrite, () => setEditing("new"));

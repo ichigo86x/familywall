@@ -18,6 +18,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 ## Indice
 
 - [Funzionalità](#funzionalità)
+- [Admin](#admin)
 - [Ruoli e permessi](#ruoli-e-permessi)
 - [Primo avvio](#primo-avvio)
 - [Collegare i calendari](#collegare-i-calendari)
@@ -52,8 +53,8 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 
 Se non ci sono dati, ogni sezione mostra un messaggio con un suggerimento invece di restare vuota. I contenuti si aggiornano da soli ogni 5 minuti.
 
-- **Meteo**: in Admin → Meteo cerca la città e sceglila. Familywall usa Open-Meteo, gratuito e senza account. Al servizio arrivano solo le coordinate della città. La previsione resta in memoria 20 minuti.
-- **Liste in dashboard**: in Liste, tocca la puntina di una lista. Se nessuna lista è scelta, compare la lista della spesa.
+- **Meteo**: in Admin → Dashboard e pannelli → Meteo cerca la città e sceglila. Familywall usa Open-Meteo, gratuito e senza account. Al servizio arrivano solo le coordinate della città. La previsione resta in memoria 20 minuti.
+- **Liste in dashboard**: in Admin → Dashboard e pannelli → **Liste in dashboard** spunta le liste, oppure in Liste tocca la puntina di una lista. Se nessuna lista è scelta, compare la lista della spesa. Ogni pannello può avere le sue liste (vedi [Un pannello per stanza](#un-pannello-per-stanza)).
 - **Note in dashboard**: apri una nota e attiva "Mostra in dashboard". Se nessuna nota è scelta, compaiono le prime quattro.
 - **Screensaver**: tocca l'orologio per aprire a tutto schermo una scena stagionale animata con l'ora e il prossimo impegno. Se il browser lo permette, lo schermo resta acceso. Un tocco chiude lo screensaver.
 - **Screensaver automatico**: sugli account Pannello lo screensaver parte da solo dopo 5 minuti senza tocchi, su ogni pagina tranne Admin (dashboard, calendario, turni, liste, note).
@@ -81,7 +82,7 @@ Privacy degli eventi:
 La pagina Menu mostra la settimana con i piatti di tutti i menu insieme:
 - **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota. Stanno nel calendario "Menu" del server CalDAV integrato, quindi si vedono e si modificano anche dal calendario del telefono (vedi [Server CalDAV integrato](#server-caldav-integrato-liste-menu-compleanni-turni-note)).
 - **Cookidoo**: il piano "La mia settimana", se l'account è collegato.
-- **Calendari menu**: in Admin → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati).
+- **Calendari menu**: in Admin → Calendari e liste → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati).
 
 **Ingredienti → spesa** (per la settimana, per un giorno o per un piatto):
 1. Familywall raccoglie gli ingredienti dei piatti e unisce quelli uguali.
@@ -118,9 +119,9 @@ Una routine è una sequenza di passi per i bambini (vestirsi, colazione, denti, 
 
 ### Liste
 
-- Le liste vengono da tre fonti: i Promemoria di iPhone (server CalDAV integrato), Google Tasks e le liste `todo` di Home Assistant (vedi [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)).
+- Le liste vengono da quattro fonti: i Promemoria della famiglia (server CalDAV integrato), Google Tasks, i Promemoria iCloud e le liste `todo` di Home Assistant (vedi [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)).
 - Puoi aggiungere, spuntare ed eliminare le voci. Le liste si aggiornano da sole ogni 2 minuti.
-- La puntina sceglie quali liste compaiono in dashboard.
+- La puntina sceglie quali liste compaiono in dashboard (lo stesso si fa in Admin → Dashboard e pannelli → Liste in dashboard).
 - **Per reparto**: le liste con "spesa" nel nome (anche "shopping" o "supermercato") mostrano le voci raggruppate per reparto, nell'ordine di un giro al supermercato: frutta e verdura, pane, latticini e uova, carne e pesce, surgelati, dispensa, colazione e dolci, bevande, casa, igiene, animali, altro. Il reparto si riconosce dalle parole della voce ("2 kg di patate" → frutta e verdura). Il pulsante "🛒 Per reparto" lo disattiva su quel dispositivo.
 - **Comprati spesso**: il pulsante "💡 Comprati spesso" propone le voci spuntate più spesso negli ultimi sei mesi che non sono già in lista; un tocco le aggiunge. Funziona con le liste Promemoria (la cronologia resta sul server CalDAV integrato) e con quelle di Home Assistant (solo le voci completate che Home Assistant conserva); non con Google Tasks.
 
@@ -133,7 +134,7 @@ Una routine è una sequenza di passi per i bambini (vestirsi, colazione, denti, 
 
 Ci sono due modi, che si possono usare insieme:
 - **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze stanno nel calendario "Compleanni" del server CalDAV integrato, come eventi di tutto il giorno ripetuti ogni anno: si vedono anche sul telefono, e un compleanno aggiunto lì compare in Familywall.
-- **Da un calendario**: in Admin → Calendari visibili, attiva "Compleanni" sul calendario giusto. Per esempio:
+- **Da un calendario**: in Admin → Calendari e liste → Calendari visibili, attiva "Compleanni" sul calendario giusto. Per esempio:
   - un calendario iCloud dedicato ("Compleanni") con eventi di tutto il giorno ripetuti ogni anno;
   - il calendario "Compleanni" di Google (dai contatti), se l'account Google è collegato.
 
@@ -154,6 +155,17 @@ Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 pe
 - Su telefono le sezioni sono in una barra in basso, come in un'app. I dialoghi si aprono dal basso, hanno sempre il pulsante di chiusura e tengono visibili i pulsanti Salva e Annulla.
 - Sugli schermi touch, pulsanti e campi sono alti almeno 44 px.
 
+### Profilo
+
+Tocca il tuo cerchio in alto a destra per aprire il **Profilo**:
+- **Cambia password**: chiede quella attuale; dopo il cambio Familywall chiede di entrare di nuovo, anche sui telefoni collegati con CalDAV.
+- **Telefono e tablet**: il profilo da installare su iPhone e iPad, la configurazione manuale e quella per Android (DAVx⁵), per vedere liste e calendari della famiglia sul telefono.
+- **Verifica in due passaggi** del proprio account.
+
+## Admin
+
+L'Admin è diviso in sezioni: **Famiglia** (nome e membri), **Dashboard e pannelli** (liste in dashboard, meteo, notte e pannelli), **Calendari e liste** (account collegati, calendari visibili, liste), **Home Assistant** (pulsanti, liste e calendari, oppure come collegarlo) e **Backup e sicurezza** (backup e registro attività). La sezione aperta è nell'indirizzo (`#/admin?sezione=dashboard`).
+
 ## Ruoli e permessi
 
 | Ruolo | Calendario | Eventi e turni | Liste e note | Membri, account, impostazioni |
@@ -163,7 +175,7 @@ Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 pe
 | Figlio | legge | — | scrive | — |
 | Pannello | legge, senza eventi "nascosti sul pannello" | solo in modalità scrittura | solo in modalità scrittura | — |
 
-- **Pannello in modalità scrittura**: in Admin → Membri e permessi, modifica l'account Pannello e attiva "Modalità scrittura". Dal pannello a muro si possono così aggiungere e modificare eventi, turni, voci delle liste e note.
+- **Pannello in modalità scrittura**: in Admin → Famiglia → Membri e permessi, modifica l'account Pannello e attiva "Modalità scrittura". Dal pannello a muro si possono così aggiungere e modificare eventi, turni, voci delle liste e note.
   - Il pannello gestisce solo eventi **condivisi**.
   - Non vede la scelta della privacy.
   - Non può modificare né eliminare eventi privati o nascosti. L'API applica la stessa regola.
@@ -173,11 +185,11 @@ Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 pe
 ## Primo avvio
 
 1. Apri Familywall. La prima schermata chiede il nome della famiglia e crea l'account Admin.
-2. In **Admin → Membri e permessi** aggiungi i membri:
+2. In **Admin → Famiglia → Membri e permessi** aggiungi i membri:
    - genitori e figli;
    - un account **Pannello** per ogni schermo a muro.
 3. Per ogni membro imposta il colore e gli "altri nomi" (soprannomi usati nei titoli degli eventi).
-4. In **Admin → Account collegati** scegli "Collega account": per ogni tipo la finestra mostra cosa si può usare (calendari, liste, menu) e come ottenere la password per app o le credenziali. Poi usa "Scegli calendari" e "Scegli liste".
+4. In **Admin → Calendari e liste → Account collegati** scegli "Collega account": per ogni tipo la finestra mostra cosa si può usare (calendari, liste, menu) e come ottenere la password per app o le credenziali. Poi usa "Scegli calendari" e "Scegli liste".
 
 Il fuso orario della famiglia è `Europe/Rome`.
 
@@ -204,7 +216,7 @@ Familywall usa le API ufficiali Google Calendar e Google Tasks con un client OAu
      - `http://localhost:5173/api/providers/google/callback` in sviluppo.
    - **App desktop**: usa come URI `http://127.0.0.1`. Dopo il consenso la pagina finale non si apre: copia il suo indirizzo e incollalo in Familywall.
 3. Imposta la schermata di consenso OAuth su **In produzione** (anche non verificata). In modalità "Test", Google fa scadere l'accesso dopo 7 giorni.
-4. In Familywall apri Admin → Account collegati → Collega account → Google. Inserisci Client ID, Client secret e URI, poi scegli "Apri Google".
+4. In Familywall apri Admin → Calendari e liste → Collega account → Google. Inserisci Client ID, Client secret e URI, poi scegli "Apri Google".
 5. Dopo il collegamento usa "Scegli calendari" e "Scegli liste".
 
 Il client secret e il refresh token sono salvati cifrati. Inseriscili solo nel campo Admin di Familywall: non metterli in file del repository o nelle variabili d'ambiente. Se un client secret è stato condiviso per errore, rigeneralo in Google Cloud Console.
@@ -249,7 +261,7 @@ Senza Radicale (`RADICALE_COMMAND` vuoto) i dati restano nel database ma menu, c
 
 ### Collegare un iPhone
 
-- **Automatico**: apri Familywall **in Safari** (non dall'icona sulla schermata Home) all'indirizzo esterno https. Vai in Liste → "Liste e calendari sul telefono" → "Come si fa" → "Prepara il profilo per questo iPhone" → "Installa su questo iPhone". Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall.
+- **Automatico**: apri Familywall **in Safari** (non dall'icona sulla schermata Home) all'indirizzo esterno https. Tocca il tuo cerchio in alto (**Profilo**) → "Telefono e tablet" → "Prepara il profilo per questo iPhone" → "Installa su questo iPhone". Tocca "Consenti", poi apri Impostazioni → Profilo scaricato → Installa e inserisci la tua password di Familywall.
   - Dall'app aggiunta alla schermata Home iOS non installa profili (pagina bianca): lì Familywall mostra "Copia link", da incollare in Safari.
   - Il link vale 10 minuti e si può aprire più volte. Il profilo non contiene la password.
 - **Manuale**: in Impostazioni → Promemoria → Account → Aggiungi account → Altro → Account CalDAV, usa il server `<indirizzo>/dav/famiglia/`.
@@ -284,7 +296,7 @@ In verticale (1080×1920) restano due colonne con il testo grande.
 
 ### Un pannello per stanza
 
-Con più pannelli (per esempio cucina e ingresso) crea un membro Pannello per ognuno. In Admin → **Notte e pannelli** → Ogni pannello → **Personalizza** si sceglie, per quel pannello:
+Con più pannelli (per esempio cucina e ingresso) crea un membro Pannello per ognuno. In Admin → Dashboard e pannelli → **Notte e pannelli** → Ogni pannello → **Personalizza** si sceglie, per quel pannello:
 - **Stanza**: un nome per riconoscerlo in Admin.
 - **Liste in dashboard**: per esempio la spesa in cucina e "Da portare" all'ingresso.
 - **Pulsanti Home Assistant**: solo alcuni dei pulsanti abilitati per i pannelli (il cancello all'ingresso, le luci in cucina).
@@ -295,7 +307,7 @@ Ogni voce può restare "come la famiglia"; **Ripristina** riporta il pannello al
 
 ### Notte del pannello
 
-In Admin → Pannello a muro → Notte scegli gli orari (per esempio dalle 23:00 alle 06:30). In quegli orari gli account Pannello mostrano solo un orologio tenue su sfondo nero, che si sposta piano per non segnare lo schermo.
+In Admin → Dashboard e pannelli → Notte e pannelli scegli gli orari (per esempio dalle 23:00 alle 06:30). In quegli orari gli account Pannello mostrano solo un orologio tenue su sfondo nero, che si sposta piano per non segnare lo schermo.
 - Un tocco riattiva il pannello per 2 minuti, poi torna la notte.
 - Con Fully Kiosk, attiva **Settings → Advanced Web Settings → Enable JavaScript Interface**: Familywall abbassa anche la luminosità dello schermo e la ripristina al mattino.
 - I pannelli leggono la nuova impostazione entro 15 minuti.
@@ -304,7 +316,7 @@ In Admin → Pannello a muro → Notte scegli gli orari (per esempio dalle 23:00
 
 La barra in alto della dashboard può contenere pulsanti per entità di Home Assistant: apertura del portone o del cancello, citofono, luci, script e scene.
 
-1. In Admin → Home Assistant → **Aggiungi pulsante**.
+1. In Admin → sezione Home Assistant → **Aggiungi pulsante**.
 2. Scegli l'entità ("Scegli da Home Assistant" la elenca, oppure scrivila, per esempio `lock.portone`).
 3. Scegli l'azione. Sono ammesse solo azioni sicure per ogni tipo di entità: `button`/`input_button` premi; `lock` apri, sblocca, blocca; `cover` apri, chiudi; `switch`/`light`/`fan`/`input_boolean` accendi, spegni; `script`/`scene` esegui; `automation` avvia.
 4. Scegli nome, icona, se chiedere conferma (consigliato per porte e cancelli) e chi può usarlo (Genitore, Figlio, Pannello; l'Admin sempre).
@@ -319,7 +331,7 @@ Collegamento a Home Assistant:
 
 Le liste dei Promemoria di iCloud non si leggono con la password per app (CalDAV): servono le API web di iCloud. Familywall le usa con **pyicloud 2.6.5**, la stessa libreria dell'integrazione iCloud di Home Assistant, in un piccolo processo Python avviato da Familywall solo su `127.0.0.1`.
 
-1. Admin → Account collegati → **Collega account** → **Promemoria iCloud**.
+1. Admin → Calendari e liste → **Collega account** → **Promemoria iCloud**.
 2. Scrivi l'Apple ID e la **password dell'Apple ID** (non quella per app).
 3. Apple mostra un codice di 6 cifre su iPhone, iPad o Mac: tocca "Consenti" e scrivilo in Familywall (**Inserisci codice**).
 4. **Scegli liste**: le liste scelte compaiono in Liste con l'etichetta "iCloud". Si aggiungono, spuntano ed eliminano le voci, anche dal pannello; funzionano dashboard, "Comprati spesso" e ingredienti del menu.
@@ -337,7 +349,7 @@ Da sapere:
 Familywall mostra le liste `todo.*` di Home Assistant, con la stessa connessione dei pulsanti. Così arrivano anche i **Promemoria di iCloud** già condivisi in famiglia, tramite l'integrazione ufficiale **Apple iCloud** di Home Assistant. Vanno bene anche Bring!, Todoist, Google Tasks o le liste locali di Home Assistant.
 
 1. In Home Assistant: Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **Apple iCloud**. Ogni lista dei Promemoria diventa un'entità `todo.*`.
-2. In Familywall: Admin → **Liste di Home Assistant** → Scegli liste → scegli la lista → Aggiungi.
+2. In Familywall: Admin → Home Assistant → **Liste di Home Assistant** → Scegli liste → scegli la lista → Aggiungi.
 3. La lista compare in Liste con l'etichetta "Home Assistant": si aggiungono, spuntano, rinominano ed eliminano le voci. Si può mostrare in dashboard e usare per gli ingredienti del menu.
 
 Da sapere:
@@ -348,9 +360,9 @@ Da sapere:
 
 ### Calendari di Home Assistant
 
-Admin → **Calendari di Home Assistant** → Scegli: i calendari `calendar.*` di Home Assistant (iCloud, Google, CalDAV, festività, raccolta rifiuti...) compaiono in sola lettura nel calendario e in dashboard, letti al momento da Home Assistant.
+Admin → Home Assistant → **Calendari di Home Assistant** → Scegli: i calendari `calendar.*` di Home Assistant (iCloud, Google, CalDAV, festività, raccolta rifiuti...) compaiono in sola lettura nel calendario e in dashboard, letti al momento da Home Assistant.
 
-Le card di Home Assistant (pulsanti, liste, calendari) compaiono in Admin solo quando Familywall raggiunge Home Assistant: dentro l'add-on (tramite il Supervisor) oppure fuori, con `HA_URL` e un token di lunga durata in `HA_TOKEN`. Senza collegamento pulsanti, liste e calendari di Home Assistant non vengono mostrati.
+Le card di Home Assistant (pulsanti, liste, calendari) compaiono in Admin → Home Assistant solo quando Familywall raggiunge Home Assistant: dentro l'add-on (tramite il Supervisor) oppure fuori, con `HA_URL` e un token di lunga durata in `HA_TOKEN`. Senza collegamento pulsanti, liste e calendari di Home Assistant non vengono mostrati e la sezione spiega come creare il token.
 
 ## Web app su iPhone e iPad
 
@@ -449,7 +461,8 @@ server {
 ## Sincronizzazione, cache e offline
 
 - **Server**: ogni 5 minuti Familywall legge i calendari visibili, da un mese fa a sei mesi avanti, e li salva nel database. Le pagine si aprono dalla cache; se un provider (iCloud, Google, Cookidoo) non risponde, restano gli ultimi eventi letti, con l'avviso dell'ora dei dati. Dopo una modifica a un evento, il calendario viene riletto subito.
-- **Liste e dati della famiglia**: se Google Tasks o il server CalDAV integrato non rispondono, restano le ultime voci lette.
+- **Liste**: le liste di Google, iCloud e Home Assistant restano in memoria sul server e vengono rilette ogni 2 minuti in background; una pagina riceve subito la copia in memoria e, se ha più di 30 secondi, il server la rilegge intanto per la richiesta successiva. Le modifiche fatte da Familywall compaiono subito. Se un provider o il server CalDAV integrato non rispondono, restano le ultime voci lette.
+- **Cambio pagina**: durante la sessione ogni pagina tiene in memoria gli ultimi dati, così tornando su una pagina compaiono subito mentre la versione aggiornata arriva in background.
 - **Dispositivi**: telefoni, tablet e pannelli salvano le ultime risposte. Senza rete, o con il server spento, mostrano i dati salvati con l'avviso "Offline" e riprovano da soli. Il pannello si può anche ricaricare senza rete (service worker, solo in HTTPS o su localhost). I dati salvati sul dispositivo si cancellano all'uscita (Esci).
 - Senza rete non si possono salvare modifiche: Familywall lo segnala.
 
@@ -459,7 +472,7 @@ server {
 
 Dopo la password Familywall chiede il codice di 6 cifre di un'app di autenticazione: Password di iPhone, Google Authenticator, Microsoft Authenticator, 1Password e simili.
 
-1. Admin → Sicurezza → **Attiva la verifica in due passaggi**.
+1. Tocca il tuo cerchio in alto (**Profilo**) → **Attiva la verifica in due passaggi**. Vale per ogni membro, non solo per l'Admin.
 2. Inquadra il codice QR con l'app. Sull'iPhone puoi anche toccare il link "Aggiungi all'app di autenticazione", oppure scrivere la chiave a mano.
 3. Scrivi il codice di 6 cifre che mostra l'app e tocca **Attiva**.
 4. Salva gli 8 **codici di recupero** (per esempio "abcd-efgh"): ognuno vale una volta, al posto del codice, se perdi il telefono. Non vengono più mostrati.
@@ -473,14 +486,14 @@ Da quel momento l'accesso chiede utente, password e codice. Un codice già usato
 
 ### Registro attività
 
-Admin → **Registro attività** mostra chi ha fatto cosa: accessi (riusciti e rifiutati), modifiche a membri, impostazioni, account, calendari, eventi, menu, turni, routine, note, liste, pulsanti di Home Assistant, backup scaricati e ripristinati.
+Admin → Backup e sicurezza → **Registro attività** mostra chi ha fatto cosa: accessi (riusciti e rifiutati), modifiche a membri, impostazioni, account, calendari, eventi, menu, turni, routine, note, liste, pulsanti di Home Assistant, backup scaricati e ripristinati.
 - Per ogni voce: ora, utente, azione ed esito. Passando sopra l'azione si vede la richiesta (per esempio `PATCH /members/…`).
 - Il contenuto delle richieste (password, testi) non viene mai salvato.
 - Si tengono gli ultimi 6 mesi (al massimo 20.000 voci). Un ripristino da backup non cancella il registro.
 
 ## Backup e ripristino
 
-In Admin → Backup:
+In Admin → Backup e sicurezza → Backup:
 - **Scarica backup**: un file `.fwbackup` con il database (membri con password cifrate, impostazioni, metadati degli eventi, account collegati, configurazione dei calendari e delle liste) e i file del server CalDAV integrato (liste, menu, compleanni, turni e note).
 - **Includi la chiave delle credenziali**: aggiunge `secret.key` al file. Serve per ripristinare su un'altra installazione senza ricollegare iCloud, Google e Cookidoo. **Con la chiave, chi ha il file può leggere quelle password: conservalo in un posto sicuro e non metterlo nel repository.**
 - **Copie automatiche**: ogni giorno Familywall salva un backup (senza chiave) in `DATA_DIR/backups` e tiene gli ultimi 7. Si scaricano dalla stessa card.

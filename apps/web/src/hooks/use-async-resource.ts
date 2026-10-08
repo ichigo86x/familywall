@@ -6,23 +6,39 @@ type ResourceState<T> =
   | { status: "error"; data: null; error: Error }
   | { status: "success"; data: T; error: null };
 
+/**
+ * Last data of each resource with a cache key, kept in memory for the session: a page opened again
+ * shows it at once while the fresh copy loads in the background. Cleared at sign-out.
+ */
+const memory = new Map<string, unknown>();
+
+export const clearResourceMemory = (): void => memory.clear();
+
 export const useAsyncResource = <T,>(
   loader: () => Promise<T>,
-  dependencies: DependencyList
+  dependencies: DependencyList,
+  cacheKey?: string
 ): ResourceState<T> & { reload: () => void } => {
   const [reloadToken, setReloadToken] = useState(0);
-  const [state, setState] = useState<ResourceState<T>>({
+  const [state, setState] = useState<ResourceState<T>>(() => ({
     status: "loading",
-    data: null,
+    data: cacheKey !== undefined && memory.has(cacheKey) ? (memory.get(cacheKey) as T) : null,
     error: null
-  });
+  }));
 
   useEffect(() => {
     let active = true;
-    setState((current) => ({ status: "loading", data: current.data, error: null }));
+    setState((current) => ({
+      status: "loading",
+      data: current.data ?? (cacheKey !== undefined && memory.has(cacheKey) ? (memory.get(cacheKey) as T) : null),
+      error: null
+    }));
 
     void loader()
       .then((data) => {
+        if (cacheKey !== undefined) {
+          memory.set(cacheKey, data);
+        }
         if (active) {
           setState({ status: "success", data, error: null });
         }
@@ -41,7 +57,7 @@ export const useAsyncResource = <T,>(
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- callers pass the loader's inputs as dependencies
-  }, [reloadToken, ...dependencies]);
+  }, [reloadToken, cacheKey, ...dependencies]);
 
   const reload = useCallback(() => {
     setReloadToken((value) => value + 1);
