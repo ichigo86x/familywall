@@ -10,6 +10,8 @@ import type {
   WeatherResponse,
   ScheduleEntry,
   ScheduleEntryInput,
+  Routine,
+  RoutineInput,
   AddCalendarInput,
   AddTaskListInput,
   FamilyNote,
@@ -251,6 +253,13 @@ export const api = {
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).entry,
   setChoreDone: async (id: string, date: string, done: boolean) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}/done`, { method: "POST", json: { date, done } })).entry,
+  getRoutines: async () => (await request<{ routines: Routine[] }>("routines")).routines,
+  createRoutine: async (input: RoutineInput) => (await request<{ routine: Routine }>("routines", { method: "POST", json: input })).routine,
+  updateRoutine: async (id: string, input: RoutineInput) =>
+    (await request<{ routine: Routine }>(`routines/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).routine,
+  deleteRoutine: (id: string) => request<void>(`routines/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  setRoutineStep: async (id: string, date: string, step: number, done: boolean) =>
+    (await request<{ routine: Routine }>(`routines/${encodeURIComponent(id)}/steps`, { method: "POST", json: { date, step, done } })).routine,
   deleteScheduleEntry: (id: string) => request<void>(`schedule/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getNotes: async () => (await request<{ notes: FamilyNote[] }>("notes")).notes,

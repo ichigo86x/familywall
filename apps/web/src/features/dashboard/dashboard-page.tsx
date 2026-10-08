@@ -11,6 +11,7 @@ import { useAsyncResource } from "@/hooks/use-async-resource";
 import { eventBackground, eventColors, type PlannerEvent } from "@/features/calendar/calendar-page";
 import { addDays, birthdayTitle, dayKey, eventBounds, occursOnDay, startOfDay } from "@/features/calendar/calendar-time";
 import { ScheduleChip, StarsLine, useChoreToggle } from "@/features/schedule/schedule-page";
+import { ActiveRoutines } from "@/features/schedule/routines";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
 import { ActionBar } from "./action-bar";
@@ -76,6 +77,7 @@ export const DashboardPage = () => {
   const lists = useAsyncResource(() => api.getLists(), []);
   const notes = useAsyncResource(() => api.getNotes(), []);
   const schedule = useAsyncResource(() => api.getSchedule(), []);
+  const routines = useAsyncResource(() => api.getRoutines().catch(() => []), []);
   const settings = useAsyncResource(() => api.getSettings(), []);
   const weather = useAsyncResource(() => api.getWeather().catch(() => null), []);
 
@@ -84,9 +86,10 @@ export const DashboardPage = () => {
     lists.reload();
     notes.reload();
     schedule.reload();
+    routines.reload();
     settings.reload();
     weather.reload();
-  }, [calendar.reload, lists.reload, notes.reload, schedule.reload, settings.reload, weather.reload]);
+  }, [calendar.reload, lists.reload, notes.reload, schedule.reload, routines.reload, settings.reload, weather.reload]);
 
   useEffect(() => {
     const timer = window.setInterval(reloadAll, REFRESH_MS);
@@ -151,6 +154,7 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-main">
+          <ActiveRoutines routines={routines.data ?? []} now={now} viewer={auth.user} membersById={membersById} onChanged={routines.reload} />
           <div className="dashboard-pair">
             <Card className="panel-card dashboard-today">
               <div className="panel-card__header">

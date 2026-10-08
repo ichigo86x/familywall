@@ -3464,3 +3464,110 @@ button.schedule-chip {
 .schedule-day .schedule-chip-row {
   gap: 4px;
 }
+
+/* Morning and evening routines: big tiles for children on the wall panel. */
+.routine-cards {
+  display: grid;
+  gap: 14px;
+}
+
+.fui-Card.routine-card {
+  border-top: 6px solid var(--color-primary);
+  gap: 12px;
+}
+
+.routine-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.routine-card__header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.routine-card__clock {
+  display: grid;
+  justify-items: end;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.routine-card__clock span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.routine-card__clock--late {
+  color: #dc2626;
+}
+
+.routine-card__progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  overflow: hidden;
+}
+
+.routine-card__progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #84cc16);
+  transition: width 0.3s ease;
+}
+
+.routine-card__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr));
+  gap: 10px;
+}
+
+.routine-step {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  min-height: 7.5rem;
+  padding: 10px 8px;
+  border-radius: 18px;
+  border: 2px solid var(--line);
+  background: var(--color-surface-soft);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.routine-step:disabled {
+  cursor: default;
+}
+
+.routine-step__icon {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.routine-step__label {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.routine-step--done {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.routine-step--done .routine-step__label {
+  text-decoration: line-through;
+}
+
+.routine-card--done .routine-card__clock {
+  color: #16a34a;
+}

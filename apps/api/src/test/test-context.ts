@@ -8,7 +8,7 @@ import { EventsRepository } from "../modules/calendars/events.repository";
 import { EventsService } from "../modules/calendars/events.service";
 import { CalendarCacheRepository } from "../modules/calendars/calendar-cache.repository";
 import { LegacyDataMigration } from "../modules/dav/legacy-migration";
-import { MenuStore, NotesStore, OccasionsStore, ScheduleStore } from "../modules/dav/family-stores";
+import { MenuStore, NotesStore, OccasionsStore, RoutinesStore, ScheduleStore } from "../modules/dav/family-stores";
 import { MembersRepository } from "../modules/members/members.repository";
 import { MembersService } from "../modules/members/members.service";
 import { CalDavClient } from "../modules/providers/caldav/caldav-client";
@@ -58,6 +58,7 @@ export const createTestContext = (
     menu,
     notes,
     schedule,
+    routines: new RoutinesStore(dav, settings, membersRepository),
     migration: new LegacyDataMigration(db, occasions, menu, schedule, notes),
     calendars,
     events: new EventsService(eventsRepository, calendars, membersRepository, accounts, caldav, settings, google)

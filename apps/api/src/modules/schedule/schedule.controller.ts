@@ -16,7 +16,7 @@ type ScheduleInput = z.output<typeof scheduleEntrySchema>;
 const TICK_DAYS_BACK = 6;
 
 /** Today in the household timezone, as YYYY-MM-DD. */
-const localToday = (timezone: string): string => new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+export const localToday = (timezone: string): string => new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
 /** Everyone sees the shifts; Admins and Parents organise them. They live in the "Turni" CalDAV collection. */
 @Controller("schedule")

@@ -30,6 +30,7 @@ import {
   entryTime,
   entryWho
 } from "./schedule-labels";
+import { RoutinesCard } from "./routines";
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
@@ -38,6 +39,7 @@ export const SchedulePage = () => {
   const canWrite = auth.can("events:write");
   const schedule = useAsyncResource(() => api.getSchedule(), []);
   const members = useAsyncResource(() => api.getMembers(), []);
+  const routines = useAsyncResource(() => api.getRoutines(), []);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [editing, setEditing] = useState<ScheduleEntry | "new" | null>(null);
   useNewParam(canWrite, () => setEditing("new"));
@@ -114,6 +116,15 @@ export const SchedulePage = () => {
           </div>
         </Card>
       )}
+
+      {routines.data ? (
+        <RoutinesCard
+          routines={routines.data}
+          members={(members.data ?? []).filter((member) => member.role !== "Kiosk" && !member.disabled)}
+          canWrite={canWrite}
+          onChanged={routines.reload}
+        />
+      ) : null}
 
       {editing ? (
         <ScheduleDialog

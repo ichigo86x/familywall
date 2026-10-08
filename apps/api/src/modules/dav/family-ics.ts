@@ -4,12 +4,14 @@ import {
   MEAL_SLOT_LABELS,
   OCCASION_ICONS,
   ingredientsFromText,
+  parseRoutineStep,
   isoWeek,
   type FamilyNote,
   type MealSlot,
   type MenuMeal,
   type Occasion,
   type OccasionKind,
+  type Routine,
   type ScheduleEntry,
   type ScheduleKind,
   type WeekParity
@@ -203,9 +205,10 @@ export const menuMapper: IcsMapper<MenuMeal, MenuMealFields> = {
 
 export type ScheduleFields = Omit<ScheduleEntry, "id" | "done">;
 
+// ical.js reads a comma in an X- property as a list separator: X-FAMILYWALL-* lists use spaces.
 const doneDates = (component: ICAL.Component): string[] =>
   text(component, X_DONE)
-    .split(",")
+    .split(/[\s,]+/)
     .map((value) => value.trim())
     .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value))
     .sort();
@@ -220,7 +223,7 @@ export const setChoreDone = (component: ICAL.Component, date: string, done: bool
   } else {
     dates.delete(date);
   }
-  setText(component, X_DONE, [...dates].sort().join(","));
+  setText(component, X_DONE, [...dates].sort().join(" "));
 };
 
 /** Shifts are written with the name of who they belong to, so phones show it. */
@@ -355,5 +358,76 @@ export const noteMapper: IcsMapper<FamilyNote, NoteFields> = {
     component.updatePropertyWithValue(X_PINNED, fields.pinned ? "1" : "0");
     component.updatePropertyWithValue(X_DASHBOARD, fields.onDashboard ? "1" : "0");
     setText(component, X_CREATED_BY, fields.createdBy);
+  }
+};
+
+/* ---------- Routines: weekly events ("Luca: Mattina"), one step per description line. ---------- */
+
+export type RoutineFields = Omit<Routine, "id" | "progress">;
+
+export interface RoutineWriteFields extends RoutineFields {
+  who: string | null;
+}
+
+const X_PROGRESS = "x-familywall-progress";
+
+/** Ticks one step of a routine on a local date; ticks of other days are dropped. */
+export const setRoutineStep = (component: ICAL.Component, date: string, step: number, done: boolean): void => {
+  const current = routineProgress(component);
+  const steps = new Set(current && current.date === date ? current.done : []);
+  if (done) {
+    steps.add(step);
+  } else {
+    steps.delete(step);
+  }
+  setText(component, X_PROGRESS, steps.size > 0 ? `${date} ${[...steps].sort((left, right) => left - right).join(" ")}` : null);
+};
+
+const routineProgress = (component: ICAL.Component): Routine["progress"] => {
+  const match = /^(\d{4}-\d{2}-\d{2})[\s:]+([\d\s,]*)$/.exec(text(component, X_PROGRESS));
+  return match ? { date: match[1]!, done: match[2]!.split(/[\s,]+/).filter(Boolean).map(Number) } : null;
+};
+
+export const routineMapper: IcsMapper<Routine, RoutineWriteFields> = {
+  component: "vevent",
+  read(component, id, context) {
+    const start = timeOf(component, "dtstart");
+    const summary = text(component, "summary");
+    if (!start || !summary) {
+      return null;
+    }
+    const who = text(component, X_WHO);
+    const begin = wallClock(start, context.timezone);
+    const endTime = timeOf(component, "dtend");
+    const end = endTime && !endTime.isDate ? wallClock(endTime, context.timezone) : null;
+    const recurrence = rule(component);
+    const byDay = ((recurrence?.parts.BYDAY ?? []) as string[]).map((value) => BYDAY.indexOf(value.slice(-2)) + 1).filter((value) => value > 0);
+    const [year, month, day] = begin.date.split("-").map(Number) as [number, number, number];
+    const startTime = begin.time ?? "07:00";
+    return {
+      id,
+      title: who && summary.startsWith(`${who}: `) ? summary.slice(who.length + 2).trim() : summary,
+      memberId: text(component, X_MEMBER) || null,
+      weekdays: byDay.length > 0 ? [...new Set(byDay)].sort() : [((new Date(year, month - 1, day).getDay() + 6) % 7) + 1],
+      startTime,
+      endTime: end?.time && end.time > startTime ? end.time : startTime,
+      steps: text(component, "description")
+        .split(/\r?\n/)
+        .map(parseRoutineStep)
+        .filter((step): step is NonNullable<typeof step> => step !== null)
+        .slice(0, 12),
+      progress: routineProgress(component)
+    };
+  },
+  write(component, fields, context) {
+    setText(component, "summary", fields.who ? `${fields.who}: ${fields.title}` : fields.title);
+    const day = scheduleAnchor(fields.weekdays, "all", context.now);
+    component.updatePropertyWithValue("dtstart", dateTimeValue(day, fields.startTime));
+    component.updatePropertyWithValue("dtend", dateTimeValue(day, fields.endTime));
+    const byDay = [...new Set(fields.weekdays)].sort().map((weekday) => BYDAY[weekday - 1]).join(",");
+    setRule(component, `FREQ=WEEKLY;BYDAY=${byDay}`);
+    setText(component, "description", fields.steps.map((step) => `${step.icon} ${step.label}`).join("\n"));
+    setText(component, X_WHO, fields.who);
+    setText(component, X_MEMBER, fields.memberId);
   }
 };

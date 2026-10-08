@@ -106,6 +106,15 @@ Ogni turno vale in uno di due modi:
 
 I turni di oggi compaiono anche in dashboard ("Oggi in casa"). Stanno nel calendario "Turni" del server CalDAV integrato: sul telefono compaiono come eventi ripetuti, per esempio "Luca: Apparecchiare".
 
+### Routine mattina e sera
+
+Una routine è una sequenza di passi per i bambini (vestirsi, colazione, denti, zaino...) con il conto alla rovescia fino all'ora in cui bisogna essere pronti.
+- **Creare**: Turni → "Routine dei bambini" → **Mattina** o **Sera** (parte da un modello). Scegli per chi è (un bambino o tutta la famiglia), i giorni, da che ora compare in dashboard e per che ora bisogna essere pronti. I passi si scrivono uno per riga con un'emoji davanti, per esempio `🪥 Lavarsi i denti` (massimo 12).
+- **In dashboard**: nell'orario della routine (fino a mezz'ora dopo la fine) compare una card con tessere grandi, la barra di avanzamento e "mancano 12 min" (in rosso quando si è in ritardo). Toccando una tessera il passo diventa ✅; a passi completati compare "🎉 Fatto!".
+- Le spunte valgono solo per il giorno: il giorno dopo la routine riparte da zero.
+- Spuntano il bambino della routine, i genitori e il pannello a muro; creano e modificano le routine Admin e Genitori.
+- Le routine stanno nel calendario "Routine" del server CalDAV integrato: sul telefono compaiono come eventi ripetuti ("Luca: Mattina 07:00–07:45") con i passi nella descrizione.
+
 ### Liste
 
 - Le liste vengono da tre fonti: i Promemoria di iPhone (server CalDAV integrato), Google Tasks e le liste `todo` di Home Assistant (vedi [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)).
@@ -214,10 +223,11 @@ Familywall include un server CalDAV (Radicale). Tutti i dati della famiglia stan
 | Menu | un evento di tutto il giorno per piatto ("Cena: Minestrone"), ingredienti e nota nella descrizione | App Calendario |
 | Compleanni | un evento di tutto il giorno ripetuto ogni anno ("🎂 Luca", "💍 Mario e Anna") | App Calendario |
 | Turni | eventi ripetuti ogni settimana, o ogni due per le settimane pari/dispari ("Anna: Ufficio") | App Calendario |
+| Routine | eventi ripetuti ogni settimana ("Luca: Mattina"), un passo per riga nella descrizione | App Calendario |
 | Note | voci di diario (VJOURNAL) | Solo client che le supportano |
 
 - Admin, Genitori e Figli vedono liste e calendari sul telefono, con il proprio utente e la propria password di Familywall. Tutti condividono gli stessi dati.
-- Alla prima partenza Familywall crea la lista "Spesa" e i calendari Menu, Compleanni, Turni e Note.
+- Alla prima partenza Familywall crea la lista "Spesa" e i calendari Menu, Compleanni, Turni, Routine e Note.
 - Quello che modifichi sul telefono compare in Familywall alla lettura successiva. Familywall legge titolo, date, ripetizione e descrizione; le informazioni che solo Familywall conosce (tipo di turno, membro, colore della nota...) restano in proprietà `X-FAMILYWALL-*` dell'evento.
 - Un evento aggiunto dal telefono a un calendario di Familywall vale come piatto, compleanno o turno. Nel Menu il pasto si sceglie iniziando il titolo con "Colazione:", "Pranzo:", "Merenda:" o "Cena:".
 - Gli account Pannello e i Figli solo etichetta non accedono al server CalDAV.

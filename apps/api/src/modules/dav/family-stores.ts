@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { MEAL_SLOTS, type FamilyNote, type MenuMeal, type Occasion, type ScheduleEntry } from "@familywall/shared";
+import { MEAL_SLOTS, type FamilyNote, type MenuMeal, type Occasion, type Routine, type ScheduleEntry } from "@familywall/shared";
 import { MembersRepository } from "../members/members.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 import { DavStore, type CollectionSpec } from "./dav-store";
@@ -7,12 +7,16 @@ import {
   menuMapper,
   noteMapper,
   occasionMapper,
+  routineMapper,
+  setRoutineStep,
   scheduleMapper,
   setChoreDone,
   type MenuMealFields,
   type NoteFields,
   type OccasionFields,
   type ReadContext,
+  type RoutineFields,
+  type RoutineWriteFields,
   type ScheduleFields,
   type ScheduleWriteFields
 } from "./family-ics";
@@ -23,7 +27,8 @@ export const FAMILY_COLLECTIONS = {
   occasions: { name: "familywall-compleanni", displayName: "Compleanni", color: "#DB2777", component: "VEVENT" },
   menu: { name: "familywall-menu", displayName: "Menu", color: "#EA580C", component: "VEVENT" },
   schedule: { name: "familywall-turni", displayName: "Turni", color: "#0EA5E9", component: "VEVENT" },
-  notes: { name: "familywall-note", displayName: "Note", color: "#EAB308", component: "VJOURNAL" }
+  notes: { name: "familywall-note", displayName: "Note", color: "#EAB308", component: "VJOURNAL" },
+  routines: { name: "familywall-routine", displayName: "Routine", color: "#8B5CF6", component: "VEVENT" }
 } satisfies Record<string, CollectionSpec>;
 
 const readContext = (settings: SettingsRepository) => (): ReadContext => ({ timezone: settings.get().timezone, now: new Date() });
@@ -64,6 +69,53 @@ export class NotesStore extends FamilyObjects<FamilyNote, NoteFields> {
 
   public override async list(): Promise<FamilyNote[]> {
     return (await super.list()).sort((left, right) => Number(right.pinned) - Number(left.pinned) || right.updatedAt.localeCompare(left.updatedAt));
+  }
+}
+
+/** Morning and evening routines of the children (weekly events in "Routine", one step per description line). */
+@Injectable()
+export class RoutinesStore {
+  private readonly objects: FamilyObjects<Routine, RoutineWriteFields>;
+
+  public constructor(
+    store: DavStore,
+    settings: SettingsRepository,
+    private readonly members: MembersRepository
+  ) {
+    this.objects = new FamilyObjects(store, FAMILY_COLLECTIONS.routines, routineMapper, readContext(settings), "Routine non trovata.");
+  }
+
+  public ensure(): Promise<void> {
+    return this.objects.ensure();
+  }
+
+  public async list(): Promise<Routine[]> {
+    return (await this.objects.list()).sort((left, right) => left.startTime.localeCompare(right.startTime) || left.title.localeCompare(right.title));
+  }
+
+  public find(id: string): Promise<Routine | undefined> {
+    return this.objects.find(id);
+  }
+
+  public create(fields: RoutineFields): Promise<Routine> {
+    return this.objects.create(this.withWho(fields));
+  }
+
+  public update(id: string, fields: RoutineFields): Promise<Routine> {
+    return this.objects.update(id, this.withWho(fields));
+  }
+
+  public delete(id: string): Promise<void> {
+    return this.objects.delete(id);
+  }
+
+  public setStep(id: string, date: string, step: number, done: boolean): Promise<Routine> {
+    return this.objects.patch(id, (component) => setRoutineStep(component, date, step, done));
+  }
+
+  private withWho(fields: RoutineFields): RoutineWriteFields {
+    const member = fields.memberId ? this.members.findById(fields.memberId) : undefined;
+    return { ...fields, who: member?.display_name ?? null };
   }
 }
 

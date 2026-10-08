@@ -112,3 +112,30 @@ describe("family data on the CalDAV server", () => {
     expect(await ctx.migration.run()).toEqual({ occasions: 0, menu: 0, schedule: 0, notes: 0 });
   });
 });
+
+describe("routines on the CalDAV server", () => {
+  it("keeps the steps in the description and the ticks of one day", async () => {
+    const ctx = createTestContext();
+    const routine = await ctx.routines.create({
+      title: "Mattina",
+      memberId: null,
+      weekdays: [1, 2, 3, 4, 5],
+      startTime: "07:00",
+      endTime: "07:45",
+      steps: [
+        { icon: "🪥", label: "Lavarsi i denti" },
+        { icon: "🎒", label: "Zaino" }
+      ]
+    });
+    const ics = icsOf(ctx, FAMILY_COLLECTIONS.routines.name, routine.id);
+    expect(ics).toContain("DESCRIPTION:🪥 Lavarsi i denti\\n🎒 Zaino");
+    expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR");
+    expect(routine).toMatchObject({ weekdays: [1, 2, 3, 4, 5], startTime: "07:00", endTime: "07:45", progress: null });
+
+    await ctx.routines.setStep(routine.id, "2026-10-08", 1, true);
+    const ticked = await ctx.routines.setStep(routine.id, "2026-10-08", 0, true);
+    expect(ticked.progress).toEqual({ date: "2026-10-08", done: [0, 1] });
+    // A new day starts from scratch.
+    expect((await ctx.routines.setStep(routine.id, "2026-10-09", 1, true)).progress).toEqual({ date: "2026-10-09", done: [1] });
+  });
+});
