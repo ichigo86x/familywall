@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { RequireAuth } from "@/components/auth/require-auth";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Providers } from "@/components/providers";
 import { AdminPage } from "@/features/admin/admin-page";
 import { LoginPage } from "@/features/auth/login-page";
@@ -15,20 +16,22 @@ import { MenuPage } from "@/features/menu/menu-page";
 // Hash routing keeps every route on the same document URL, so deep links survive
 // the Home Assistant ingress prefix, nginx and iOS home-screen launches without server rewrites.
 export const App = () => (
-  <Providers>
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/setup" element={<SetupPage />} />
-        <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
-        <Route path="/calendar" element={<RequireAuth><CalendarPage /></RequireAuth>} />
-        <Route path="/lists" element={<RequireAuth><ListsPage /></RequireAuth>} />
-        <Route path="/notes" element={<RequireAuth><NotesPage /></RequireAuth>} />
-        <Route path="/schedule" element={<RequireAuth><SchedulePage /></RequireAuth>} />
-        <Route path="/menu" element={<RequireAuth><MenuPage /></RequireAuth>} />
-        <Route path="/admin" element={<RequireAuth permission="members:manage"><AdminPage /></RequireAuth>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </HashRouter>
-  </Providers>
+  <ErrorBoundary>
+    <Providers>
+      <HashRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/setup" element={<SetupPage />} />
+          <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+          <Route path="/calendar" element={<RequireAuth><CalendarPage /></RequireAuth>} />
+          <Route path="/lists" element={<RequireAuth><ListsPage /></RequireAuth>} />
+          <Route path="/notes" element={<RequireAuth><NotesPage /></RequireAuth>} />
+          <Route path="/schedule" element={<RequireAuth><SchedulePage /></RequireAuth>} />
+          <Route path="/menu" element={<RequireAuth><MenuPage /></RequireAuth>} />
+          <Route path="/admin" element={<RequireAuth permission="members:manage"><AdminPage /></RequireAuth>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </HashRouter>
+    </Providers>
+  </ErrorBoundary>
 );

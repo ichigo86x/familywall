@@ -3725,3 +3725,56 @@ button.schedule-chip {
   flex-wrap: wrap;
   gap: 2px 12px;
 }
+
+/* Unexpected errors: readable in both themes, outside of the Fluent provider. */
+.crash-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #f5f1ea;
+  color: #1f2937;
+  font-family: system-ui, sans-serif;
+}
+
+.crash-card {
+  max-width: 560px;
+  padding: 24px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 12%);
+}
+
+.crash-card h1 {
+  margin: 4px 0 12px;
+  font-size: 1.5rem;
+}
+
+.crash-card pre {
+  white-space: pre-wrap;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  font-size: 0.85rem;
+}
+
+.crash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.crash-actions button {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #3a7d6e;
+  background: #3a7d6e;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.crash-actions button + button {
+  background: #ffffff;
+  color: #3a7d6e;
+}

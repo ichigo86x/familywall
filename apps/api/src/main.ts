@@ -52,7 +52,16 @@ async function bootstrap(): Promise<void> {
     logger.log(`Serving web app from ${appConfig.webDistDir}`);
   }
 
-  await app.listen(appConfig.port);
+  try {
+    await app.listen(appConfig.port);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EADDRINUSE") {
+      // A common one in development: another app (or an old Familywall) answers on this port instead.
+      logger.error(`Port ${appConfig.port} is already in use by another program. Stop it or set PORT (and API_PROXY_TARGET for Vite).`);
+      process.exit(1);
+    }
+    throw error;
+  }
   logger.log(`Familywall API listening on port ${appConfig.port}, data in ${appConfig.dataDir}`);
 }
 
