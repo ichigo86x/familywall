@@ -15,6 +15,7 @@
     "dev:api": "node scripts/dev-api.mjs",
     "dev:web": "npm --prefix apps/web run dev",
     "addon:stage": "node scripts/stage-addon.mjs",
+    "reset-password": "node --disable-warning=ExperimentalWarning scripts/reset-password.mjs",
     "test": "npm test --workspace @familywall/api"
   }
 }

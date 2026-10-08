@@ -377,6 +377,7 @@ npm run dev:web   # web su http://localhost:5173, /api e /dav inoltrati all'API
 - Se la porta 3001 è occupata l'API si ferma con "Port 3001 is already in use". Attenzione: se sulla 3001 risponde un altro programma (per esempio un'altra app in sviluppo), la web app riceve le sue risposte e mostra la pagina "Qualcosa non ha funzionato". Ferma l'altro programma, oppure:
   - avvia l'API con `PORT=3002 npm run dev:api`;
   - avvia il web con `API_PROXY_TARGET=http://localhost:3002 npm run dev:web`.
+- Password dimenticata: `npm run reset-password -- <utente>` chiede la nuova password (non viene mostrata mentre la scrivi) e la salva nel database di `apps/api/data`. Le sessioni aperte di quell'utente vengono chiuse. Con `--disable-totp` spegne anche l'accesso in due passaggi; con `--data <cartella>` usa un'altra cartella dati. Se il nome utente non esiste, lo script elenca gli utenti con una password.
 
 Per provare i pulsanti di Home Assistant in sviluppo aggiungi `HA_URL` e `HA_TOKEN` (vedi [Pulsanti Home Assistant](#pulsanti-home-assistant)).
 
