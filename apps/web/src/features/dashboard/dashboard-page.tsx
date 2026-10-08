@@ -18,7 +18,6 @@ import { ActionBar } from "./action-bar";
 import { WeatherClock } from "./weather-clock";
 
 const REFRESH_MS = 5 * 60 * 1000;
-const LIST_ITEMS = 10;
 const NOTES_SHOWN = 4;
 /** Days covered by the dashboard: today, tomorrow and the "next days" card. */
 const DAYS_AHEAD = 7;
@@ -141,6 +140,7 @@ export const DashboardPage = () => {
   return (
     <AppShell
       headless
+      dashboard
       currentRoute="/"
       eyebrow="Oggi"
       title={dayLabel(now)}
@@ -450,13 +450,12 @@ const DashboardList = ({ list, canWrite, onChanged }: { list: FamilyTaskList; ca
         </p>
       ) : (
         <ul className="dashboard-shopping">
-          {open.slice(0, LIST_ITEMS).map((task) => (
+          {open.map((task) => (
             <li key={task.id}>
               <span className="dashboard-shopping__dot" style={{ background: list.color }} />
               {task.title}
             </li>
           ))}
-          {open.length > LIST_ITEMS ? <li className="calendar-detail-hint">e altre {open.length - LIST_ITEMS}...</li> : null}
         </ul>
       )}
     </Card>

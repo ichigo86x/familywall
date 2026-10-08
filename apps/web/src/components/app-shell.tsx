@@ -63,6 +63,8 @@ interface AppShellProps {
   headless?: boolean;
   /** Fill exactly the screen below the header (calendar planner); other pages scroll normally. */
   fit?: boolean;
+  /** Dashboard: on panels and tablets everything stays on one screen and long cards scroll inside. */
+  dashboard?: boolean;
 }
 
 const ROLE_LABELS = { Admin: "Admin", Parent: "Genitore", Child: "Figlio", Kiosk: "Pannello" } as const;
@@ -75,7 +77,7 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("");
 
-export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, headless = false, fit = false }: AppShellProps) => {
+export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, headless = false, fit = false, dashboard = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
   const theme = useThemePreference();
@@ -93,7 +95,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   return (
     // Wall panels fall back to the screensaver when nobody touches them, on every page except Admin.
     <ScreensaverHost panel={auth.user?.role === "Kiosk"} idleStart={currentRoute !== "/admin"} memberId={auth.user?.id}>
-      <div className={fit ? "app-shell app-shell--fit" : "app-shell"}>
+      <div className={["app-shell", fit ? "app-shell--fit" : "", dashboard ? "app-shell--dashboard" : ""].filter(Boolean).join(" ")}>
         <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
           <div className="app-toolbar__brand">
             <span className="app-toolbar__dot" />

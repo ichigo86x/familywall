@@ -41,7 +41,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 
 ### Dashboard
 
-È la pagina iniziale, pensata per il pannello a muro. Non ha intestazione di pagina, per lasciare più spazio ai contenuti. Mostra:
+È la pagina iniziale, pensata per il pannello a muro. Non ha intestazione di pagina, per lasciare più spazio ai contenuti. Su pannelli, tablet e computer (almeno 901×600 pixel) sta tutta in uno schermo: le schede si dividono l'altezza e le liste lunghe, i turni, l'agenda e le note scorrono al loro interno. Sui telefoni la pagina scorre normalmente e una lista lunga scorre nella sua scheda. Mostra:
 - **Orologio e meteo**: ora e data grandi, su uno sfondo animato che segue il meteo del giorno (sereno, nuvoloso, pioggia, neve, nebbia, temporale, di giorno o di notte). Accanto ci sono la temperatura attuale, minima e massima, la probabilità di pioggia e il meteo di domani.
 - **Compleanni e ricorrenze**: in alto a destra, sotto i pulsanti e sopra i turni, solo se ce ne sono nei prossimi 30 giorni; quello di oggi è evidenziato. Pulsanti e ricorrenze occupano la stessa altezza del riquadro con orologio e meteo.
 - **Agenda**: gli eventi di oggi non ancora finiti, con il prossimo (o quello in corso) evidenziato, la riga **In tavola** con i piatti di oggi (da tutti i menu) e sotto gli impegni e i piatti di **domani**. Quando la giornata è conclusa, domani passa in primo piano.

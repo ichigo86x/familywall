@@ -3999,3 +3999,123 @@ button.schedule-chip {
 .phone-setup__platform code {
   overflow-wrap: anywhere;
 }
+
+/*
+ * Dashboard on panels, tablets and computers: the page is exactly one screen high.
+ * The columns share the height and long cards (lists, chores, agenda, notes) scroll inside.
+ * Phones and short screens keep the normal scrolling page.
+ */
+@media (min-width: 901px) and (min-height: 600px) {
+  .app-shell--dashboard {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell--dashboard .app-toolbar {
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  .app-shell--dashboard .shell-main {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .app-shell--dashboard .page-stack {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .app-shell--dashboard .dashboard-grid {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .app-shell--dashboard .dashboard-main,
+  .app-shell--dashboard .dashboard-side-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-shell--dashboard .dashboard-main > .routine-cards {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 30%;
+    overflow-y: auto;
+  }
+
+  .app-shell--dashboard .dashboard-pair {
+    flex: 1 1 0;
+    min-height: 12rem;
+    align-items: stretch;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .app-shell--dashboard .dashboard-pair > .panel-card {
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+  }
+
+  /* Notes: as tall as they need, at most about a quarter of the column. */
+  .app-shell--dashboard .dashboard-main > .dashboard-side {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 28%;
+    overflow-y: auto;
+  }
+
+  .app-shell--dashboard .dashboard-home {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 45%;
+    overflow-y: auto;
+    align-content: start;
+  }
+
+  /* Lists share the rest of the side column; their items scroll, the title and the add field stay. */
+  .app-shell--dashboard .dashboard-side-column > .dashboard-side {
+    flex: 1 1 0;
+    min-height: 9rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .app-shell--dashboard .dashboard-side-column > .dashboard-side > * {
+    flex-shrink: 0;
+  }
+
+  .app-shell--dashboard .dashboard-side-column > .dashboard-side > .dashboard-shopping {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    overscroll-behavior: contain;
+  }
+}
+
+/* One screen high: agenda and next days side by side earlier, so neither gets squeezed. */
+@media (min-width: 1100px) and (min-height: 600px) {
+  .app-shell--dashboard .dashboard-pair {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+}
+
+/* Phones and short screens: a long list scrolls inside its card instead of stretching the page. */
+@media (max-width: 900px), (max-height: 599px) {
+  .dashboard-shopping {
+    max-height: 22rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
