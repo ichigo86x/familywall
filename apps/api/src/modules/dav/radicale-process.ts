@@ -69,7 +69,9 @@ export class RadicaleProcess {
         // Retrying cannot help: Radicale is not installed for this Python.
         this.logger.error(
           `Radicale is not installed for ${executable}: calendars, lists, notes and shifts are unavailable. ` +
-            "In development run \"npm run python:setup\" and restart the API, or set RADICALE_COMMAND."
+            (process.env.RADICALE_COMMAND
+              ? `RADICALE_COMMAND is set to "${process.env.RADICALE_COMMAND}": remove it from this terminal (PowerShell: Remove-Item Env:RADICALE_COMMAND) to use the venv of "npm run python:setup", then restart the API.`
+              : "In development run \"npm run python:setup\" and restart the API, or set RADICALE_COMMAND.")
         );
         return;
       }
