@@ -5,7 +5,7 @@ import { SettingsRepository } from "../settings/settings.repository";
 import { HomeAssistantClient } from "./home-assistant.client";
 import { HomeService } from "./home.service";
 
-const user = (role: User["role"]): User => ({ id: role, username: role.toLowerCase(), displayName: role, role, color: "#000000", disabled: false, keywords: [], canLogin: true, panelWrite: false });
+const user = (role: User["role"]): User => ({ id: role, username: role.toLowerCase(), displayName: role, role, color: "#000000", disabled: false, keywords: [], canLogin: true, panelWrite: false, totpEnabled: false });
 
 const door = { id: "door", label: "Portone", icon: "🚪", entityId: "lock.portone", service: "open", confirm: true, roles: ["Parent" as const, "Kiosk" as const] };
 

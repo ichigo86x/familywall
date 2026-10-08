@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { SecretBox } from "../common/crypto/secret-box";
 import { openDatabase } from "../database/database";
 import { AuthService } from "../modules/auth/auth.service";
+import { TotpService } from "../modules/auth/totp.service";
 import { CalendarsRepository } from "../modules/calendars/calendars.repository";
 import { CalendarsService } from "../modules/calendars/calendars.service";
 import { EventsRepository } from "../modules/calendars/events.repository";
@@ -50,7 +51,8 @@ export const createTestContext = (
     eventsRepository,
     membersRepository,
     members: new MembersService(membersRepository),
-    auth: new AuthService(db, randomBytes(32), membersRepository, settings),
+    auth: new AuthService(db, randomBytes(32), membersRepository, settings, new TotpService(secrets, membersRepository, settings)),
+    totp: new TotpService(secrets, membersRepository, settings),
     providers,
     dav,
     occasions,

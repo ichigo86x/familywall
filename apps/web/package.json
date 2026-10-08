@@ -12,6 +12,7 @@
   "dependencies": {
     "@fluentui/react-components": "^9.62.0",
     "@fluentui/react-icons": "^2.0.277",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.4",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^5.2.0",

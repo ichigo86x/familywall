@@ -54,7 +54,8 @@ export const BackupCard = () => {
         </div>
       </div>
       <p>
-        Il backup contiene membri, impostazioni, eventi locali, turni, note, ricorrenze, account collegati e le liste dei Promemoria. Ogni giorno
+        Il backup contiene membri, impostazioni e account collegati, più i dati del server CalDAV integrato: liste, menu, compleanni, turni,
+        routine e note. Ogni giorno
         Familywall ne salva una copia (ultimi 7 giorni); il backup di Home Assistant include anche queste copie.
       </p>
       <Switch

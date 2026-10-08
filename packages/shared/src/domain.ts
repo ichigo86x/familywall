@@ -46,6 +46,39 @@ export interface User {
   canLogin: boolean;
   /** Kiosk only: the panel may also write events, shifts, lists and notes. */
   panelWrite: boolean;
+  /** Sign-in asks a code of an authenticator app after the password. */
+  totpEnabled: boolean;
+}
+
+/** A new authenticator secret, to scan or type in the app; confirmed with a first code. */
+export interface TotpSetupResponse {
+  secret: string;
+  otpauthUrl: string;
+}
+
+/** One-time codes for when the phone with the authenticator app is lost (shown once). */
+export interface TotpEnabledResponse {
+  recoveryCodes: string[];
+}
+
+/** One change made in Familywall: who, what, when, and how it went. */
+export interface AuditEntry {
+  id: number;
+  at: string;
+  memberId: string | null;
+  username: string | null;
+  /** "Membri: modifica", "Accesso", "Backup: ripristino"... */
+  action: string;
+  /** Method and path, e.g. "PATCH /members/3f2a…". */
+  request: string;
+  status: number;
+  ip: string | null;
+}
+
+export interface AuditLogResponse {
+  entries: AuditEntry[];
+  /** Pass as ?before= to read older entries; null at the end. */
+  nextBefore: number | null;
 }
 
 export interface AuthSession {

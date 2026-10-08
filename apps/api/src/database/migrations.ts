@@ -221,5 +221,25 @@ export const migrations: string[] = [
     updated_at TEXT NOT NULL
   );
   CREATE INDEX menu_meals_date ON menu_meals (date);
+  `,
+  // Two-step sign-in (authenticator app) and the activity log.
+  `
+  ALTER TABLE members ADD COLUMN totp_secret_enc TEXT;
+  ALTER TABLE members ADD COLUMN totp_pending_enc TEXT;
+  ALTER TABLE members ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE members ADD COLUMN totp_last_step INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE members ADD COLUMN totp_recovery TEXT NOT NULL DEFAULT '[]';
+
+  CREATE TABLE audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL,
+    member_id TEXT,
+    username TEXT,
+    action TEXT NOT NULL,
+    request TEXT NOT NULL,
+    status INTEGER NOT NULL,
+    ip TEXT
+  );
+  CREATE INDEX audit_log_at ON audit_log (at);
   `
 ];

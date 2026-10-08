@@ -112,12 +112,28 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
                 {ROLE_INFO[member.role].label}
                 {member.canLogin === false ? <div className="table-subline">solo etichetta, nessun accesso</div> : null}
                 {member.panelWrite ? <div className="table-subline">modalità scrittura</div> : null}
+                {member.totpEnabled ? <div className="table-subline">🔐 verifica in due passaggi</div> : null}
                 {member.keywords?.length ? <div className="table-subline">anche: {member.keywords.join(", ")}</div> : null}
               </TableCell>
               <TableCell>
                 <div className="row-actions">
                   <Button size="small" appearance="subtle" icon={<EditRegular />} aria-label="Modifica" onClick={() => setDialog({ kind: "edit", member })} />
                   <Button size="small" appearance="subtle" icon={<KeyRegular />} aria-label="Reimposta password" onClick={() => setDialog({ kind: "password", member })} />
+                  {member.totpEnabled && member.id !== auth.user?.id ? (
+                    <Button
+                      size="small"
+                      appearance="subtle"
+                      aria-label="Azzera verifica in due passaggi"
+                      title="Azzera la verifica in due passaggi (telefono perso)"
+                      onClick={() => {
+                        if (window.confirm(`Azzerare la verifica in due passaggi di ${member.displayName}? Potrà accedere con la sola password e riattivarla.`)) {
+                          void api.resetTotp(member.id).then(onChanged).catch((caught: unknown) => window.alert(caught instanceof Error ? caught.message : "Operazione non riuscita."));
+                        }
+                      }}
+                    >
+                      🔓
+                    </Button>
+                  ) : null}
                   {member.id !== auth.user?.id ? (
                     <Button size="small" appearance="subtle" icon={<DeleteRegular />} aria-label="Elimina" onClick={() => void remove(member)} />
                   ) : null}

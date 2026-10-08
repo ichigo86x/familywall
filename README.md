@@ -30,6 +30,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - [Pulsanti Home Assistant](#pulsanti-home-assistant)
 - [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)
 - [Sincronizzazione, cache e offline](#sincronizzazione-cache-e-offline)
+- [Sicurezza: verifica in due passaggi e registro attività](#sicurezza-verifica-in-due-passaggi-e-registro-attività)
 - [Backup e ripristino](#backup-e-ripristino)
 - [Dati e chiavi](#dati-e-chiavi)
 - [Struttura del progetto](#struttura-del-progetto)
@@ -416,6 +417,31 @@ server {
 - **Liste e dati della famiglia**: se Google Tasks o il server CalDAV integrato non rispondono, restano le ultime voci lette.
 - **Dispositivi**: telefoni, tablet e pannelli salvano le ultime risposte. Senza rete, o con il server spento, mostrano i dati salvati con l'avviso "Offline" e riprovano da soli. Il pannello si può anche ricaricare senza rete (service worker, solo in HTTPS o su localhost). I dati salvati sul dispositivo si cancellano all'uscita (Esci).
 - Senza rete non si possono salvare modifiche: Familywall lo segnala.
+
+## Sicurezza: verifica in due passaggi e registro attività
+
+### Verifica in due passaggi
+
+Dopo la password Familywall chiede il codice di 6 cifre di un'app di autenticazione: Password di iPhone, Google Authenticator, Microsoft Authenticator, 1Password e simili.
+
+1. Admin → Sicurezza → **Attiva la verifica in due passaggi**.
+2. Inquadra il codice QR con l'app. Sull'iPhone puoi anche toccare il link "Aggiungi all'app di autenticazione", oppure scrivere la chiave a mano.
+3. Scrivi il codice di 6 cifre che mostra l'app e tocca **Attiva**.
+4. Salva gli 8 **codici di recupero** (per esempio "abcd-efgh"): ognuno vale una volta, al posto del codice, se perdi il telefono. Non vengono più mostrati.
+
+Da quel momento l'accesso chiede utente, password e codice. Un codice già usato non vale una seconda volta. Gli errori contano nel limite dei tentativi di accesso.
+
+- **Disattivare**: nella stessa card, con password e codice (o un codice di recupero).
+- **Telefono e codici persi**: un altro Admin, in Membri, tocca 🔓 accanto al membro. Se sei l'unico Admin, ripristina un backup precedente all'attivazione.
+- Il segreto è cifrato nel database con `secret.key`, come le credenziali dei provider.
+- Il collegamento CalDAV dei telefoni (Promemoria e Calendario) usa ancora solo la password: iOS non supporta un secondo passaggio per gli account CalDAV.
+
+### Registro attività
+
+Admin → **Registro attività** mostra chi ha fatto cosa: accessi (riusciti e rifiutati), modifiche a membri, impostazioni, account, calendari, eventi, menu, turni, routine, note, liste, pulsanti di Home Assistant, backup scaricati e ripristinati.
+- Per ogni voce: ora, utente, azione ed esito. Passando sopra l'azione si vede la richiesta (per esempio `PATCH /members/…`).
+- Il contenuto delle richieste (password, testi) non viene mai salvato.
+- Si tengono gli ultimi 6 mesi (al massimo 20.000 voci). Un ripristino da backup non cancella il registro.
 
 ## Backup e ripristino
 

@@ -14,6 +14,12 @@ export interface MemberRow {
   disabled: number;
   keywords: string;
   panel_write: number;
+  totp_secret_enc: string | null;
+  totp_pending_enc: string | null;
+  totp_enabled: number;
+  totp_last_step: number;
+  /** JSON array of sha256 hashes of the unused recovery codes. */
+  totp_recovery: string;
   created_at: string;
   updated_at: string;
 }
@@ -51,7 +57,8 @@ export const toUser = (row: MemberRow): User => ({
   disabled: row.disabled === 1,
   keywords: JSON.parse(row.keywords) as string[],
   canLogin: row.password_hash !== NO_PASSWORD,
-  panelWrite: row.role === "Kiosk" && row.panel_write === 1
+  panelWrite: row.role === "Kiosk" && row.panel_write === 1,
+  totpEnabled: row.totp_enabled === 1
 });
 
 @Injectable()
@@ -66,6 +73,32 @@ export class MembersRepository {
     return (
       this.db.prepare("SELECT COUNT(*) AS total FROM members WHERE role = 'Admin' AND disabled = 0").get() as { total: number }
     ).total;
+  }
+
+  /** A secret waiting for its first code (the authenticator app is being set up). */
+  public setTotpPending(id: string, secretEnc: string | null): void {
+    this.db.prepare("UPDATE members SET totp_pending_enc = ?, updated_at = ? WHERE id = ?").run(secretEnc, nowIso(), id);
+  }
+
+  public enableTotp(id: string, secretEnc: string, step: number, recoveryHashes: string[]): void {
+    this.db
+      .prepare("UPDATE members SET totp_secret_enc = ?, totp_pending_enc = NULL, totp_enabled = 1, totp_last_step = ?, totp_recovery = ?, updated_at = ? WHERE id = ?")
+      .run(secretEnc, step, JSON.stringify(recoveryHashes), nowIso(), id);
+  }
+
+  public disableTotp(id: string): void {
+    this.db
+      .prepare("UPDATE members SET totp_secret_enc = NULL, totp_pending_enc = NULL, totp_enabled = 0, totp_last_step = 0, totp_recovery = '[]', updated_at = ? WHERE id = ?")
+      .run(nowIso(), id);
+  }
+
+  public recordTotpUse(id: string, step: number | null, recoveryHashes?: string[]): void {
+    if (step !== null) {
+      this.db.prepare("UPDATE members SET totp_last_step = ? WHERE id = ?").run(step, id);
+    }
+    if (recoveryHashes) {
+      this.db.prepare("UPDATE members SET totp_recovery = ? WHERE id = ?").run(JSON.stringify(recoveryHashes), id);
+    }
   }
 
   public findById(id: string): MemberRow | undefined {

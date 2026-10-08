@@ -14,6 +14,8 @@ const DAILY_CHECK_MS = 60 * 60 * 1000;
 const MAX_UNPACKED_BYTES = 300 * 1024 * 1024;
 /** Derived data, rebuilt by the next sync: never restored. */
 const SKIPPED_TABLES = new Set(["calendar_cache"]);
+/** The activity log of this installation stays as it is (the restore itself is logged in it). */
+const KEPT_TABLES = new Set(["audit_log"]);
 const STORED_NAME = /^familywall-\d{4}-\d{2}-\d{2}\.fwbackup$/;
 
 interface BackupBundle {
@@ -252,7 +254,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
         (this.db.prepare("SELECT name FROM backup.sqlite_master WHERE type = 'table'").all() as Array<{ name: string }>).map((row) => row.name)
       );
       transaction(this.db, () => {
-        for (const table of tables) {
+        for (const table of tables.filter((name) => !KEPT_TABLES.has(name))) {
           this.db.exec(`DELETE FROM main.${quoteIdentifier(table)}`);
           if (SKIPPED_TABLES.has(table) || !backupTables.has(table)) {
             continue;

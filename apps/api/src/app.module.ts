@@ -16,6 +16,7 @@ import { SettingsModule } from "./modules/settings/settings.module";
 import { WeatherModule } from "./modules/weather/weather.module";
 import { HomeModule } from "./modules/home/home.module";
 import { BackupModule } from "./modules/backup/backup.module";
+import { AuditModule } from "./modules/audit/audit.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BackupModule } from "./modules/backup/backup.module";
     WeatherModule,
     HomeModule,
     BackupModule,
+    AuditModule,
     HealthModule
   ],
   providers: [

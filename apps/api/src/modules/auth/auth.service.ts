@@ -8,6 +8,7 @@ import { DATABASE, transaction, type Database } from "../../database/database";
 import { MembersRepository, toUser, type MemberRow } from "../members/members.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 import { LoginThrottle } from "./login-throttle";
+import { TotpService } from "./totp.service";
 
 export const JWT_SECRET = Symbol("JWT_SECRET");
 
@@ -24,7 +25,8 @@ export class AuthService {
     @Inject(DATABASE) private readonly db: Database,
     @Inject(JWT_SECRET) private readonly jwtSecret: Buffer,
     private readonly members: MembersRepository,
-    private readonly settings: SettingsRepository
+    private readonly settings: SettingsRepository,
+    private readonly totp: TotpService
   ) {}
 
   public needsSetup(): boolean {
@@ -64,6 +66,17 @@ export class AuthService {
     if (!member || !valid || member.disabled === 1) {
       this.throttle.recordFailure(keys);
       throw AppException.unauthorized("Utente o password non corretti.");
+    }
+
+    // Two-step sign-in: the right password alone is not enough (and does not reset the failures).
+    if (member.totp_enabled === 1) {
+      if (!input.code) {
+        throw new AppException("TOTP_REQUIRED", "Inserisci il codice dell'app di autenticazione.");
+      }
+      if (!this.totp.verify(member, input.code)) {
+        this.throttle.recordFailure(keys);
+        throw new AppException("TOTP_REQUIRED", "Codice non valido o già usato.");
+      }
     }
 
     this.throttle.reset(keys);

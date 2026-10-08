@@ -11,6 +11,9 @@ import type {
   ScheduleEntry,
   ScheduleEntryInput,
   Routine,
+  TotpEnabledResponse,
+  TotpSetupResponse,
+  AuditLogResponse,
   RoutineInput,
   AddCalendarInput,
   AddTaskListInput,
@@ -251,6 +254,11 @@ export const api = {
   createScheduleEntry: async (input: ScheduleEntryInput) => (await request<{ entry: ScheduleEntry }>("schedule", { method: "POST", json: input })).entry,
   updateScheduleEntry: async (id: string, input: ScheduleEntryInput) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).entry,
+  setupTotp: () => request<TotpSetupResponse>("auth/totp/setup", { method: "POST", json: {} }),
+  enableTotp: (code: string) => request<TotpEnabledResponse>("auth/totp/enable", { method: "POST", json: { code } }),
+  disableTotp: (password: string, code: string) => request<void>("auth/totp/disable", { method: "POST", json: { password, code } }),
+  resetTotp: (memberId: string) => request<void>(`auth/totp/reset/${encodeURIComponent(memberId)}`, { method: "POST", json: {} }),
+  getAuditLog: (before: number | null) => request<AuditLogResponse>(`audit${before === null ? "" : `?before=${before}`}`),
   getListSuggestions: async (listId: string) => (await request<{ suggestions: string[] }>(`lists/${encodeURIComponent(listId)}/suggestions`)).suggestions,
   setChoreDone: async (id: string, date: string, done: boolean) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}/done`, { method: "POST", json: { date, done } })).entry,

@@ -252,7 +252,7 @@ describe("CalendarsService and EventsService", () => {
 });
 
 describe("projectEventForViewer", () => {
-  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false, keywords: [], canLogin: true, panelWrite: false });
+  const viewer = (role: User["role"], id = role.toLowerCase()): User => ({ id, username: id, displayName: id, role, color: "#000000", disabled: false, keywords: [], canLogin: true, panelWrite: false, totpEnabled: false });
   const event = {
     id: "e1",
     calendarId: "c1",

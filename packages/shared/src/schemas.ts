@@ -23,10 +23,25 @@ export const setupSchema = z.object({
 
 export type SetupInput = z.infer<typeof setupSchema>;
 
+/** A 6-digit code of the authenticator app, or a recovery code ("abcd-efgh"). */
+export const totpCodeSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^(\d{6}|[a-z0-9]{4}-?[a-z0-9]{4})$/, "Codice non valido");
+
 export const loginSchema = z.object({
   username: z.string().trim().toLowerCase().min(1).max(64),
-  password: z.string().min(1).max(128)
+  password: z.string().min(1).max(128),
+  /** Required when the member turned on two-step sign-in. */
+  code: totpCodeSchema.optional()
 });
+
+export const totpEnableSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, "Inserisci le 6 cifre") });
+export type TotpEnableInput = z.infer<typeof totpEnableSchema>;
+
+export const totpDisableSchema = z.object({ password: z.string().min(1).max(128), code: totpCodeSchema });
+export type TotpDisableInput = z.infer<typeof totpDisableSchema>;
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
