@@ -117,7 +117,39 @@ export interface HouseholdSettings {
   homeButtons: HomeButton[];
   /** Home Assistant to-do lists shown in Liste. */
   homeLists: HomeList[];
+  /** Settings of single wall panels, by Kiosk member id (missing = like the family). */
+  panelProfiles: Record<string, PanelProfile>;
 }
+
+/** What one wall panel shows differently from the others (e.g. the kitchen and the hall). */
+export interface PanelProfile {
+  /** Room shown in Admin, e.g. "Cucina". */
+  room: string;
+  /** Lists on its dashboard; null = the family choice. */
+  dashboardListIds: string[] | null;
+  /** Home Assistant buttons shown on it; null = all those allowed to panels. */
+  homeButtonIds: string[] | null;
+  /** Its own night hours; null = the family ones. */
+  night: PanelNight | null;
+  /** Minutes without touches before the screensaver; 0 = never; null = the default (5). */
+  screensaverMinutes: number | null;
+}
+
+export const DEFAULT_SCREENSAVER_MINUTES = 5;
+
+/** The settings a wall panel actually uses: its own profile over the family ones. */
+export const panelView = (
+  settings: Pick<HouseholdSettings, "dashboardListIds" | "panelNight" | "panelProfiles">,
+  memberId: string | null | undefined
+): { dashboardListIds: string[]; night: PanelNight; screensaverMinutes: number; homeButtonIds: string[] | null } => {
+  const profile = memberId ? settings.panelProfiles?.[memberId] : undefined;
+  return {
+    dashboardListIds: profile?.dashboardListIds ?? settings.dashboardListIds,
+    night: profile?.night ?? settings.panelNight,
+    screensaverMinutes: profile?.screensaverMinutes ?? DEFAULT_SCREENSAVER_MINUTES,
+    homeButtonIds: profile?.homeButtonIds ?? null
+  };
+};
 
 export interface PanelNight {
   enabled: boolean;

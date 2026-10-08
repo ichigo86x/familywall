@@ -3712,3 +3712,16 @@ button.schedule-chip {
     grid-column: 1 / -1;
   }
 }
+
+/* Per-panel settings in Admin. */
+.panel-profiles {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.panel-profile__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}

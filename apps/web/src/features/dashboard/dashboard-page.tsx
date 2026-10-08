@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
-import { canTickChore, scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
+import { canTickChore, panelView, scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -133,7 +133,9 @@ export const DashboardPage = () => {
   const nextDays = Array.from({ length: DAYS_AHEAD - 2 }, (_, index) => addDays(today, index + 2));
   const mealsOn = (day: Date) => meals.filter((meal) => occursOnDay(meal, day));
 
-  const shownLists = dashboardLists(lists.data?.lists ?? [], settings.data?.dashboardListIds ?? []);
+  // A panel may have its own lists (kitchen: shopping; hall: things to bring).
+  const listIds = settings.data ? panelView({ ...settings.data, panelProfiles: settings.data.panelProfiles ?? {} }, auth.user?.id).dashboardListIds : [];
+  const shownLists = dashboardLists(lists.data?.lists ?? [], listIds);
   const shownNotes = dashboardNotes(notes.data ?? []);
 
   return (

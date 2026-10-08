@@ -285,6 +285,17 @@ A 1920×1080 la dashboard sta in una sola schermata:
 
 In verticale (1080×1920) restano due colonne con il testo grande.
 
+### Un pannello per stanza
+
+Con più pannelli (per esempio cucina e ingresso) crea un membro Pannello per ognuno. In Admin → **Notte e pannelli** → Ogni pannello → **Personalizza** si sceglie, per quel pannello:
+- **Stanza**: un nome per riconoscerlo in Admin.
+- **Liste in dashboard**: per esempio la spesa in cucina e "Da portare" all'ingresso.
+- **Pulsanti Home Assistant**: solo alcuni dei pulsanti abilitati per i pannelli (il cancello all'ingresso, le luci in cucina).
+- **Notte**: orari propri, oppure notte spenta.
+- **Screensaver dopo**: 1-30 minuti senza tocchi, oppure mai.
+
+Ogni voce può restare "come la famiglia"; **Ripristina** riporta il pannello alle impostazioni comuni. I pannelli leggono le modifiche entro 15 minuti (o subito, ricaricando la pagina).
+
 ### Notte del pannello
 
 In Admin → Pannello a muro → Notte scegli gli orari (per esempio dalle 23:00 alle 06:30). In quegli orari gli account Pannello mostrano solo un orologio tenue su sfondo nero, che si sposta piano per non segnare lo schermo.

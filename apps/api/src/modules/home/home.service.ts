@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { HOME_SERVICES, homeDomain, isAllowedHomeService, type HomeButton, type HomeButtonsResponse, type HomeEntity, type User } from "@familywall/shared";
+import { HOME_SERVICES, homeDomain, isAllowedHomeService, panelView, type HomeButton, type HomeButtonsResponse, type HomeEntity, type User } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { SettingsRepository } from "../settings/settings.repository";
 import { HomeAssistantClient, HomeAssistantError } from "./home-assistant.client";
@@ -17,7 +17,10 @@ export class HomeService {
 
   /** The viewer's buttons with the current state of their entities (state is null when HA cannot be read). */
   public async buttons(viewer: User): Promise<HomeButtonsResponse> {
-    const buttons = this.settings.get().homeButtons.filter((button) => canUse(button, viewer));
+    const settings = this.settings.get();
+    // A panel may show only some of the buttons (e.g. the gate in the hall, the lights in the kitchen).
+    const onlyIds = viewer.role === "Kiosk" ? panelView(settings, viewer.id).homeButtonIds : null;
+    const buttons = settings.homeButtons.filter((button) => canUse(button, viewer) && (onlyIds === null || onlyIds.includes(button.id)));
     if (!this.client.available || buttons.length === 0) {
       return { available: this.client.available, buttons: buttons.map((button) => ({ ...button, state: null })) };
     }

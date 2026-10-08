@@ -104,6 +104,20 @@ export const homeButtonSchema = z
   })
   .refine((button) => isAllowedHomeService(button.entityId, button.service), { path: ["service"], message: "Azione non consentita per questa entità" });
 
+const panelNightSchema = z.object({
+  enabled: z.boolean(),
+  start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa HH:MM"),
+  end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Usa HH:MM")
+});
+
+export const panelProfileSchema = z.object({
+  room: z.string().trim().max(40).default(""),
+  dashboardListIds: z.array(z.string().min(1).max(300)).max(20).nullable().default(null),
+  homeButtonIds: z.array(z.string().min(1).max(64)).max(16).nullable().default(null),
+  night: panelNightSchema.nullable().default(null),
+  screensaverMinutes: z.number().int().min(0).max(120).nullable().default(null)
+});
+
 export const updateSettingsSchema = z
   .object({
     householdName: z.string().trim().min(2).max(80).optional(),
@@ -120,6 +134,7 @@ export const updateSettingsSchema = z
       .optional(),
     homeButtons: z.array(homeButtonSchema).max(16).optional(),
     homeLists: z.array(homeListSchema).max(20).optional(),
+    panelProfiles: z.record(z.string().min(1).max(64), panelProfileSchema).optional(),
     weatherLocation: z
       .object({
         name: z.string().trim().min(1).max(120),

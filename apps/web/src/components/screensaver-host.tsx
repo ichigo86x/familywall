@@ -1,13 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { isNightTime, type PanelNight } from "@familywall/shared";
+import { DEFAULT_SCREENSAVER_MINUTES, isNightTime, panelView, type PanelNight } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { useNow } from "@/components/live-clock";
 import { NightScreen } from "@/features/dashboard/night-screen";
 import { Screensaver } from "@/features/dashboard/screensaver";
 
-/** Wall panels (Kiosk accounts) start the screensaver after this much inactivity on any page. */
-const IDLE_MS = 5 * 60 * 1000;
 /** At night a tap wakes the panel; it goes dark again after this much inactivity. */
 const NIGHT_WAKE_MS = 2 * 60 * 1000;
 const SETTINGS_REFRESH_MS = 15 * 60 * 1000;
@@ -37,9 +35,18 @@ const useIdle = (enabled: boolean, delayMs: number, onIdle: () => void) => {
   }, [enabled, delayMs]);
 };
 
-/** The panel night window, re-read now and then so Admin changes reach panels that never reload. */
-const usePanelNight = (enabled: boolean): PanelNight | null => {
-  const [night, setNight] = useState<PanelNight | null>(null);
+interface PanelTiming {
+  night: PanelNight | null;
+  /** Minutes without touches before the screensaver; 0 = never. */
+  screensaverMinutes: number;
+}
+
+/**
+ * Night hours and screensaver delay of this panel (its own profile, or the family ones),
+ * re-read now and then so Admin changes reach panels that never reload.
+ */
+const usePanelTiming = (enabled: boolean, memberId: string | undefined): PanelTiming => {
+  const [timing, setTiming] = useState<PanelTiming>({ night: null, screensaverMinutes: DEFAULT_SCREENSAVER_MINUTES });
   useEffect(() => {
     if (!enabled) {
       return;
@@ -48,7 +55,12 @@ const usePanelNight = (enabled: boolean): PanelNight | null => {
     const load = () =>
       api
         .getSettings()
-        .then((settings) => active && setNight(settings.panelNight ?? null))
+        .then((settings) => {
+          if (active) {
+            const view = panelView({ ...settings, panelProfiles: settings.panelProfiles ?? {} }, memberId);
+            setTiming({ night: view.night ?? null, screensaverMinutes: view.screensaverMinutes });
+          }
+        })
         .catch(() => undefined);
     void load();
     const timer = window.setInterval(load, SETTINGS_REFRESH_MS);
@@ -56,8 +68,8 @@ const usePanelNight = (enabled: boolean): PanelNight | null => {
       active = false;
       window.clearInterval(timer);
     };
-  }, [enabled]);
-  return enabled ? night : null;
+  }, [enabled, memberId]);
+  return enabled ? timing : { night: null, screensaverMinutes: 0 };
 };
 
 interface ScreensaverHostProps {
@@ -65,18 +77,20 @@ interface ScreensaverHostProps {
   panel: boolean;
   /** The idle screensaver is off on some pages (Admin). */
   idleStart: boolean;
+  /** The signed-in panel, for its own settings. */
+  memberId?: string;
   children: React.ReactNode;
 }
 
 /** Owns the screensaver of a page: started by a tap on the clock or, on wall panels, by inactivity and at night. */
-export const ScreensaverHost = ({ panel, idleStart, children }: ScreensaverHostProps) => {
+export const ScreensaverHost = ({ panel, idleStart, memberId, children }: ScreensaverHostProps) => {
   const now = useNow();
   const [active, setActive] = useState(false);
   const [awakeAtNight, setAwakeAtNight] = useState(false);
   const start = useCallback(() => setActive(true), []);
   const exit = useCallback(() => setActive(false), []);
 
-  const nightWindow = usePanelNight(panel);
+  const { night: nightWindow, screensaverMinutes } = usePanelTiming(panel, memberId);
   const night = nightWindow ? isNightTime(nightWindow, now) : false;
   const dark = night && !awakeAtNight;
 
@@ -86,7 +100,7 @@ export const ScreensaverHost = ({ panel, idleStart, children }: ScreensaverHostP
     }
   }, [night]);
 
-  useIdle(panel && idleStart && !active && !night, IDLE_MS, start);
+  useIdle(panel && idleStart && !active && !night && screensaverMinutes > 0, Math.max(screensaverMinutes, 1) * 60 * 1000, start);
   useIdle(night && awakeAtNight, NIGHT_WAKE_MS, () => setAwakeAtNight(false));
 
   return (

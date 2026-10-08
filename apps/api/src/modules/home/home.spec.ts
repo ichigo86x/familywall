@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { homeButtonSchema, type User } from "@familywall/shared";
+import { homeButtonSchema, panelView, type User } from "@familywall/shared";
 import { openDatabase } from "../../database/database";
 import { SettingsRepository } from "../settings/settings.repository";
 import { HomeAssistantClient } from "./home-assistant.client";
@@ -50,5 +50,23 @@ describe("HomeService", () => {
     const service = new HomeService(settings, new HomeAssistantClient(null));
     expect(await service.buttons(user("Admin"))).toEqual({ available: false, buttons: [] });
     expect(await service.entities()).toEqual([]);
+  });
+});
+
+describe("panel profiles", () => {
+  it("lets one panel show only some buttons and its own lists and night", async () => {
+    const settings = new SettingsRepository(openDatabase(":memory:"));
+    settings.update({
+      homeButtons: [door],
+      dashboardListIds: ["dav:spesa"],
+      panelProfiles: { Kiosk: { room: "Cucina", dashboardListIds: ["dav:cucina"], homeButtonIds: [], night: null, screensaverMinutes: 0 } }
+    });
+    const service = new HomeService(settings, new HomeAssistantClient({ url: "http://ha/api", token: "t" }, async () => new Response("[]")));
+    expect((await service.buttons(user("Kiosk"))).buttons).toEqual([]);
+    expect((await service.buttons(user("Parent"))).buttons).toHaveLength(1);
+
+    const stored = settings.get();
+    expect(panelView(stored, "Kiosk")).toEqual({ dashboardListIds: ["dav:cucina"], night: stored.panelNight, screensaverMinutes: 0, homeButtonIds: [] });
+    expect(panelView(stored, "other")).toMatchObject({ dashboardListIds: ["dav:spesa"], screensaverMinutes: 5, homeButtonIds: null });
   });
 });

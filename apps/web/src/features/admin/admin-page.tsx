@@ -46,7 +46,13 @@ export const AdminPage = () => {
         <>
           <HouseholdCard householdName={admin.data.settings.householdName} onSaved={admin.reload} />
           <WeatherCard location={admin.data.settings.weatherLocation} onSaved={admin.reload} />
-          <PanelSettingsCard night={admin.data.settings.panelNight} onSaved={admin.reload} />
+          <PanelSettingsCard
+            night={admin.data.settings.panelNight}
+            panels={admin.data.members.filter((member) => member.role === "Kiosk")}
+            profiles={admin.data.settings.panelProfiles ?? {}}
+            buttons={admin.data.settings.homeButtons}
+            onSaved={admin.reload}
+          />
           <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} />
           <MembersSection members={admin.data.members} onChanged={admin.reload} />
           <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
