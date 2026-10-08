@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from "@nestjs
 import { createHash } from "node:crypto";
 import http from "node:http";
 import type { Request, Response } from "express";
-import { hasPermission } from "@familywall/shared";
+import { hasPermission, type Permission, type UserRole } from "@familywall/shared";
 import { verifyPassword } from "../../common/crypto/password";
 import { appConfig } from "../../config/app-config";
 import { LoginThrottle } from "../auth/login-throttle";
@@ -13,6 +13,36 @@ import { DAV_FAMILY_USER, RadicaleProcess } from "./radicale-process";
 export const DAV_PATH = "/dav";
 /** A successful check is reused for a while: iOS sends many requests and scrypt is slow on purpose. */
 const AUTH_CACHE_MS = 10 * 60 * 1000;
+
+/** Methods that change data on the server. */
+const WRITE_METHODS = new Set(["PUT", "DELETE", "MOVE", "COPY", "PROPPATCH", "MKCALENDAR", "MKCOL", "LOCK", "UNLOCK"]);
+/** Collections of family data and the permission needed to change their items (lists need lists:write, checked at login). */
+const COLLECTION_PERMISSIONS: Record<string, Permission> = {
+  "familywall-menu": "events:write",
+  "familywall-compleanni": "events:write",
+  "familywall-turni": "events:write",
+  "familywall-note": "lists:write"
+};
+
+/**
+ * Same rules as the app: Children may tick lists and write notes but not change menu, birthdays
+ * or shifts; only the Admin may delete, rename or recreate the family collections themselves.
+ */
+export const davWriteAllowed = (role: UserRole, method: string, davPath: string): boolean => {
+  if (!WRITE_METHODS.has(method.toUpperCase())) {
+    return true;
+  }
+  const segments = davPath.split("?")[0]!.split("/").filter(Boolean).map((segment) => decodeURIComponent(segment));
+  const collection = segments[1];
+  if (!collection) {
+    return role === "Admin";
+  }
+  const permission = COLLECTION_PERMISSIONS[collection];
+  if (!permission) {
+    return hasPermission(role, "lists:write");
+  }
+  return segments.length <= 2 ? role === "Admin" : hasPermission(role, permission);
+};
 
 /** Hop-by-hop or security-sensitive headers never forwarded to Radicale. */
 const DROPPED_HEADERS = new Set(["authorization", "host", "connection", "x-remote-user", "x-script-name", "cookie"]);
@@ -60,10 +90,16 @@ export class DavGatewayService implements OnModuleInit, OnApplicationShutdown {
       return;
     }
 
-    const username = await this.authenticate(request);
-    if (!username) {
+    const member = await this.authenticate(request);
+    if (!member) {
       response.setHeader("WWW-Authenticate", 'Basic realm="Familywall", charset="UTF-8"');
       response.status(401).send("Accesso richiesto.");
+      return;
+    }
+    const davPath = request.originalUrl.slice(request.originalUrl.indexOf(DAV_PATH) + DAV_PATH.length) || "/";
+    if (!davWriteAllowed(member.role, request.method, davPath)) {
+      this.logger.warn(`CalDAV ${request.method} on ${davPath} refused for "${member.username}" (${member.role})`);
+      response.status(403).send("Non hai il permesso di modificare questo calendario.");
       return;
     }
 
@@ -71,7 +107,7 @@ export class DavGatewayService implements OnModuleInit, OnApplicationShutdown {
   }
 
   /** Members that can write lists (Admin, Parent, Child) may sync them; panels and tag-only members cannot. */
-  private async authenticate(request: Request): Promise<string | null> {
+  private async authenticate(request: Request): Promise<{ username: string; role: UserRole } | null> {
     const header = request.headers.authorization ?? "";
     if (!header.startsWith("Basic ")) {
       return null;
@@ -89,7 +125,7 @@ export class DavGatewayService implements OnModuleInit, OnApplicationShutdown {
     const cachedUntil = this.verified.get(cacheKey);
     const allowed = member && member.disabled === 0 && member.password_hash !== NO_PASSWORD && hasPermission(member.role, "lists:write");
     if (allowed && cachedUntil && cachedUntil > Date.now()) {
-      return username;
+      return { username, role: member.role };
     }
 
     const keys = [`dav-ip:${request.ip}`, `dav-user:${username}`];
@@ -104,7 +140,7 @@ export class DavGatewayService implements OnModuleInit, OnApplicationShutdown {
     }
     this.throttle.reset(keys);
     this.verified.set(cacheKey, Date.now() + AUTH_CACHE_MS);
-    return username;
+    return { username, role: member!.role };
   }
 
   private forward(request: Request, response: Response, scriptName: string): void {

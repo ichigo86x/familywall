@@ -219,6 +219,7 @@ Familywall include un server CalDAV (Radicale). Tutti i dati della famiglia stan
 - Quello che modifichi sul telefono compare in Familywall alla lettura successiva. Familywall legge titolo, date, ripetizione e descrizione; le informazioni che solo Familywall conosce (tipo di turno, membro, colore della nota...) restano in proprietà `X-FAMILYWALL-*` dell'evento.
 - Un evento aggiunto dal telefono a un calendario di Familywall vale come piatto, compleanno o turno. Nel Menu il pasto si sceglie iniziando il titolo con "Colazione:", "Pranzo:", "Merenda:" o "Cena:".
 - Gli account Pannello e i Figli solo etichetta non accedono al server CalDAV.
+- Dal telefono valgono gli stessi permessi dell'app: i Figli spuntano le liste e scrivono note, ma vedono Menu, Compleanni e Turni in sola lettura (una modifica viene rifiutata e il telefono mostra un errore). Admin e Genitori modificano tutto. Solo l'Admin può eliminare o rinominare i calendari di Familywall.
 
 ### Aggiornamento dalla versione 0.3
 
