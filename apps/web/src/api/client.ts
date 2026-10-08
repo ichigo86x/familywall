@@ -251,6 +251,7 @@ export const api = {
   createScheduleEntry: async (input: ScheduleEntryInput) => (await request<{ entry: ScheduleEntry }>("schedule", { method: "POST", json: input })).entry,
   updateScheduleEntry: async (id: string, input: ScheduleEntryInput) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).entry,
+  getListSuggestions: async (listId: string) => (await request<{ suggestions: string[] }>(`lists/${encodeURIComponent(listId)}/suggestions`)).suggestions,
   setChoreDone: async (id: string, date: string, done: boolean) =>
     (await request<{ entry: ScheduleEntry }>(`schedule/${encodeURIComponent(id)}/done`, { method: "POST", json: { date, done } })).entry,
   getRoutines: async () => (await request<{ routines: Routine[] }>("routines")).routines,

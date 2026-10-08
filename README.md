@@ -120,6 +120,8 @@ Una routine è una sequenza di passi per i bambini (vestirsi, colazione, denti, 
 - Le liste vengono da tre fonti: i Promemoria di iPhone (server CalDAV integrato), Google Tasks e le liste `todo` di Home Assistant (vedi [Liste di Home Assistant e Promemoria iCloud](#liste-di-home-assistant-e-promemoria-icloud)).
 - Puoi aggiungere, spuntare ed eliminare le voci. Le liste si aggiornano da sole ogni 2 minuti.
 - La puntina sceglie quali liste compaiono in dashboard.
+- **Per reparto**: le liste con "spesa" nel nome (anche "shopping" o "supermercato") mostrano le voci raggruppate per reparto, nell'ordine di un giro al supermercato: frutta e verdura, pane, latticini e uova, carne e pesce, surgelati, dispensa, colazione e dolci, bevande, casa, igiene, animali, altro. Il reparto si riconosce dalle parole della voce ("2 kg di patate" → frutta e verdura). Il pulsante "🛒 Per reparto" lo disattiva su quel dispositivo.
+- **Comprati spesso**: il pulsante "💡 Comprati spesso" propone le voci spuntate più spesso negli ultimi sei mesi che non sono già in lista; un tocco le aggiunge. Funziona con le liste Promemoria (la cronologia resta sul server CalDAV integrato) e con quelle di Home Assistant (solo le voci completate che Home Assistant conserva); non con Google Tasks.
 
 ### Note
 

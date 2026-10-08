@@ -101,9 +101,14 @@ export class DavTasksClient {
 
   /** Open reminders plus the ones completed in the last two days. */
   public async tasks(listName: string): Promise<TaskItem[]> {
+    const threshold = this.now() - COMPLETED_VISIBLE_MS;
+    return (await this.allTasks(listName)).filter((task) => !task.completed || (task.completedAt !== null && Date.parse(task.completedAt) >= threshold));
+  }
+
+  /** Every reminder of the list, completed ones included (the history used for suggestions). */
+  public async allTasks(listName: string): Promise<TaskItem[]> {
     const response = await this.send(this.listUrl(listName), "REPORT", TASKS_BODY, { Depth: "1", "Content-Type": "application/xml; charset=utf-8" });
     const xml = await this.expectOk(response, "lettura della lista");
-    const threshold = this.now() - COMPLETED_VISIBLE_MS;
 
     return responseBlocks(xml)
       .flatMap((block): TaskItem[] => {
@@ -131,8 +136,7 @@ export class DavTasksClient {
           }
         ];
       })
-      .filter((task) => task.title !== "")
-      .filter((task) => !task.completed || (task.completedAt !== null && Date.parse(task.completedAt) >= threshold));
+      .filter((task) => task.title !== "");
   }
 
   public async createTask(listName: string, title: string): Promise<string> {

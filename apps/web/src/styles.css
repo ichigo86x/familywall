@@ -3571,3 +3571,37 @@ button.schedule-chip {
 .routine-card--done .routine-card__clock {
   color: #16a34a;
 }
+
+/* Shopping lists: tools, suggestions and aisle groups. */
+.task-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.task-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-suggestion {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--color-primary);
+  background: var(--color-surface-soft);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.task-aisle h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 2px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ingredientKey } from "@familywall/shared";
 import type {
   AddTaskListInput,
   CreateTaskInput,
@@ -26,6 +27,9 @@ const DAV_PREFIX = "dav:";
 const HA_PREFIX = "ha:";
 /** Home Assistant does not say when an item was completed: the ones ticked here stay visible for two days. */
 const COMPLETED_VISIBLE_MS = 2 * 24 * 60 * 60 * 1000;
+/** Suggestions look at what was bought in the last months. */
+const SUGGESTION_WINDOW_MS = 180 * 24 * 60 * 60 * 1000;
+const MAX_SUGGESTIONS = 12;
 
 /** Shared lists (shopping, chores...): Google Tasks lists and the family Reminders lists (CalDAV). */
 @Injectable()
@@ -148,6 +152,55 @@ export class ListsService {
     const message = error instanceof Error ? error.message : "Errore sconosciuto.";
     const tasks = this.lastGood.get(listId);
     return tasks ? { lastError: `${message} Mostro le ultime voci lette.`, tasks } : { lastError: message, tasks: [] };
+  }
+
+  /**
+   * Items completed often in a list and not open now, most frequent (then most recent) first.
+   * Reminder lists keep their history on the CalDAV server; Home Assistant lists give the completed
+   * items they still have; Google lists have no history here.
+   */
+  public async suggestions(listId: string): Promise<string[]> {
+    let history: Array<{ title: string; completed: boolean; at: number }>;
+    try {
+      if (listId.startsWith(DAV_PREFIX)) {
+        history = (await this.dav.allTasks(listId.slice(DAV_PREFIX.length))).map((task) => ({
+          title: task.title,
+          completed: task.completed,
+          at: task.completedAt ? Date.parse(task.completedAt) : 0
+        }));
+      } else if (listId.startsWith(HA_PREFIX)) {
+        history = (await this.homeAssistant.todoItems(this.homeEntity(listId))).map((item) => ({ title: item.summary, completed: item.status === "completed", at: 0 }));
+      } else {
+        return [];
+      }
+    } catch (error) {
+      if (error instanceof AppException) {
+        throw error;
+      }
+      this.logger.warn(`Reading the history of list ${listId} failed: ${error instanceof Error ? error.message : String(error)}`);
+      return [];
+    }
+
+    const open = new Set(history.filter((item) => !item.completed).map((item) => ingredientKey(item.title)));
+    const since = Date.now() - SUGGESTION_WINDOW_MS;
+    const counted = new Map<string, { title: string; count: number; last: number }>();
+    for (const item of history) {
+      const key = ingredientKey(item.title);
+      if (!item.completed || open.has(key) || (item.at !== 0 && item.at < since) || key === "") {
+        continue;
+      }
+      const entry = counted.get(key) ?? { title: item.title.trim(), count: 0, last: 0 };
+      entry.count += 1;
+      if (item.at >= entry.last) {
+        entry.last = item.at;
+        entry.title = item.title.trim();
+      }
+      counted.set(key, entry);
+    }
+    return [...counted.values()]
+      .sort((left, right) => right.count - left.count || right.last - left.last || left.title.localeCompare(right.title))
+      .slice(0, MAX_SUGGESTIONS)
+      .map((entry) => entry.title);
   }
 
   public listConfigs(): TaskListConfig[] {

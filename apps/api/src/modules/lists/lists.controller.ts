@@ -3,6 +3,7 @@ import type {
   AddTaskListInput,
   CreateTaskInput,
   ListsResponse,
+  ListSuggestionsResponse,
   RemoteTaskListsResponse,
   TaskListConfigResponse,
   TaskListConfigsResponse,
@@ -33,6 +34,13 @@ export class ListsController {
   @RequirePermission("calendar:read")
   public getLists(): Promise<ListsResponse> {
     return this.listsService.getLists();
+  }
+
+  /** Items bought often, to add again with one tap. */
+  @Get(":listId/suggestions")
+  @RequirePermission("lists:write")
+  public async suggestions(@Param("listId") listId: string): Promise<ListSuggestionsResponse> {
+    return { suggestions: await this.listsService.suggestions(listId) };
   }
 
   @Get("config")

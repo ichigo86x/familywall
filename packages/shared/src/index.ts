@@ -6,3 +6,4 @@ export * from "./weather";
 export * from "./home";
 export * from "./occasions";
 export * from "./menu";export * from "./routine";
+export * from "./shopping";

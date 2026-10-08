@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Card, MessageBar, MessageBarBody } from "@fluentui/react-components";
-import type { FamilyTaskList, TaskItem } from "@familywall/shared";
+import { AISLES, OTHER_AISLE, aisleOf, ingredientKey, isShoppingList, type FamilyTaskList, type TaskItem } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -14,6 +14,30 @@ import { RemindersSetup } from "./reminders-setup";
 const AUTO_REFRESH_MS = 2 * 60 * 1000;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
+
+/** Per device: shopping lists grouped by supermarket aisle (on by default). */
+const BY_AISLE_KEY = "familywall.lists.byAisle";
+const readByAisle = (): boolean => {
+  try {
+    return window.localStorage.getItem(BY_AISLE_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+
+const AISLE_ORDER = [...AISLES.map((aisle) => aisle.id), OTHER_AISLE.id];
+
+/** Open items grouped by aisle, in the order of a walk through the supermarket. */
+const byAisle = (tasks: TaskItem[]) => {
+  const groups = new Map<string, { label: string; icon: string; tasks: TaskItem[] }>();
+  for (const task of tasks) {
+    const aisle = aisleOf(task.title);
+    const group = groups.get(aisle.id) ?? { label: aisle.label, icon: aisle.icon, tasks: [] };
+    group.tasks.push(task);
+    groups.set(aisle.id, group);
+  }
+  return [...groups.entries()].sort(([left], [right]) => AISLE_ORDER.indexOf(left) - AISLE_ORDER.indexOf(right)).map(([id, group]) => ({ id, ...group }));
+};
 
 export const ListsPage = () => {
   const auth = useAuth();
@@ -93,8 +117,41 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
   const [tasks, setTasks] = useState<TaskItem[]>(list.tasks);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const shopping = isShoppingList(list.name);
+  const [grouped, setGrouped] = useState(readByAisle);
+  const [suggestions, setSuggestions] = useState<string[] | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const hasHistory = list.source !== "google";
 
   useEffect(() => setTasks(list.tasks), [list.tasks]);
+
+  const toggleGrouped = () => {
+    const next = !grouped;
+    setGrouped(next);
+    try {
+      window.localStorage.setItem(BY_AISLE_KEY, next ? "1" : "0");
+    } catch {
+      // Private mode: the choice lasts until the page is closed.
+    }
+  };
+
+  const toggleSuggestions = () => {
+    const next = !showSuggestions;
+    setShowSuggestions(next);
+    if (next) {
+      setSuggestions(null);
+      api
+        .getListSuggestions(list.id)
+        .then(setSuggestions)
+        .catch((caught: unknown) => {
+          setSuggestions([]);
+          setError(errorText(caught));
+        });
+    }
+  };
+
+  const openKeys = new Set(tasks.filter((task) => !task.completed).map((task) => ingredientKey(task.title)));
+  const shownSuggestions = (suggestions ?? []).filter((title) => !openKeys.has(ingredientKey(title)));
 
   const act = async (optimistic: (current: TaskItem[]) => TaskItem[], action: () => Promise<unknown>) => {
     setError(null);
@@ -107,12 +164,14 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
     onChanged();
   };
 
-  const add = () => {
-    const title = draft.trim();
+  const add = (value = draft) => {
+    const title = value.trim();
     if (!title) {
       return;
     }
-    setDraft("");
+    if (value === draft) {
+      setDraft("");
+    }
     void act(
       (current) => [{ id: `pending-${Date.now()}`, title, notes: null, completed: false, completedAt: null, due: null }, ...current],
       () => api.createTask(list.id, title)
@@ -121,6 +180,40 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
 
   const open = tasks.filter((task) => !task.completed);
   const done = tasks.filter((task) => task.completed);
+
+  const renderTask = (task: TaskItem) => (
+    <li key={task.id} className={`task-item ${task.completed ? "task-item--done" : ""}`.trim()}>
+      <label>
+        <input
+          type="checkbox"
+          checked={task.completed}
+          disabled={!canWrite || task.id.startsWith("pending-")}
+          onChange={(change) => {
+            const completed = change.target.checked;
+            void act(
+              (current) => current.map((item) => (item.id === task.id ? { ...item, completed } : item)),
+              () => api.updateTask(list.id, task.id, { completed })
+            );
+          }}
+        />
+        <span>{task.title}</span>
+      </label>
+      {canWrite && !task.id.startsWith("pending-") ? (
+        <Button
+          size="small"
+          appearance="subtle"
+          icon={<DismissRegular />}
+          aria-label={`Elimina ${task.title}`}
+          onClick={() =>
+            void act(
+              (current) => current.filter((item) => item.id !== task.id),
+              () => api.deleteTask(list.id, task.id)
+            )
+          }
+        />
+      ) : null}
+    </li>
+  );
 
   return (
     <Card className="panel-card task-list-card" style={{ borderTopColor: list.color }}>
@@ -161,40 +254,50 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
         </form>
       ) : null}
 
+      {(canWrite && hasHistory) || shopping ? (
+        <div className="task-tools">
+          {canWrite && hasHistory ? (
+            <Button size="small" appearance={showSuggestions ? "primary" : "secondary"} aria-pressed={showSuggestions} onClick={toggleSuggestions}>
+              💡 Comprati spesso
+            </Button>
+          ) : null}
+          {shopping ? (
+            <Button size="small" appearance={grouped ? "primary" : "secondary"} aria-pressed={grouped} onClick={toggleGrouped}>
+              🛒 Per reparto
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {showSuggestions ? (
+        <div className="task-suggestions" aria-label="Voci suggerite">
+          {suggestions === null ? (
+            <span className="calendar-detail-hint">Cerco le voci frequenti...</span>
+          ) : shownSuggestions.length === 0 ? (
+            <span className="calendar-detail-hint">Nessun suggerimento: le voci spuntate nel tempo compariranno qui.</span>
+          ) : (
+            shownSuggestions.map((title) => (
+              <button key={title} type="button" className="task-suggestion" onClick={() => add(title)}>
+                + {title}
+              </button>
+            ))
+          )}
+        </div>
+      ) : null}
+
+      {shopping && grouped
+        ? byAisle(open).map((group) => (
+            <section key={group.id} className="task-aisle">
+              <h4>
+                <span aria-hidden="true">{group.icon}</span> {group.label}
+              </h4>
+              <ul className="task-items">{group.tasks.map(renderTask)}</ul>
+            </section>
+          ))
+        : null}
+
       <ul className="task-items">
-        {[...open, ...done].map((task) => (
-          <li key={task.id} className={`task-item ${task.completed ? "task-item--done" : ""}`.trim()}>
-            <label>
-              <input
-                type="checkbox"
-                checked={task.completed}
-                disabled={!canWrite || task.id.startsWith("pending-")}
-                onChange={(change) => {
-                  const completed = change.target.checked;
-                  void act(
-                    (current) => current.map((item) => (item.id === task.id ? { ...item, completed } : item)),
-                    () => api.updateTask(list.id, task.id, { completed })
-                  );
-                }}
-              />
-              <span>{task.title}</span>
-            </label>
-            {canWrite && !task.id.startsWith("pending-") ? (
-              <Button
-                size="small"
-                appearance="subtle"
-                icon={<DismissRegular />}
-                aria-label={`Elimina ${task.title}`}
-                onClick={() =>
-                  void act(
-                    (current) => current.filter((item) => item.id !== task.id),
-                    () => api.deleteTask(list.id, task.id)
-                  )
-                }
-              />
-            ) : null}
-          </li>
-        ))}
+        {(shopping && grouped ? done : [...open, ...done]).map(renderTask)}
         {tasks.length === 0 ? <li className="calendar-detail-hint">Lista vuota.</li> : null}
       </ul>
 
