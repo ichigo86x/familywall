@@ -19,6 +19,7 @@ import { ProviderAccountsRepository } from "../modules/providers/provider-accoun
 import { ProvidersService } from "../modules/providers/providers.service";
 import { SettingsRepository } from "../modules/settings/settings.repository";
 import { MemoryDavStore } from "./memory-dav-store";
+import { HomeAssistantClient } from "../modules/home/home-assistant.client";
 
 /** Wires the services by hand on an in-memory database, mirroring the Nest modules. */
 export const createTestContext = (
@@ -35,12 +36,13 @@ export const createTestContext = (
   const eventsRepository = new EventsRepository(db);
   const providers = new ProvidersService(accounts, caldav, cookidoo, google);
   const dav = new MemoryDavStore();
+  const homeAssistant = new HomeAssistantClient(null);
   const occasions = new OccasionsStore(dav, settings);
   const cache = new CalendarCacheRepository(db);
   const menu = new MenuStore(dav, settings);
   const notes = new NotesStore(dav, settings);
   const schedule = new ScheduleStore(dav, settings, membersRepository);
-  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings, menu);
+  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings, menu, homeAssistant);
 
   return {
     db,

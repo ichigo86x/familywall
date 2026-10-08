@@ -12,6 +12,7 @@ import type {
 } from "@familywall/shared";
 import {
   MEAL_SLOT_LABELS,
+  HOME_CALENDAR_PREFIX,
   MENU_CALENDAR_ID,
   MENU_EVENT_PREFIX,
   OCCASIONS_CALENDAR_ID,
@@ -37,6 +38,7 @@ import { EventsRepository, type StoredEvent } from "./events.repository";
 import { MenuStore, OccasionsStore } from "../dav/family-stores";
 import { CalendarCacheRepository } from "./calendar-cache.repository";
 import { SettingsRepository } from "../settings/settings.repository";
+import { HomeAssistantClient, HomeAssistantError, type HaCalendarEvent } from "../home/home-assistant.client";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RANGE_MS = 400 * DAY_MS;
@@ -110,6 +112,32 @@ const withInferredMembers = (event: FamilyEvent, matchMembers: (title: string) =
 
 const isoDate = (date: Date): string => date.toISOString().slice(0, 10);
 
+/** An event of a Home Assistant calendar; all-day events travel as UTC midnight like the others. */
+export const homeEventToFamily = (calendarId: string, event: HaCalendarEvent, index: number): FamilyEvent | null => {
+  const allDay = Boolean(event.start.date && !event.start.dateTime);
+  const start = allDay ? new Date(`${event.start.date}T00:00:00.000Z`) : new Date(event.start.dateTime ?? "");
+  const end = allDay ? new Date(`${event.end.date ?? event.start.date}T00:00:00.000Z`) : new Date(event.end.dateTime ?? event.start.dateTime ?? "");
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+  return {
+    id: `${calendarId}:${event.uid ?? index}:${event.recurrence_id ?? start.toISOString()}`,
+    calendarId,
+    title: event.summary || "Evento",
+    startAt: start.toISOString(),
+    endAt: (end > start ? end : new Date(start.getTime() + (allDay ? DAY_MS : 60 * 60 * 1000))).toISOString(),
+    allDay,
+    memberIds: [],
+    tagMemberId: null,
+    privacy: "shared",
+    source: "remote",
+    membersInferred: false,
+    recurring: Boolean(event.recurrence_id),
+    redacted: false,
+    notes: event.description ?? null
+  };
+};
+
 /** Dishes of the family menu as all-day events ("Pranzo: Lasagne"), ingredients in the notes. */
 export const menuEvents = (meals: MenuMeal[]): FamilyEvent[] =>
   meals.map((meal) => {
@@ -180,7 +208,8 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     private readonly occasions: OccasionsStore,
     private readonly cache: CalendarCacheRepository,
     private readonly settings: SettingsRepository,
-    private readonly menu: MenuStore
+    private readonly menu: MenuStore,
+    private readonly homeAssistant: HomeAssistantClient
   ) {}
 
   /** Clock, replaceable in tests. */
@@ -251,7 +280,36 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
       });
     }
 
+    calendars.push(...(await this.homeCalendars(viewer, from, to, matchMembers)));
+
     return { range: { from: from.toISOString(), to: to.toISOString() }, calendars };
+  }
+
+  /** Calendars of Home Assistant chosen in Admin: read-only, read live (Home Assistant is on the same network). */
+  private async homeCalendars(viewer: User, from: Date, to: Date, matchMembers: (title: string) => string[]): Promise<FamilyCalendar[]> {
+    const configs = this.settings.get().homeCalendars ?? [];
+    if (configs.length === 0 || !this.homeAssistant.available) {
+      return [];
+    }
+    return Promise.all(
+      configs.map(async (config): Promise<FamilyCalendar> => {
+        const id = HOME_CALENDAR_PREFIX + config.entityId;
+        try {
+          const events = (await this.homeAssistant.calendarEvents(config.entityId, from, to))
+            .map((event, index) => homeEventToFamily(id, event, index))
+            .filter((event): event is FamilyEvent => event !== null)
+            .map((event) => withInferredMembers(event, matchMembers))
+            .map((event) => projectEventForViewer(event, viewer))
+            .filter((event): event is FamilyEvent => event !== null)
+            .sort((left, right) => left.startAt.localeCompare(right.startAt));
+          return { id, name: config.name, color: config.color, readOnly: true, kind: "events", lastError: null, events };
+        } catch (error) {
+          const message = error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.";
+          this.logger.warn(`Reading Home Assistant calendar ${config.entityId} failed: ${message}`);
+          return { id, name: config.name, color: config.color, readOnly: true, kind: "events", lastError: message, events: [] };
+        }
+      })
+    );
   }
 
   private async familyData<T>(read: () => Promise<T[]>): Promise<{ items: T[]; error: string | null }> {

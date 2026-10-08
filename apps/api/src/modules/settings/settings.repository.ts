@@ -12,6 +12,7 @@ const DEFAULTS: HouseholdSettings = {
   panelNight: { enabled: false, start: "23:00", end: "06:30" },
   homeButtons: [],
   homeLists: [],
+  homeCalendars: [],
   panelProfiles: {}
 };
 

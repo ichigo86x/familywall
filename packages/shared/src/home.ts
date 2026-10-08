@@ -98,6 +98,22 @@ export interface HomeList {
   color: string;
 }
 
+/** A Home Assistant calendar (calendar.* entity) shown read-only among the family calendars. */
+export interface HomeCalendar {
+  entityId: string;
+  name: string;
+  color: string;
+}
+
+export const homeCalendarSchema = z.object({
+  entityId: z.string().trim().regex(/^calendar\.[a-z0-9_]+$/, "Scegli un calendario calendar.*"),
+  name: z.string().trim().min(1).max(80),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
+});
+
+/** Calendars of Home Assistant have ids "ha:<entity id>" in GET /calendars. */
+export const HOME_CALENDAR_PREFIX = "ha:";
+
 export const homeListSchema = z.object({
   entityId: z.string().trim().regex(/^todo\.[a-z0-9_]+$/, "Scegli una lista todo.*"),
   name: z.string().trim().min(1).max(80),

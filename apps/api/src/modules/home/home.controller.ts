@@ -22,6 +22,19 @@ export class HomeController {
     return this.home.run(request.user, id);
   }
 
+  /** Whether Familywall can reach Home Assistant (the Admin hides the Home Assistant cards otherwise). */
+  @Get("status")
+  @RequirePermission("calendar:read")
+  public status(): { available: boolean } {
+    return { available: this.home.available };
+  }
+
+  @Get("calendar-entities")
+  @RequirePermission("settings:manage")
+  public async calendarEntities(): Promise<{ entities: HomeEntity[] }> {
+    return { entities: await this.home.calendarEntities() };
+  }
+
   @Get("todo-entities")
   @RequirePermission("settings:manage")
   public async todoEntities(): Promise<{ entities: HomeEntity[] }> {

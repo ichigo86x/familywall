@@ -17,6 +17,16 @@ export interface HaTodoItem {
   description?: string | null;
 }
 
+/** An event of GET /api/calendars/<entity>: dateTime for timed events, date for all-day ones. */
+export interface HaCalendarEvent {
+  start: { dateTime?: string; date?: string };
+  end: { dateTime?: string; date?: string };
+  summary: string;
+  description?: string | null;
+  uid?: string | null;
+  recurrence_id?: string | null;
+}
+
 /** Minimal Home Assistant REST client: read states, call services. */
 export class HomeAssistantClient {
   public constructor(
@@ -35,6 +45,11 @@ export class HomeAssistantClient {
 
   public async callService(domain: string, service: string, entityId: string, data: Record<string, unknown> = {}): Promise<void> {
     await this.request("POST", `/services/${encodeURIComponent(domain)}/${encodeURIComponent(service)}`, { ...data, entity_id: entityId });
+  }
+
+  public async calendarEvents(entityId: string, from: Date, to: Date): Promise<HaCalendarEvent[]> {
+    const query = `start=${encodeURIComponent(from.toISOString())}&end=${encodeURIComponent(to.toISOString())}`;
+    return (await this.request("GET", `/calendars/${encodeURIComponent(entityId)}?${query}`)) as HaCalendarEvent[];
   }
 
   /** Items of a to-do entity (open ones first, as Home Assistant returns them). */

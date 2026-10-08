@@ -13,18 +13,19 @@ import { WeatherCard } from "./weather-card";
 import { PanelSettingsCard } from "./panel-settings-card";
 import { HomeButtonsCard } from "./home-buttons-card";
 import { BackupCard } from "./backup-card";
-import { HomeListsCard } from "./home-lists-card";
+import { HomeCalendarsCard, HomeListsCard } from "./home-lists-card";
 import { AuditCard, SecurityCard } from "./security-card";
 
 const loadAdminData = async () => {
-  const [members, accounts, calendars, settings, taskLists] = await Promise.all([
+  const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
     api.getMembers(),
     api.getProviderAccounts(),
     api.getCalendarConfigs(),
     api.getSettings(),
-    api.getTaskListConfigs()
+    api.getTaskListConfigs(),
+    api.getHomeStatus().catch(() => ({ available: false }))
   ]);
-  return { members, accounts, calendars, settings, taskLists };
+  return { members, accounts, calendars, settings, taskLists, homeAvailable: home.available };
 };
 
 export const AdminPage = () => {
@@ -53,11 +54,17 @@ export const AdminPage = () => {
             buttons={admin.data.settings.homeButtons}
             onSaved={admin.reload}
           />
-          <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} />
+          {/* Home Assistant cards only where Familywall can reach it: add-on (Supervisor) or HA_URL + long-lived HA_TOKEN. */}
+          {admin.data.homeAvailable ? <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} /> : null}
           <MembersSection members={admin.data.members} onChanged={admin.reload} />
           <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
           <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
-          <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
+          {admin.data.homeAvailable ? (
+            <>
+              <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
+              <HomeCalendarsCard calendars={admin.data.settings.homeCalendars ?? []} onSaved={admin.reload} />
+            </>
+          ) : null}
           <SecurityCard />
           <BackupCard />
           <AuditCard />

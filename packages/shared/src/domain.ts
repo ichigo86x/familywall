@@ -1,4 +1,4 @@
-import type { HomeButton, HomeList } from "./home";
+import type { HomeButton, HomeCalendar, HomeList } from "./home";
 import type { WeatherLocation } from "./weather";
 
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
@@ -117,6 +117,8 @@ export interface HouseholdSettings {
   homeButtons: HomeButton[];
   /** Home Assistant to-do lists shown in Liste. */
   homeLists: HomeList[];
+  /** Home Assistant calendars shown (read-only) in the calendar. */
+  homeCalendars: HomeCalendar[];
   /** Settings of single wall panels, by Kiosk member id (missing = like the family). */
   panelProfiles: Record<string, PanelProfile>;
 }

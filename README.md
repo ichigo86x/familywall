@@ -332,6 +332,12 @@ Da sapere:
 - Con una password per app restano disponibili i **calendari** iCloud, collegati direttamente in Familywall (CalDAV). I Promemoria iCloud non sono più raggiungibili via CalDAV.
 - Home Assistant non dice quando una voce è stata completata: Familywall mostra le voci aperte e, per due giorni, quelle spuntate da Familywall.
 
+### Calendari di Home Assistant
+
+Admin → **Calendari di Home Assistant** → Scegli: i calendari `calendar.*` di Home Assistant (iCloud, Google, CalDAV, festività, raccolta rifiuti...) compaiono in sola lettura nel calendario e in dashboard, letti al momento da Home Assistant.
+
+Le card di Home Assistant (pulsanti, liste, calendari) compaiono in Admin solo quando Familywall raggiunge Home Assistant: dentro l'add-on (tramite il Supervisor) oppure fuori, con `HA_URL` e un token di lunga durata in `HA_TOKEN`. Senza collegamento pulsanti, liste e calendari di Home Assistant non vengono mostrati.
+
 ## Web app su iPhone e iPad
 
 1. Apri l'indirizzo esterno in Safari.

@@ -4,6 +4,7 @@ import { CalDavClient, CalDavError } from "../providers/caldav/caldav-client";
 import { parseCalendarData } from "../providers/caldav/ics-parser";
 import { createTestContext } from "../../test/test-context";
 import { projectEventForViewer } from "./event-visibility";
+import { homeEventToFamily } from "./calendars.service";
 import { ingredientsFromText } from "@familywall/shared";
 
 const SCHOOL_TRIP = `BEGIN:VCALENDAR
@@ -282,5 +283,20 @@ describe("projectEventForViewer", () => {
 
     expect(projectEventForViewer(hidden, viewer("Kiosk"))).toBeNull();
     expect(projectEventForViewer(hidden, viewer("Child", "child-out"))?.title).toBe("Visita medica");
+  });
+});
+
+describe("Home Assistant calendar events", () => {
+  it("maps timed and all-day events", () => {
+    expect(homeEventToFamily("ha:calendar.scuola", { start: { date: "2026-10-12" }, end: { date: "2026-10-13" }, summary: "Vacanza", uid: "u1" }, 0)).toMatchObject({
+      calendarId: "ha:calendar.scuola",
+      title: "Vacanza",
+      allDay: true,
+      startAt: "2026-10-12T00:00:00.000Z",
+      endAt: "2026-10-13T00:00:00.000Z"
+    });
+    expect(
+      homeEventToFamily("ha:calendar.x", { start: { dateTime: "2026-10-12T09:00:00+02:00" }, end: { dateTime: "2026-10-12T10:00:00+02:00" }, summary: "Pediatra" }, 3)
+    ).toMatchObject({ allDay: false, startAt: "2026-10-12T07:00:00.000Z", endAt: "2026-10-12T08:00:00.000Z", id: "ha:calendar.x:3:2026-10-12T07:00:00.000Z" });
   });
 });

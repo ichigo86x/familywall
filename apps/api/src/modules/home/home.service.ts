@@ -21,8 +21,11 @@ export class HomeService {
     // A panel may show only some of the buttons (e.g. the gate in the hall, the lights in the kitchen).
     const onlyIds = viewer.role === "Kiosk" ? panelView(settings, viewer.id).homeButtonIds : null;
     const buttons = settings.homeButtons.filter((button) => canUse(button, viewer) && (onlyIds === null || onlyIds.includes(button.id)));
-    if (!this.client.available || buttons.length === 0) {
-      return { available: this.client.available, buttons: buttons.map((button) => ({ ...button, state: null })) };
+    if (!this.client.available) {
+      return { available: false, buttons: [] };
+    }
+    if (buttons.length === 0) {
+      return { available: true, buttons: [] };
     }
     let states = new Map<string, string>();
     try {
@@ -50,19 +53,33 @@ export class HomeService {
     this.logger.log(`${viewer.username} ran "${button.label}" (${button.service} ${button.entityId})`);
   }
 
-  /** To-do lists of Home Assistant (Apple Reminders through the iCloud integration, Bring!, Todoist, local lists...). */
-  public async todoEntities(): Promise<HomeEntity[]> {
+  /** Calendars of Home Assistant (calendar.* entities: iCloud, Google, local, school holidays...). */
+  public async calendarEntities(): Promise<HomeEntity[]> {
+    return this.entitiesOf("calendar");
+  }
+
+  private async entitiesOf(domain: string): Promise<HomeEntity[]> {
     if (!this.client.available) {
       return [];
     }
     try {
       return (await this.client.states())
-        .filter((entity) => homeDomain(entity.entity_id) === "todo")
+        .filter((entity) => homeDomain(entity.entity_id) === domain)
         .map((entity) => ({ entityId: entity.entity_id, name: entity.attributes?.friendly_name ?? entity.entity_id, state: entity.state }))
         .sort((left, right) => left.name.localeCompare(right.name));
     } catch (error) {
       throw AppException.providerError(error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.");
     }
+  }
+
+  /** To-do lists of Home Assistant (Apple Reminders through the iCloud integration, Bring!, Todoist, local lists...). */
+  public async todoEntities(): Promise<HomeEntity[]> {
+    return this.entitiesOf("todo");
+  }
+
+  /** Home Assistant is reachable only inside the add-on (Supervisor) or with HA_URL and a long-lived HA_TOKEN. */
+  public get available(): boolean {
+    return this.client.available;
   }
 
   /** Entities an Admin can turn into buttons (only domains with allowed services). */

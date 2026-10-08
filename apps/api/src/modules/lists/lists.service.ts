@@ -58,7 +58,8 @@ export class ListsService {
 
   /** To-do lists of Home Assistant chosen in Admin (for example Apple Reminders through the iCloud integration). */
   private async homeLists(): Promise<FamilyTaskList[]> {
-    const configs = this.settings.get().homeLists;
+    // Without the add-on or a long-lived token Home Assistant lists are not shown at all.
+    const configs = this.homeAssistant.available ? this.settings.get().homeLists : [];
     return Promise.all(
       configs.map(async (config): Promise<FamilyTaskList> => {
         const base = { id: HA_PREFIX + config.entityId, name: config.name, color: config.color, source: "homeassistant" as const };
