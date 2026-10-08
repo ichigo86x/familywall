@@ -13,7 +13,7 @@ import { WeatherCard } from "./weather-card";
 import { PanelSettingsCard } from "./panel-settings-card";
 import { HomeButtonsCard } from "./home-buttons-card";
 import { BackupCard } from "./backup-card";
-import { HomeCalendarsCard, HomeListsCard } from "./home-lists-card";
+import { HomeAssistantHintCard, HomeCalendarsCard, HomeListsCard } from "./home-lists-card";
 import { AuditCard, SecurityCard } from "./security-card";
 
 const loadAdminData = async () => {
@@ -64,7 +64,9 @@ export const AdminPage = () => {
               <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
               <HomeCalendarsCard calendars={admin.data.settings.homeCalendars ?? []} onSaved={admin.reload} />
             </>
-          ) : null}
+          ) : (
+            <HomeAssistantHintCard />
+          )}
           <SecurityCard />
           <BackupCard />
           <AuditCard />

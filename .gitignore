@@ -21,3 +21,6 @@ homeassistant/familywall/app/
 
 .DS_Store
 Thumbs.db
+
+# Development Python for iCloud Reminders (npm run icloud:setup)
+.venv*/

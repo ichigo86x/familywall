@@ -177,7 +177,7 @@ Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 pe
    - genitori e figli;
    - un account **Pannello** per ogni schermo a muro.
 3. Per ogni membro imposta il colore e gli "altri nomi" (soprannomi usati nei titoli degli eventi).
-4. In **Admin → Account calendario** scegli "Collega account" per ogni provider. Poi usa "Scegli calendari" e "Scegli liste".
+4. In **Admin → Account collegati** scegli "Collega account": per ogni tipo la finestra mostra cosa si può usare (calendari, liste, menu) e come ottenere la password per app o le credenziali. Poi usa "Scegli calendari" e "Scegli liste".
 
 Il fuso orario della famiglia è `Europe/Rome`.
 
@@ -204,7 +204,7 @@ Familywall usa le API ufficiali Google Calendar e Google Tasks con un client OAu
      - `http://localhost:5173/api/providers/google/callback` in sviluppo.
    - **App desktop**: usa come URI `http://127.0.0.1`. Dopo il consenso la pagina finale non si apre: copia il suo indirizzo e incollalo in Familywall.
 3. Imposta la schermata di consenso OAuth su **In produzione** (anche non verificata). In modalità "Test", Google fa scadere l'accesso dopo 7 giorni.
-4. In Familywall apri Admin → Account calendario → Collega account → Google. Inserisci Client ID, Client secret e URI, poi scegli "Apri Google".
+4. In Familywall apri Admin → Account collegati → Collega account → Google. Inserisci Client ID, Client secret e URI, poi scegli "Apri Google".
 5. Dopo il collegamento usa "Scegli calendari" e "Scegli liste".
 
 Il client secret e il refresh token sono salvati cifrati. Inseriscili solo nel campo Admin di Familywall: non metterli in file del repository o nelle variabili d'ambiente. Se un client secret è stato condiviso per errore, rigeneralo in Google Cloud Console.
@@ -322,7 +322,7 @@ Collegamento a Home Assistant:
 
 Le liste dei Promemoria di iCloud non si leggono con la password per app (CalDAV): servono le API web di iCloud. Familywall le usa con **pyicloud 2.6.5**, la stessa libreria dell'integrazione iCloud di Home Assistant, in un piccolo processo Python avviato da Familywall solo su `127.0.0.1`.
 
-1. Admin → Account calendario → **Collega account** → **Promemoria iCloud**.
+1. Admin → Account collegati → **Collega account** → **Promemoria iCloud**.
 2. Scrivi l'Apple ID e la **password dell'Apple ID** (non quella per app).
 3. Apple mostra un codice di 6 cifre su iPhone, iPad o Mac: tocca "Consenti" e scrivilo in Familywall (**Inserisci codice**).
 4. **Scegli liste**: le liste scelte compaiono in Liste con l'etichetta "iCloud". Si aggiungono, spuntano ed eliminano le voci, anche dal pannello; funzionano dashboard, "Comprati spesso" e ingredienti del menu.
@@ -333,7 +333,7 @@ Da sapere:
 - Sono API non ufficiali: Apple può cambiarle o bloccare l'accesso per un po' dopo troppi tentativi. Familywall riapre la sessione una volta sola per richiesta e non riprova in ciclo.
 - Con la **Protezione avanzata dei dati** attiva su iCloud i Promemoria non sono leggibili.
 - Le sotto-voci dei Promemoria non vengono mostrate.
-- Nell'add-on pyicloud è già installato. In sviluppo: `pip install pyicloud==2.6.5` e `ICLOUD_PYTHON` con il Python da usare (predefinito `python3`; vuoto per disattivare). Il processo ascolta su `ICLOUD_BRIDGE_PORT` (predefinita 5234), solo in locale e con un token casuale.
+- Nell'add-on pyicloud è già installato. In sviluppo esegui `npm run icloud:setup` (serve Python 3.10 o più recente): crea `apps/api/.venv-icloud` con pyicloud 2.6.5, che l'API usa da sola al riavvio. In alternativa imposta `ICLOUD_PYTHON` con il Python da usare (vuoto per disattivare). Il processo ascolta su `ICLOUD_BRIDGE_PORT` (predefinita 5234), solo in locale e con un token casuale.
 
 ### Liste di Home Assistant e Promemoria iCloud
 

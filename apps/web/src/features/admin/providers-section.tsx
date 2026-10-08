@@ -12,8 +12,6 @@ import {
   Input,
   MessageBar,
   MessageBarBody,
-  Radio,
-  RadioGroup,
   Spinner,
   Switch
 } from "@fluentui/react-components";
@@ -23,9 +21,10 @@ import { api } from "@/api/client";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { AddRegular, CalendarRegular, ClipboardTaskRegular, DeleteRegular } from "@/lib/fluent-icons";
 import { GoogleConnect } from "./google-connect";
+import { PROVIDER_GUIDES, ProviderHelp, capabilitySummary, guideFor } from "./provider-guides";
 import { DiscoverListsDialog } from "./task-lists-section";
 
-const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google", icloudweb: "Promemoria iCloud" };
+const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "Calendari iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google", icloudweb: "Promemoria iCloud" };
 
 /** Localized Cookidoo sites (country and language come from the URL). */
 const COOKIDOO_SITES = [
@@ -87,7 +86,7 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
         <div className="panel-card__header">
           <div>
             <p className="eyebrow">Connessioni</p>
-            <h3>Account calendario</h3>
+            <h3>Account collegati</h3>
           </div>
           <Button appearance="primary" icon={<AddRegular />} onClick={() => setAddingAccount(true)}>
             Collega account
@@ -101,7 +100,7 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
         ) : null}
 
         {accounts.length === 0 ? (
-          <p className="calendar-detail-hint">Nessun account collegato. Collega un account iCloud per importare i calendari della famiglia.</p>
+          <p className="calendar-detail-hint">Nessun account collegato. Con "Collega account" vedi per ogni tipo cosa si può usare e come ottenere la password.</p>
         ) : (
           <div className="stack-list">
             {accounts.map((account) => (
@@ -113,6 +112,7 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
                     {account.status === "verify" ? <Badge color="warning">codice richiesto</Badge> : null}
                   </h4>
                   <p>{account.username}{account.serverUrl ? ` · ${account.serverUrl}` : ""}</p>
+                  <p className="account-capabilities">{capabilitySummary(account.provider)}</p>
                   {account.lastError ? <p className="form-error">{account.lastError}</p> : null}
                 </div>
                 <div className="row-actions">
@@ -335,6 +335,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const guide = guideFor(form.provider);
 
   const submit = async () => {
     if (form.provider === "google") {
@@ -360,83 +361,76 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
 
   return (
     <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
-      <DialogSurface>
+      <DialogSurface className="account-dialog">
         <DialogBody>
-          <CloseableDialogTitle>Collega account calendario</CloseableDialogTitle>
+          <CloseableDialogTitle>Collega account</CloseableDialogTitle>
           <DialogContent className="dialog-form">
-            <RadioGroup layout="horizontal" value={form.provider} onChange={(_, data) => setForm({ ...form, provider: data.value as CalendarProvider })}>
-              <Radio value="icloud" label="iCloud" />
-              <Radio value="caldav" label="Altro server CalDAV" />
-              <Radio value="cookidoo" label="Cookidoo (Bimby)" />
-              <Radio value="google" label="Google" />
-              <Radio value="icloudweb" label="Promemoria iCloud" />
-            </RadioGroup>
+            <div className="provider-picker" role="radiogroup" aria-label="Tipo di account">
+              {PROVIDER_GUIDES.map((entry) => (
+                <button
+                  key={entry.provider}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.provider === entry.provider}
+                  className={`provider-tile${form.provider === entry.provider ? " provider-tile--selected" : ""}`}
+                  onClick={() => {
+                    setError(null);
+                    setForm({ ...form, provider: entry.provider });
+                  }}
+                >
+                  <span className="provider-tile__icon" aria-hidden="true">{entry.icon}</span>
+                  <strong>{entry.title}</strong>
+                  <small>{entry.tagline}</small>
+                </button>
+              ))}
+            </div>
 
-            {form.provider === "google" ? <GoogleConnect onLinked={onCreated} onDone={onClose} /> : null}
+            <ProviderHelp guide={guide} />
 
-            {form.provider === "icloudweb" ? (
-              <MessageBar intent="warning">
-                <MessageBarBody>
-                  Le liste dei <strong>Promemoria di iCloud</strong> non sono raggiungibili con la password per app: Familywall usa pyicloud (la stessa
-                  libreria dell'integrazione iCloud di Home Assistant) con la <strong>password dell'Apple ID</strong> e il codice di verifica mostrato
-                  sui dispositivi Apple. La password resta cifrata in Familywall. Sono API non ufficiali: Apple può chiedere di nuovo il codice o
-                  bloccare l'accesso per un po' dopo troppi tentativi. Con la Protezione avanzata dei dati i Promemoria non sono leggibili.
-                </MessageBarBody>
-              </MessageBar>
-            ) : null}
-
-            {form.provider === "google" || form.provider === "icloudweb" ? null : form.provider === "icloud" ? (
-              <MessageBar intent="info">
-                <MessageBarBody>
-                  iCloud richiede una <strong>password specifica per app</strong>, non la password dell'Apple ID: generala su
-                  account.apple.com → Accesso e sicurezza → Password specifiche per le app. Si consiglia un Apple ID dedicato alla famiglia, con cui
-                  condividere i calendari (permesso "può modificare").
-                </MessageBarBody>
-              </MessageBar>
-            ) : form.provider === "cookidoo" ? (
-              <>
-                <MessageBar intent="info">
-                  <MessageBarBody>
-                    Mostra in sola lettura il piano settimanale ("La mia settimana") di Cookidoo: ogni ricetta pianificata diventa un evento di tutto
-                    il giorno. Usa email e password dell'account Cookidoo; l'accesso usa le stesse API non ufficiali dell'app Cookidoo, quindi
-                    potrebbe smettere di funzionare se Vorwerk le cambia.
-                  </MessageBarBody>
-                </MessageBar>
-                <Field label="Paese dell'account Cookidoo" required>
-                  <select className="native-select" value={form.cookidooSite} onChange={(change) => setForm({ ...form, cookidooSite: change.target.value })}>
-                    {COOKIDOO_SITES.map((site) => (
-                      <option key={site.url} value={site.url}>{site.label}</option>
-                    ))}
-                  </select>
-                </Field>
-              </>
+            {form.provider === "google" ? (
+              <GoogleConnect onLinked={onCreated} onDone={onClose} />
             ) : (
-              <Field label="URL server CalDAV" required hint="Es. https://cloud.example.com/remote.php/dav">
-                <Input value={form.serverUrl} onChange={(_, data) => setForm({ ...form, serverUrl: data.value })} />
-              </Field>
-            )}
-
-            {form.provider === "google" ? null : (
               <>
+                {form.provider === "cookidoo" ? (
+                  <Field label="Paese dell'account Cookidoo" required>
+                    <select className="native-select" value={form.cookidooSite} onChange={(change) => setForm({ ...form, cookidooSite: change.target.value })}>
+                      {COOKIDOO_SITES.map((site) => (
+                        <option key={site.url} value={site.url}>{site.label}</option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
+                {form.provider === "caldav" ? (
+                  <Field label="URL server CalDAV" required hint="Es. https://cloud.example.com/remote.php/dav">
+                    <Input value={form.serverUrl} onChange={(_, data) => setForm({ ...form, serverUrl: data.value })} />
+                  </Field>
+                ) : null}
                 <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
                   <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
                 </Field>
                 <Field label={form.provider === "icloud" || form.provider === "icloudweb" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
                   <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
                 </Field>
-                <Field label={form.provider === "icloud" ? "Password specifica per app" : form.provider === "icloudweb" ? "Password dell'Apple ID" : "Password"} required>
+                <Field
+                  label={form.provider === "icloud" ? "Password specifica per app" : form.provider === "icloudweb" ? "Password dell'Apple ID" : form.provider === "caldav" ? "Password (meglio una password per app)" : "Password"}
+                  required
+                >
                   <Input type="password" autoComplete="off" placeholder={form.provider === "icloud" ? "xxxx-xxxx-xxxx-xxxx" : ""} value={form.password} onChange={(_, data) => setForm({ ...form, password: data.value })} />
                 </Field>
-                  </>
+              </>
             )}
             {error ? <p className="form-error">{error}</p> : null}
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" onClick={onClose}>Annulla</Button>
             {form.provider === "google" ? null : (
-            <Button appearance="primary" disabled={busy || !form.username || !form.password} onClick={() => void submit()}>
-              {busy ? "Verifica in corso..." : "Verifica e collega"}
-            </Button>
+              <Button
+                appearance="primary"
+                disabled={busy || !form.username || !form.password || (form.provider === "caldav" && !form.serverUrl.trim())}
+                onClick={() => void submit()}
+              >
+                {busy ? "Verifica in corso..." : "Verifica e collega"}
+              </Button>
             )}
           </DialogActions>
         </DialogBody>

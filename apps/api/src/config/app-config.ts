@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 export interface AppConfig {
@@ -19,6 +20,13 @@ export interface AppConfig {
   /** Home Assistant REST API: the Supervisor proxy inside the add-on, or HA_URL with a long-lived HA_TOKEN. */
   homeAssistant: { url: string; token: string } | null;
 }
+
+/** Python of the development venv made by `npm run icloud:setup` (apps/api/.venv-icloud), when present. */
+const icloudVenvPython = (): string | null => {
+  const venv = path.resolve(__dirname, "..", "..", ".venv-icloud");
+  const candidates = [path.join(venv, "Scripts", "python.exe"), path.join(venv, "bin", "python")];
+  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+};
 
 const readList = (value: string | undefined): string[] =>
   (value ?? "")
@@ -47,7 +55,7 @@ export const loadAppConfig = (): AppConfig => {
     radicaleCommand: process.env.RADICALE_COMMAND ?? "python3 -m radicale",
     radicalePort: Number(process.env.RADICALE_PORT ?? 5232),
     // Python with pyicloud for iCloud Reminders (Apple ID login); set ICLOUD_PYTHON="" to disable.
-    icloudPython: process.env.ICLOUD_PYTHON ?? "python3",
+    icloudPython: process.env.ICLOUD_PYTHON ?? icloudVenvPython() ?? "python3",
     icloudBridgePort: Number(process.env.ICLOUD_BRIDGE_PORT ?? 5234),
     homeAssistant: process.env.SUPERVISOR_TOKEN
       ? { url: "http://supervisor/core/api", token: process.env.SUPERVISOR_TOKEN }

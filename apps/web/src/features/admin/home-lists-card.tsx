@@ -188,3 +188,60 @@ export const HomeCalendarsCard = ({ calendars, onSaved }: { calendars: HomeCalen
     }}
   />
 );
+
+/** Shown instead of the Home Assistant cards when Familywall cannot reach Home Assistant. */
+export const HomeAssistantHintCard = () => (
+  <Card className="panel-card">
+    <div className="panel-card__header">
+      <div>
+        <p className="eyebrow">Home Assistant</p>
+        <h3>Home Assistant non collegato</h3>
+      </div>
+    </div>
+    <div className="provider-help">
+      <section>
+        <h4>Cosa si attiva con Home Assistant</h4>
+        <ul className="capability-list">
+          <li className="capability capability--yes">
+            <span className="capability__mark">✓</span>
+            <span>Pulsanti di casa sul pannello (luci, scene, script)</span>
+          </li>
+          <li className="capability capability--yes">
+            <span className="capability__mark">✓</span>
+            <span>
+              Liste "to-do" di Home Assistant
+              <small>Per esempio Lista della spesa, Google Tasks, Todoist o Bring! configurate in Home Assistant.</small>
+            </span>
+          </li>
+          <li className="capability capability--yes">
+            <span className="capability__mark">✓</span>
+            <span>
+              Calendari di Home Assistant, in sola lettura
+              <small>Per esempio raccolta rifiuti, calendario scolastico, festività.</small>
+            </span>
+          </li>
+        </ul>
+      </section>
+      <details className="provider-help__steps" open>
+        <summary>Come collegarlo</summary>
+        <ol>
+          <li>
+            <strong>Add-on di Home Assistant</strong>: il collegamento è automatico, non serve nessun token.
+          </li>
+          <li>
+            <strong>Fuori dall'add-on</strong>: in Home Assistant apri il tuo <strong>Profilo</strong> (in basso a sinistra) → scheda{" "}
+            <strong>Sicurezza</strong> → <strong>Token di accesso a lungo termine</strong> → <strong>Crea token</strong>. Copialo subito: viene
+            mostrato una volta sola.
+          </li>
+          <li>
+            Sul server di Familywall imposta <code>HA_URL</code> (es. <code>http://homeassistant.local:8123</code>) e <code>HA_TOKEN</code> con il
+            token, poi riavvia Familywall.
+          </li>
+        </ol>
+        <ul className="provider-help__notes">
+          <li>Il token dà accesso a Home Assistant come il tuo utente: meglio un utente dedicato, non amministratore. Non salvarlo nel repository.</li>
+        </ul>
+      </details>
+    </div>
+  </Card>
+);

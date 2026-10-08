@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Field, Input, MessageBar, MessageBarBody } from "@fluentui/react-components";
+import { Button, Field, Input } from "@fluentui/react-components";
 import type { ProviderAccount } from "@familywall/shared";
 
 import { api } from "@/api/client";
@@ -52,15 +52,6 @@ export const GoogleConnect = ({ onLinked, onDone }: { onLinked: (account: Provid
 
   return (
     <>
-      <MessageBar intent="info">
-        <MessageBarBody>
-          Usa un client OAuth del tuo progetto Google Cloud (va bene anche quello di Home Assistant) con le API <strong>Google Calendar</strong> e{" "}
-          <strong>Google Tasks</strong> abilitate. Nel client registra come URI di reindirizzamento l'indirizzo qui sotto, oppure usa un client
-          di tipo "App desktop" con <code>http://127.0.0.1</code>. Se la schermata di consenso è in modalità "Test", l'accesso scade dopo 7 giorni:
-          pubblicala ("In produzione").
-        </MessageBarBody>
-      </MessageBar>
-
       <Field label="Nome account" hint="Come appare nell'app">
         <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
       </Field>
@@ -70,7 +61,7 @@ export const GoogleConnect = ({ onLinked, onDone }: { onLinked: (account: Provid
       <Field label="Client secret" required>
         <Input type="password" autoComplete="off" value={form.clientSecret} onChange={(_, data) => setForm({ ...form, clientSecret: data.value })} />
       </Field>
-      <Field label="URI di reindirizzamento" required hint="Deve coincidere con uno degli URI registrati nel client OAuth.">
+      <Field label="URI di reindirizzamento" required hint="Registra questo indirizzo nel client OAuth (passo 4).">
         <Input value={form.redirectUri} onChange={(_, data) => setForm({ ...form, redirectUri: data.value })} />
       </Field>
 

@@ -3778,3 +3778,150 @@ button.schedule-chip {
   background: #ffffff;
   color: #3a7d6e;
 }
+
+/* Add-account dialog: provider tiles, what each type provides and how to get its password. */
+@media (min-width: 701px) {
+  .fui-DialogSurface.account-dialog {
+    width: min(780px, calc(100vw - 32px));
+    max-width: min(780px, calc(100vw - 32px));
+  }
+}
+
+.provider-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+}
+
+.provider-tile {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.provider-tile:hover {
+  border-color: var(--color-primary);
+}
+
+.provider-tile:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.provider-tile--selected {
+  border-color: var(--color-primary);
+  background: var(--today-bg);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.provider-tile__icon {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.provider-tile strong {
+  font-size: 0.95rem;
+}
+
+.provider-tile small {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.provider-help {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+}
+
+.provider-help h4 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+
+.provider-help a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.provider-help code {
+  overflow-wrap: anywhere;
+}
+
+.capability-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capability {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 6px;
+  align-items: start;
+}
+
+.capability small {
+  display: block;
+  color: var(--color-muted);
+}
+
+.capability__mark {
+  font-weight: 700;
+  text-align: center;
+}
+
+.capability--yes .capability__mark {
+  color: var(--color-primary);
+}
+
+.capability--partial .capability__mark {
+  color: var(--color-accent);
+}
+
+.capability--no {
+  color: var(--color-muted);
+}
+
+.capability--no .capability__mark {
+  color: var(--color-danger);
+}
+
+.provider-help__steps summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.provider-help__steps ol,
+.provider-help__notes {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.provider-help__notes {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
+.account-capabilities {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
