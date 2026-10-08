@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Logger } from "@nestjs/common";
+import { splitCommand } from "../../config/command-line";
 
 /** Radicale user that owns the family lists; every Familywall member is mapped to it. */
 export const DAV_FAMILY_USER = "famiglia";
@@ -39,24 +40,37 @@ export class RadicaleProcess {
       return;
     }
     const configPath = this.writeConfig();
-    const [executable, ...args] = this.command.trim().split(/\s+/);
+    const [executable, ...args] = splitCommand(this.command);
     this.stopping = false;
 
     const child = spawn(executable!, [...args, "--config", configPath], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
     this.child = child;
     child.stdout?.on("data", (chunk: Buffer) => this.logger.debug(chunk.toString().trim()));
+    let missingModule = false;
     child.stderr?.on("data", (chunk: Buffer) => {
       const line = chunk.toString().trim();
+      if (/No module named .?radicale/.test(line)) {
+        missingModule = true;
+        return;
+      }
       if (/error|critical|traceback/i.test(line)) {
         this.logger.warn(line.slice(0, 500));
       }
     });
     child.on("error", (error) => {
-      this.logger.warn(`CalDAV server not started (${error.message}). Install Radicale or set RADICALE_COMMAND.`);
+      this.logger.warn(`CalDAV server not started (${error.message}). In development run "npm run python:setup", or set RADICALE_COMMAND.`);
     });
     child.on("exit", (code) => {
       this.child = null;
       if (this.stopping) {
+        return;
+      }
+      if (missingModule) {
+        // Retrying cannot help: Radicale is not installed for this Python.
+        this.logger.error(
+          `Radicale is not installed for ${executable}: calendars, lists, notes and shifts are unavailable. ` +
+            "In development run \"npm run python:setup\" and restart the API, or set RADICALE_COMMAND."
+        );
         return;
       }
       this.failures += 1;

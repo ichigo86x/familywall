@@ -261,10 +261,7 @@ Note:
 - Se nginx pubblica Familywall in un sotto-percorso, imposta l'header `X-Forwarded-Prefix`.
 - Radicale ascolta solo su `127.0.0.1` e si fida dell'utente indicato da Familywall. **Non esporre mai la sua porta** (`RADICALE_PORT`, predefinita 5232).
 - I dati di Radicale stanno in `data/radicale`.
-- Nell'add-on Radicale è già installato. In sviluppo:
-  - installalo con `pip install radicale`;
-  - imposta `RADICALE_COMMAND="python -m radicale"`;
-  - lascia `RADICALE_COMMAND` vuoto per disattivarlo.
+- Nell'add-on Radicale è già installato. In sviluppo esegui `npm run python:setup` (vedi [Sviluppo locale](#sviluppo-locale)), oppure imposta `RADICALE_COMMAND` con il comando da usare (vuoto per disattivarlo).
 
 ## Pannello a muro: Echo Show 15 con Fully Kiosk
 
@@ -333,7 +330,7 @@ Da sapere:
 - Sono API non ufficiali: Apple può cambiarle o bloccare l'accesso per un po' dopo troppi tentativi. Familywall riapre la sessione una volta sola per richiesta e non riprova in ciclo.
 - Con la **Protezione avanzata dei dati** attiva su iCloud i Promemoria non sono leggibili.
 - Le sotto-voci dei Promemoria non vengono mostrate.
-- Nell'add-on pyicloud è già installato. In sviluppo esegui `npm run icloud:setup` (serve Python 3.10 o più recente): crea `apps/api/.venv-icloud` con pyicloud 2.6.5, che l'API usa da sola al riavvio. In alternativa imposta `ICLOUD_PYTHON` con il Python da usare (vuoto per disattivare). Il processo ascolta su `ICLOUD_BRIDGE_PORT` (predefinita 5234), solo in locale e con un token casuale.
+- Nell'add-on pyicloud è già installato. In sviluppo esegui `npm run python:setup` (vedi [Sviluppo](#sviluppo)). In alternativa imposta `ICLOUD_PYTHON` con il Python da usare (vuoto per disattivare). Il processo ascolta su `ICLOUD_BRIDGE_PORT` (predefinita 5234), solo in locale e con un token casuale.
 
 ### Liste di Home Assistant e Promemoria iCloud
 
@@ -364,14 +361,16 @@ L'app si apre a schermo intero con la propria icona. Resta connessa per 30 giorn
 
 ## Sviluppo locale
 
-Serve Node.js 24 o superiore, per `node:sqlite`.
+Servono Node.js 24 o superiore (per `node:sqlite`) e Python 3.10 o superiore.
 
 ```bash
 npm install
+npm run python:setup   # una volta: Radicale e pyicloud in apps/api/.venv
 npm run dev:api   # API su http://localhost:3001, dati in apps/api/data (ricompila anche packages/shared)
 npm run dev:web   # web su http://localhost:5173, /api e /dav inoltrati all'API
 ```
 
+- `python:setup` crea `apps/api/.venv` con Radicale 3.8.1 e pyicloud 2.6.5, le stesse versioni dell'add-on. L'API usa quel Python da sola, se `RADICALE_COMMAND` e `ICLOUD_PYTHON` non sono impostati. Senza Radicale calendari della famiglia, liste, note, menu, compleanni e turni non funzionano (errore 502); il log dell'API dice "Radicale is not installed".
 - Al primo accesso la web app chiede di creare la famiglia e l'account Admin.
 - `dev:api` tiene d'occhio sia l'API sia `packages/shared`: una modifica a uno dei due ricompila e riavvia l'API. Dopo un aggiornamento del codice (git pull) riavvia comunque `dev:api`: all'avvio applica le migrazioni del database.
 - Se la porta 3001 è occupata l'API si ferma con "Port 3001 is already in use". Attenzione: se sulla 3001 risponde un altro programma (per esempio un'altra app in sviluppo), la web app riceve le sue risposte e mostra la pagina "Qualcosa non ha funzionato". Ferma l'altro programma, oppure:
@@ -384,7 +383,7 @@ Per provare i pulsanti di Home Assistant in sviluppo aggiungi `HA_URL` e `HA_TOK
 In PowerShell imposta le variabili prima del comando:
 
 ```powershell
-$env:RADICALE_COMMAND = "python -m radicale"; npm run dev:api
+$env:PORT = "3002"; npm run dev:api
 ```
 
 Per fermare API e web, premi `Ctrl+C` nei rispettivi terminali.

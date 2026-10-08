@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const target = path.join(root, "homeassistant", "familywall", "app");
 const entries = ["package.json", "package-lock.json", "tsconfig.base.json", "apps/api", "apps/web", "packages/shared"];
-const skipped = new Set(["node_modules", "dist", "data", ".next", ".venv-icloud"]);
+const skipped = new Set(["node_modules", "dist", "data", ".next", ".venv"]);
 
 rmSync(target, { recursive: true, force: true });
 for (const entry of entries) {

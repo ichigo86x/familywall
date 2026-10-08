@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { Injectable, Logger, type OnApplicationShutdown } from "@nestjs/common";
 import { appConfig } from "../../../config/app-config";
+import { splitCommand } from "../../../config/command-line";
 
 /** The Python side lives next to the API sources (apps/api/python), the same depth from src and dist. */
 const SCRIPT = path.resolve(__dirname, "..", "..", "..", "..", "python", "icloud_bridge.py");
@@ -162,9 +163,7 @@ export class IcloudBridge implements OnApplicationShutdown {
     if (!existsSync(script)) {
       throw new IcloudBridgeError("disabled", "Script del collegamento iCloud mancante.");
     }
-    // A path to an existing interpreter may contain spaces; otherwise the setting is a command line ("py -3").
-    const python = this.options.python.trim();
-    const [executable, ...args] = existsSync(python) ? [python] : python.split(/\s+/);
+    const [executable, ...args] = splitCommand(this.options.python);
     const child = spawn(executable!, [...args, script], {
       env: { ...process.env, ICLOUD_BRIDGE_TOKEN: this.token, ICLOUD_BRIDGE_PORT: String(this.options.port), ICLOUD_SESSION_DIR: this.options.sessionDir, PYTHONUNBUFFERED: "1" },
       stdio: ["ignore", "pipe", "pipe"],
@@ -187,7 +186,7 @@ export class IcloudBridge implements OnApplicationShutdown {
       child.once("error", () => resolve(false));
     });
     if (!spawned) {
-      throw new IcloudBridgeError("disabled", `Python non trovato (${executable}): installa Python 3, poi esegui "npm run icloud:setup" e riavvia l'API (oppure imposta ICLOUD_PYTHON).`);
+      throw new IcloudBridgeError("disabled", `Python non trovato (${executable}): installa Python 3, poi esegui "npm run python:setup" e riavvia l'API (oppure imposta ICLOUD_PYTHON).`);
     }
     this.child = child;
 
@@ -197,7 +196,7 @@ export class IcloudBridge implements OnApplicationShutdown {
         this.child = null;
         throw new IcloudBridgeError(
           "disabled",
-          /No module named .?pyicloud/.test(failure) ? `pyicloud non installato per ${executable}. Nell'add-on è già incluso; in sviluppo esegui "npm run icloud:setup" e riavvia l'API.` : `Collegamento iCloud non avviato: ${failure || "errore sconosciuto"}`
+          /No module named .?pyicloud/.test(failure) ? `pyicloud non installato per ${executable}. Nell'add-on è già incluso; in sviluppo esegui "npm run python:setup" e riavvia l'API.` : `Collegamento iCloud non avviato: ${failure || "errore sconosciuto"}`
         );
       }
       const healthy = await this.fetchImpl(`http://127.0.0.1:${this.options.port}/health`, { method: "GET", signal: AbortSignal.timeout(1_000) })

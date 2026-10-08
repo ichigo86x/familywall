@@ -72,7 +72,7 @@ export const PROVIDER_GUIDES: ProviderGuide[] = [
     notes: [
       <>La <strong>Protezione avanzata dei dati</strong> deve essere spenta (iPhone: Impostazioni → [il tuo nome] → iCloud): con la protezione attiva i Promemoria non sono leggibili dal web.</>,
       <>Usa le API web di iCloud tramite pyicloud, la libreria dell'integrazione iCloud di Home Assistant. Non sono ufficiali: Apple può chiedere di nuovo il codice (pulsante "Riconnetti") o bloccare l'accesso per un po' dopo troppi tentativi.</>,
-      <>La password resta cifrata nel database di Familywall. Nell'add-on pyicloud è incluso; in sviluppo esegui <code>npm run icloud:setup</code> e riavvia l'API.</>
+      <>La password resta cifrata nel database di Familywall. Nell'add-on pyicloud è incluso; in sviluppo esegui <code>npm run python:setup</code> e riavvia l'API.</>
     ]
   },
   {

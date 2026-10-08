@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { quoteCommandPart } from "./command-line";
 
 export interface AppConfig {
   nodeEnv: string;
@@ -21,9 +22,9 @@ export interface AppConfig {
   homeAssistant: { url: string; token: string } | null;
 }
 
-/** Python of the development venv made by `npm run icloud:setup` (apps/api/.venv-icloud), when present. */
-const icloudVenvPython = (): string | null => {
-  const venv = path.resolve(__dirname, "..", "..", ".venv-icloud");
+/** Python of the development venv made by `npm run python:setup` (apps/api/.venv, Radicale and pyicloud), when present. */
+const devVenvPython = (): string | null => {
+  const venv = path.resolve(__dirname, "..", "..", ".venv");
   const candidates = [path.join(venv, "Scripts", "python.exe"), path.join(venv, "bin", "python")];
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
 };
@@ -35,6 +36,7 @@ const readList = (value: string | undefined): string[] =>
     .filter(Boolean);
 
 export const loadAppConfig = (): AppConfig => {
+  const venvPython = devVenvPython();
   const nodeEnv = process.env.NODE_ENV ?? "development";
   const isDevelopment = nodeEnv !== "production";
 
@@ -52,10 +54,10 @@ export const loadAppConfig = (): AppConfig => {
         ? ["http://localhost:5173"]
         : [],
     // e.g. "python3 -m radicale" in the add-on; set RADICALE_COMMAND="" to disable.
-    radicaleCommand: process.env.RADICALE_COMMAND ?? "python3 -m radicale",
+    radicaleCommand: process.env.RADICALE_COMMAND ?? `${venvPython ? quoteCommandPart(venvPython) : "python3"} -m radicale`,
     radicalePort: Number(process.env.RADICALE_PORT ?? 5232),
     // Python with pyicloud for iCloud Reminders (Apple ID login); set ICLOUD_PYTHON="" to disable.
-    icloudPython: process.env.ICLOUD_PYTHON ?? icloudVenvPython() ?? "python3",
+    icloudPython: process.env.ICLOUD_PYTHON ?? (venvPython ? quoteCommandPart(venvPython) : "python3"),
     icloudBridgePort: Number(process.env.ICLOUD_BRIDGE_PORT ?? 5234),
     homeAssistant: process.env.SUPERVISOR_TOKEN
       ? { url: "http://supervisor/core/api", token: process.env.SUPERVISOR_TOKEN }
