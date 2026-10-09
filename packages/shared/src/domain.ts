@@ -121,6 +121,10 @@ export interface HouseholdSettings {
   homeCalendars: HomeCalendar[];
   /** Settings of single wall panels, by Kiosk member id (missing = like the family). */
   panelProfiles: Record<string, PanelProfile>;
+  /** Where the family menu is kept: null = automatic, "internal" = built-in server, else a calendar id. */
+  menuCalendarId: string | null;
+  /** Where birthdays and anniversaries are kept (same values as menuCalendarId). */
+  occasionsCalendarId: string | null;
 }
 
 /** What one wall panel shows differently from the others (e.g. the kitchen and the hall). */

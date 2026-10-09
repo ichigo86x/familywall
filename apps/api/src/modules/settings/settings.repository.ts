@@ -13,7 +13,9 @@ const DEFAULTS: HouseholdSettings = {
   homeButtons: [],
   homeLists: [],
   homeCalendars: [],
-  panelProfiles: {}
+  panelProfiles: {},
+  menuCalendarId: null,
+  occasionsCalendarId: null
 };
 
 @Injectable()
@@ -24,6 +26,14 @@ export class SettingsRepository {
     const rows = this.db.prepare("SELECT key, value FROM settings").all() as Array<{ key: string; value: string }>;
     const stored = Object.fromEntries(rows.map((row) => [row.key, JSON.parse(row.value) as unknown]));
     return { ...DEFAULTS, ...(stored as Partial<HouseholdSettings>) };
+  }
+
+  /** Where menu or birthdays are kept: changed only through the family targets (which also move the data). */
+  public setFamilyTarget(key: "menuCalendarId" | "occasionsCalendarId", value: string | null): HouseholdSettings {
+    this.db
+      .prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value")
+      .run(key, JSON.stringify(value));
+    return this.get();
   }
 
   public update(patch: UpdateSettingsInput): HouseholdSettings {

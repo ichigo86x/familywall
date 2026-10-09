@@ -17,6 +17,7 @@ import { BackupCard } from "./backup-card";
 import { HomeAssistantHintCard, HomeCalendarsCard, HomeListsCard } from "./home-lists-card";
 import { AuditCard } from "./security-card";
 import { DashboardListsCard } from "./dashboard-lists-card";
+import { FamilyTargetsCard } from "./family-targets-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
@@ -101,6 +102,7 @@ export const AdminPage = () => {
           {section === "accounts" ? (
             <>
               <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
+              <FamilyTargetsCard onChanged={admin.reload} />
               <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
             </>
           ) : null}

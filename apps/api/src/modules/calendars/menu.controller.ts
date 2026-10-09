@@ -7,15 +7,15 @@ import { ProviderAccountsRepository } from "../providers/provider-accounts.repos
 import { CalendarsRepository } from "./calendars.repository";
 import { decodeRemoteEventId } from "./event-ids";
 import type { MenuMealFields } from "../dav/family-ics";
-import { MenuStore } from "../dav/family-stores";
+import { FamilyTargetsService } from "./family-targets.service";
 
 const MAX_INGREDIENT_LOOKUPS = 30;
 
-/** The family menu (on the built-in CalDAV server), and the ingredients of Cookidoo recipes. */
+/** The family menu (built-in CalDAV server or the calendar chosen for it), and the ingredients of Cookidoo recipes. */
 @Controller("menu")
 export class MenuController {
   public constructor(
-    private readonly menu: MenuStore,
+    private readonly targets: FamilyTargetsService,
     private readonly calendars: CalendarsRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly cookidoo: CookidooClient
@@ -24,26 +24,26 @@ export class MenuController {
   @Get()
   @RequirePermission("calendar:read")
   public async list(@Query(new ZodValidationPipe(menuRangeSchema)) range: { from: string; to: string }): Promise<MenuMealsResponse> {
-    return { meals: await this.menu.between(range.from, range.to) };
+    return { meals: await this.targets.mealsBetween(range.from, range.to) };
   }
 
   @Post()
   @RequirePermission("events:write")
   public async create(@Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): Promise<{ meal: MenuMeal }> {
-    return { meal: await this.menu.create(input) };
+    return { meal: await this.targets.menuObjects().create(input) };
   }
 
   @Patch(":id")
   @RequirePermission("events:write")
   public async update(@Param("id") id: string, @Body(new ZodValidationPipe(menuMealSchema)) input: MenuMealFields): Promise<{ meal: MenuMeal }> {
-    return { meal: await this.menu.update(id, input) };
+    return { meal: await this.targets.menuObjects().update(id, input) };
   }
 
   @Delete(":id")
   @RequirePermission("events:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   public async delete(@Param("id") id: string): Promise<void> {
-    await this.menu.delete(id);
+    await this.targets.menuObjects().delete(id);
   }
 
   /** Ingredients of Cookidoo meal events (ids from GET /calendars); null when Cookidoo does not give them. */

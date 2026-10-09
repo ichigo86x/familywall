@@ -8,6 +8,7 @@ import { CalendarsService } from "../modules/calendars/calendars.service";
 import { EventsRepository } from "../modules/calendars/events.repository";
 import { EventsService } from "../modules/calendars/events.service";
 import { CalendarCacheRepository } from "../modules/calendars/calendar-cache.repository";
+import { FamilyTargetsService } from "../modules/calendars/family-targets.service";
 import { LegacyDataMigration } from "../modules/dav/legacy-migration";
 import { MenuStore, NotesStore, OccasionsStore, RoutinesStore, ScheduleStore } from "../modules/dav/family-stores";
 import { MembersRepository } from "../modules/members/members.repository";
@@ -43,7 +44,8 @@ export const createTestContext = (
   const menu = new MenuStore(dav, settings);
   const notes = new NotesStore(dav, settings);
   const schedule = new ScheduleStore(dav, settings, membersRepository);
-  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, occasions, cache, settings, menu, homeAssistant);
+  const targets = new FamilyTargetsService(calendarsRepository, accounts, caldav, google, settings, menu, occasions);
+  const calendars = new CalendarsService(calendarsRepository, eventsRepository, accounts, providers, caldav, membersRepository, cookidoo, google, targets, cache, settings, homeAssistant);
 
   return {
     db,
@@ -61,6 +63,7 @@ export const createTestContext = (
     occasions,
     cache,
     menu,
+    targets,
     notes,
     schedule,
     routines: new RoutinesStore(dav, settings, membersRepository),

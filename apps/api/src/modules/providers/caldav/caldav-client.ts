@@ -170,8 +170,13 @@ export class CalDavClient {
     return (await this.queryResources(credentials, calendarUrl, "")).find((resource) => hasUid(resource.ics, uid)) ?? null;
   }
 
+  /** Every event resource of a calendar, with its data (family data kept on a provider calendar). */
+  public listResources(credentials: CalDavCredentials, calendarUrl: string): Promise<CalDavResource[]> {
+    return this.queryResources(credentials, calendarUrl, "");
+  }
+
   /** Reads one .ics resource; null when it does not exist. */
-  private async getResource(credentials: CalDavCredentials, href: string): Promise<CalDavResource | null> {
+  public async getResource(credentials: CalDavCredentials, href: string): Promise<CalDavResource | null> {
     const response = await this.send(credentials, href, { method: "GET", headers: { Accept: "text/calendar" } });
     if (response.status === 404 || response.status === 410) {
       return null;

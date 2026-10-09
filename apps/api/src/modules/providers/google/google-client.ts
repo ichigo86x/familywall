@@ -50,7 +50,7 @@ export class GoogleError extends CalDavError {
   }
 }
 
-interface GoogleEventJson {
+export interface GoogleEventJson {
   id: string;
   status?: string;
   summary?: string;
@@ -58,6 +58,10 @@ interface GoogleEventJson {
   recurringEventId?: string;
   start?: { date?: string; dateTime?: string; timeZone?: string };
   end?: { date?: string; dateTime?: string; timeZone?: string };
+  recurrence?: string[];
+  transparency?: string;
+  etag?: string;
+  extendedProperties?: { private?: Record<string, string> };
 }
 
 type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
@@ -263,6 +267,47 @@ export class GoogleClient {
   public async deleteEvent(secret: GoogleSecret, remoteUrl: string, ref: { uid: string; occurrenceKey: string }, scope: "occurrence" | "series"): Promise<void> {
     const target = ref.occurrenceKey && scope === "occurrence" ? ref.occurrenceKey : ref.uid;
     await this.request(secret, "DELETE", `${this.eventsUrl(remoteUrl)}/${encodeURIComponent(target)}`, undefined, [404, 410]);
+  }
+
+  // -- Whole events (family data kept on a Google calendar) ---------------------
+
+  /** Every event of a calendar as stored (recurring events once, not expanded). */
+  public async listEventsRaw(secret: GoogleSecret, remoteUrl: string): Promise<GoogleEventJson[]> {
+    const query = new URLSearchParams({ singleEvents: "false", showDeleted: "false", maxResults: "2500" });
+    const items = await this.paged<GoogleEventJson>(secret, `${this.eventsUrl(remoteUrl)}?${query.toString()}`);
+    return items.filter((item) => item.status !== "cancelled" && !item.recurringEventId);
+  }
+
+  public async getEventRaw(secret: GoogleSecret, remoteUrl: string, id: string): Promise<GoogleEventJson | null> {
+    const event = (await this.request(secret, "GET", `${this.eventsUrl(remoteUrl)}/${encodeURIComponent(id)}`, undefined, [404, 410])) as GoogleEventJson | null;
+    return event && event.status !== "cancelled" ? event : null;
+  }
+
+  /** Creates the event with this id, or replaces it when it exists (create=true never replaces). */
+  public async putEventRaw(secret: GoogleSecret, remoteUrl: string, event: GoogleEventJson, create: boolean): Promise<void> {
+    const base = this.eventsUrl(remoteUrl);
+    // A deleted event keeps its id on Google: writing it again brings it back.
+    const body = { ...event, status: "confirmed" };
+    const replace = () => this.request(secret, "PUT", `${base}/${encodeURIComponent(event.id)}`, body, [404, 410]);
+    if (create) {
+      const existing = (await this.request(secret, "GET", `${base}/${encodeURIComponent(event.id)}`, undefined, [404, 410])) as GoogleEventJson | null;
+      if (existing && existing.status !== "cancelled") {
+        throw new GoogleError("conflict", "Esiste già un elemento con questo identificativo su Google.");
+      }
+      if (existing) {
+        await replace();
+        return;
+      }
+      await this.request(secret, "POST", base, body);
+      return;
+    }
+    if ((await replace()) === null) {
+      await this.request(secret, "POST", base, body);
+    }
+  }
+
+  public async deleteEventRaw(secret: GoogleSecret, remoteUrl: string, id: string): Promise<void> {
+    await this.request(secret, "DELETE", `${this.eventsUrl(remoteUrl)}/${encodeURIComponent(id)}`, undefined, [404, 410]);
   }
 
   // -- Tasks ---------------------------------------------------------------

@@ -153,6 +153,8 @@ describe("CalendarsService and EventsService", () => {
     await ctx.occasions.create({ name: "Luca", kind: "birthday", month: 10, day: 20, year: 2017 });
     await ctx.occasions.create({ name: "Nonni", kind: "anniversary", month: 3, day: 1, year: null });
     ctx.calendars.update(calendar.id, { purpose: "birthdays" });
+    // Birthdays kept on the built-in server: the marked calendar is shown next to them.
+    ctx.settings.setFamilyTarget("occasionsCalendarId", "internal");
 
     const { calendars } = await ctx.calendars.getCalendars(admin, range);
     expect(calendars.map((entry) => [entry.id, entry.kind])).toEqual([[calendar.id, "birthdays"], ["occasions", "birthdays"]]);
@@ -181,6 +183,7 @@ describe("CalendarsService and EventsService", () => {
     const dinner = SCHOOL_TRIP.replace("SUMMARY:Gita scolastica", "SUMMARY:Lasagne\nDESCRIPTION:Ingredienti:\\n- 500 g di ragù\\n- sfoglia");
     const { ctx, admin, calendar } = await setup({ "dinner.ics": dinner });
     ctx.calendars.update(calendar.id, { purpose: "meals" });
+    ctx.settings.setFamilyTarget("menuCalendarId", "internal");
     await ctx.menu.create({ date: "2026-10-06", slot: "cena", title: "Minestrone", ingredients: ["zucchine", "carote"], note: null });
 
     const { calendars } = await ctx.calendars.getCalendars(admin, range);

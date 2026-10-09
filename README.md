@@ -23,6 +23,7 @@ Gira come add-on di Home Assistant. Si usa come web app su iPhone, iPad, tablet 
 - [Primo avvio](#primo-avvio)
 - [Collegare i calendari](#collegare-i-calendari)
 - [Server CalDAV integrato (liste, menu, compleanni, turni, note)](#server-caldav-integrato-liste-menu-compleanni-turni-note)
+- [Dove salvare menu e compleanni](#dove-salvare-menu-e-compleanni)
 - [Pannello a muro: Echo Show 15 con Fully Kiosk](#pannello-a-muro-echo-show-15-con-fully-kiosk)
 - [Web app su iPhone e iPad](#web-app-su-iphone-e-ipad)
 - [Sviluppo locale](#sviluppo-locale)
@@ -79,10 +80,10 @@ Privacy degli eventi:
 
 ### Menu
 
-La pagina Menu mostra la settimana con i piatti di tutti i menu insieme:
-- **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota. Stanno nel calendario "Menu" del server CalDAV integrato, quindi si vedono e si modificano anche dal calendario del telefono (vedi [Server CalDAV integrato](#server-caldav-integrato-liste-menu-compleanni-turni-note)).
+La pagina Menu mostra i piatti di tutti i menu insieme, per **settimana**, **14 giorni** o **mese** (la vista scelta resta su quel dispositivo):
+- **Menu di casa**: i piatti inseriti in Familywall ("Nuovo piatto" o "+ piatto" nel giorno), con pasto (colazione, pranzo, merenda, cena), ingredienti (uno per riga) e nota. Stanno nel calendario "Menu" del server CalDAV integrato, oppure nel calendario di iCloud, Google o di un altro server scelto in Admin (vedi [Dove salvare menu e compleanni](#dove-salvare-menu-e-compleanni)); in tutti i casi si vedono e si modificano anche dal calendario del telefono.
 - **Cookidoo**: il piano "La mia settimana", se l'account è collegato.
-- **Calendari menu**: in Admin → Calendari e liste → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati).
+- **Calendari menu**: in Admin → Calendari e liste → Calendari visibili scegli "🍽️ Menu" per un calendario (per esempio un calendario iCloud o Google "Menu"). Ogni evento è un piatto; gli ingredienti vanno nella **descrizione**, uno per riga (elenchi puntati e la riga "Ingredienti:" vengono ignorati). Il primo calendario segnato così diventa anche quello dove Familywall salva i nuovi piatti, salvo una scelta diversa in Admin.
 
 **Ingredienti → spesa** (per la settimana, per un giorno o per un piatto):
 1. Familywall raccoglie gli ingredienti dei piatti e unisce quelli uguali.
@@ -95,7 +96,7 @@ Possono creare e modificare piatti i membri che scrivono eventi; mandare gli ing
 
 ### Turni
 
-La pagina Turni mostra la settimana con:
+La pagina Turni mostra **settimana**, **14 giorni** o **mese** (nelle viste lunghe ogni lunedì indica il numero della settimana e se è pari o dispari) con:
 - **Lavoro genitori**: smart working, ufficio, trasferta, ferie o riposo, con orari facoltativi;
 - **Faccende bambini**: apparecchiare, sparecchiare e altre faccende;
 - **Presenze in casa**: per esempio pulizie, babysitter o nonni, con nome della persona e orari.
@@ -133,12 +134,26 @@ Una routine è una sequenza di passi per i bambini (vestirsi, colazione, denti, 
 ### Compleanni e ricorrenze
 
 Ci sono due modi, che si possono usare insieme:
-- **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze stanno nel calendario "Compleanni" del server CalDAV integrato, come eventi di tutto il giorno ripetuti ogni anno: si vedono anche sul telefono, e un compleanno aggiunto lì compare in Familywall.
+- **In Familywall**: nella pagina Note (Bacheca) → "Compleanni e ricorrenze" → Aggiungi. Scegli compleanno, anniversario o altra ricorrenza, giorno e mese. L'anno è facoltativo: se c'è, compaiono gli anni compiuti, per esempio "🎂 Luca (9)". Le ricorrenze sono eventi di tutto il giorno ripetuti ogni anno, nel calendario "Compleanni" del server CalDAV integrato oppure nel calendario scelto in Admin (vedi [Dove salvare menu e compleanni](#dove-salvare-menu-e-compleanni)): si vedono anche sul telefono, e un compleanno aggiunto lì compare in Familywall.
 - **Da un calendario**: in Admin → Calendari e liste → Calendari visibili, attiva "Compleanni" sul calendario giusto. Per esempio:
   - un calendario iCloud dedicato ("Compleanni") con eventi di tutto il giorno ripetuti ogni anno;
   - il calendario "Compleanni" di Google (dai contatti), se l'account Google è collegato.
 
-Il calendario "Compleanni" di iCloud generato dai contatti non è disponibile via CalDAV: per iCloud usa un calendario normale dedicato.
+Il calendario "Compleanni" di iCloud generato dai contatti non è disponibile via CalDAV: per iCloud usa un calendario normale dedicato. Quello di Google generato dai contatti si può mostrare, ma è di sola lettura: Familywall non ci salva le ricorrenze.
+
+### Dove salvare menu e compleanni
+
+In Admin → Calendari e liste → **Dove salvarli** scegli, per il menu e per compleanni e ricorrenze:
+- **Automatico** (predefinito): il primo calendario visibile di iCloud, Google o di un server CalDAV segnato "🍽️ Menu" o "🎂 Compleanni"; se non ce n'è, il server CalDAV di Familywall.
+- **Familywall**: sempre il server CalDAV integrato.
+- **Un calendario preciso**: tra i calendari visibili di iCloud, Google e dei server CalDAV. Il calendario scelto viene segnato "Menu" o "Compleanni".
+
+Cambiando la scelta Familywall chiede se **spostare** anche i dati esistenti: li copia nel nuovo calendario (con gli stessi identificativi) e poi li toglie dal vecchio; quelli che non riesce a copiare restano dove erano e vengono contati. Si può spostare in entrambe le direzioni (da Familywall a iCloud o Google e ritorno). Se si usa un calendario esterno e sul server di Familywall restano dei dati, compaiono a parte nel calendario ("Menu (Familywall)", "Compleanni (Familywall)") e la scheda propone di spostarli.
+
+Da sapere:
+- Nei calendari esterni Familywall scrive gli stessi eventi del server integrato: piatti come eventi di tutto il giorno ("Cena: Minestrone", ingredienti nella descrizione), ricorrenze come eventi annuali ("🎂 Luca"). Su Google le informazioni proprie di Familywall (pasto, anno di nascita) vanno nelle proprietà private dell'evento.
+- I calendari esterni vengono letti al massimo una volta al minuto; senza rete restano gli ultimi dati letti.
+- Il backup di Familywall contiene solo i dati del server integrato: quelli su iCloud o Google restano al provider.
 
 Compleanni e ricorrenze compaiono nel calendario e nell'agenda con 🎂 (💍 per gli anniversari) e nella card della dashboard. Chi può creare eventi può gestirli.
 

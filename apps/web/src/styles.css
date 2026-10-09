@@ -4119,3 +4119,57 @@ button.schedule-chip {
     overscroll-behavior: contain;
   }
 }
+
+/* Where menu and birthdays are kept. */
+.family-targets {
+  display: grid;
+  gap: 16px;
+}
+
+.family-target {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.family-target__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+/* Menu and Turni: two weeks and month views in rows of seven days. */
+.schedule-week--fortnight .schedule-day {
+  min-height: 130px;
+}
+
+.schedule-week--month .schedule-day {
+  min-height: 96px;
+  padding: 8px 6px;
+  gap: 6px;
+}
+
+.schedule-week--month .schedule-day header,
+.schedule-week--fortnight .schedule-day header {
+  font-size: 0.85rem;
+}
+
+.schedule-day--outside {
+  opacity: 0.45;
+}
+
+.schedule-day__week {
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 1120px) {
+  /* Phones and tablets list the days one after the other: days of other months are left out. */
+  .schedule-week--month .schedule-day--outside {
+    display: none;
+  }
+}

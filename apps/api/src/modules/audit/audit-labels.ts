@@ -13,7 +13,8 @@ const AREAS: Record<string, string> = {
   notes: "Note",
   lists: "Liste",
   backup: "Backup",
-  home: "Home Assistant"
+  home: "Home Assistant",
+  "family-targets": "Dove salvare menu e compleanni"
 };
 
 /** Routes with a name of their own (method and route path without the /api prefix). */
@@ -34,7 +35,8 @@ const NAMED: Record<string, string> = {
   "PATCH /lists/dashboard": "Liste: dashboard",
   "POST /lists/:listId/tasks": "Liste: voce aggiunta",
   "PATCH /lists/:listId/tasks/:taskId": "Liste: voce modificata",
-  "DELETE /lists/:listId/tasks/:taskId": "Liste: voce eliminata"
+  "DELETE /lists/:listId/tasks/:taskId": "Liste: voce eliminata",
+  "PUT /family-targets/:kind": "Menu e compleanni: calendario scelto"
 };
 
 const VERBS: Record<string, string> = { POST: "nuovo", PUT: "modifica", PATCH: "modifica", DELETE: "eliminazione" };

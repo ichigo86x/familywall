@@ -1,4 +1,7 @@
 import type {
+  FamilyDataKind,
+  FamilyTargetsResponse,
+  SetFamilyTargetResponse,
   MenuIngredientsResponse,
   MenuMeal,
   MenuMealInput,
@@ -168,6 +171,9 @@ export const api = {
     (await request<MenuIngredientsResponse>(`menu/ingredients?ids=${encodeURIComponent(eventIds.join(","))}`)).ingredients,
 
   getOccasions: async () => (await request<{ occasions: Occasion[] }>("occasions")).occasions,
+  getFamilyTargets: () => request<FamilyTargetsResponse>("family-targets"),
+  setFamilyTarget: (kind: FamilyDataKind, target: string | null, move: boolean) =>
+    request<SetFamilyTargetResponse>(`family-targets/${kind}`, { method: "PUT", json: { target, move } }),
   createOccasion: (input: OccasionInput) => request<{ occasion: Occasion }>("occasions", { method: "POST", json: input }),
   updateOccasion: (id: string, input: OccasionInput) => request<{ occasion: Occasion }>(`occasions/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
   deleteOccasion: (id: string) => request<void>(`occasions/${encodeURIComponent(id)}`, { method: "DELETE" }),

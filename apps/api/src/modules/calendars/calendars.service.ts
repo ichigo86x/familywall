@@ -35,7 +35,7 @@ import { projectEventForViewer } from "./event-visibility";
 import { buildMemberMatcher } from "./member-matcher";
 import { MembersRepository } from "../members/members.repository";
 import { EventsRepository, type StoredEvent } from "./events.repository";
-import { MenuStore, OccasionsStore } from "../dav/family-stores";
+import { FamilyTargetsService } from "./family-targets.service";
 import { CalendarCacheRepository } from "./calendar-cache.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 import { HomeAssistantClient, HomeAssistantError, type HaCalendarEvent } from "../home/home-assistant.client";
@@ -205,10 +205,9 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     private readonly members: MembersRepository,
     private readonly cookidoo: CookidooClient,
     private readonly google: GoogleClient,
-    private readonly occasions: OccasionsStore,
+    private readonly targets: FamilyTargetsService,
     private readonly cache: CalendarCacheRepository,
     private readonly settings: SettingsRepository,
-    private readonly menu: MenuStore,
     private readonly homeAssistant: HomeAssistantClient
   ) {}
 
@@ -222,7 +221,10 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
       throw AppException.validation("Intervallo troppo ampio (massimo 400 giorni).");
     }
 
-    const configs = this.calendars.list({ enabledOnly: true });
+    // The calendars that hold the family menu and birthdays are shown as those (below), not twice.
+    const menuTarget = this.targets.target("menu");
+    const occasionsTarget = this.targets.target("occasions");
+    const configs = this.calendars.list({ enabledOnly: true }).filter((config) => config.id !== menuTarget?.id && config.id !== occasionsTarget?.id);
     const matchMembers = buildMemberMatcher(this.members.list());
     const stored = this.events.listForCalendars(configs.map((config) => config.id), from.toISOString(), to.toISOString());
 
@@ -251,32 +253,54 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
       })
     );
 
-    // Family menu and birthdays from the built-in CalDAV server; shown when they have something (or fail).
+    // Family menu and birthdays, from the built-in CalDAV server or the calendar chosen for them; shown when
+    // they have something (or fail). What is still on the built-in server while a provider calendar is used
+    // is shown apart, until the Admin moves it.
     // A day of margin on both sides: menu dates are local, the range is in UTC.
-    const [meals, occasions] = await Promise.all([
-      this.familyData(() => this.menu.between(isoDate(new Date(from.getTime() - DAY_MS)), isoDate(new Date(to.getTime() + DAY_MS)))),
-      this.familyData(() => this.occasions.list())
+    const fromDate = isoDate(new Date(from.getTime() - DAY_MS));
+    const toDate = isoDate(new Date(to.getTime() + DAY_MS));
+    const inRange = (meals: MenuMeal[]) =>
+      menuEvents(meals.filter((meal) => meal.date >= fromDate && meal.date <= toDate)).filter((event) => new Date(event.startAt) < to && new Date(event.endAt) > from);
+    const [meals, occasions, oldMeals, oldOccasions] = await Promise.all([
+      this.familyData(() => this.targets.mealsBetween(fromDate, toDate)),
+      this.familyData(() => this.targets.occasions()),
+      menuTarget ? this.familyData(() => this.targets.menuObjects(null).list()) : Promise.resolve({ items: [] as MenuMeal[], error: null }),
+      occasionsTarget ? this.familyData(() => this.targets.occasionObjects(null).list()) : Promise.resolve({ items: [] as Occasion[], error: null })
     ]);
     if (meals.items.length > 0 || meals.error) {
       calendars.push({
         id: MENU_CALENDAR_ID,
-        name: "Menu di casa",
-        color: "#EA580C",
+        name: menuTarget?.name ?? "Menu di casa",
+        color: menuTarget?.color ?? "#EA580C",
         readOnly: true,
         kind: "meals",
         lastError: meals.error,
-        events: menuEvents(meals.items).filter((event) => new Date(event.startAt) < to && new Date(event.endAt) > from)
+        events: inRange(meals.items)
       });
+    }
+    if (oldMeals.items.length > 0) {
+      calendars.push({ id: `${MENU_CALENDAR_ID}-internal`, name: "Menu (Familywall)", color: "#EA580C", readOnly: true, kind: "meals", lastError: null, events: inRange(oldMeals.items) });
     }
     if (occasions.items.length > 0 || occasions.error) {
       calendars.push({
         id: OCCASIONS_CALENDAR_ID,
-        name: "Compleanni e ricorrenze",
-        color: "#DB2777",
+        name: occasionsTarget?.name ?? "Compleanni e ricorrenze",
+        color: occasionsTarget?.color ?? "#DB2777",
         readOnly: true,
         kind: "birthdays",
         lastError: occasions.error,
         events: occasionEvents(occasions.items, from, to).map((event) => withInferredMembers(event, matchMembers))
+      });
+    }
+    if (oldOccasions.items.length > 0) {
+      calendars.push({
+        id: `${OCCASIONS_CALENDAR_ID}-internal`,
+        name: "Compleanni (Familywall)",
+        color: "#DB2777",
+        readOnly: true,
+        kind: "birthdays",
+        lastError: null,
+        events: occasionEvents(oldOccasions.items, from, to).map((event) => withInferredMembers(event, matchMembers))
       });
     }
 

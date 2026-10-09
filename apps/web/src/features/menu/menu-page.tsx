@@ -18,8 +18,9 @@ import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { useNewParam } from "@/hooks/use-new-param";
-import { AddRegular, ArrowLeftRegular, ArrowRightRegular } from "@/lib/fluent-icons";
-import { addDays, dayKey, occursOnDay, startOfWeek } from "@/features/calendar/calendar-time";
+import { AddRegular } from "@/lib/fluent-icons";
+import { addDays, dayKey, occursOnDay } from "@/features/calendar/calendar-time";
+import { PeriodToolbar, usePeriod } from "@/features/calendar/period-view";
 import type { PlannerEvent } from "@/features/calendar/calendar-page";
 import { IngredientsDialog, type DishSource } from "./ingredients-dialog";
 
@@ -42,22 +43,22 @@ export const MenuPage = () => {
   const auth = useAuth();
   const canWrite = auth.can("events:write");
   const canShop = auth.can("lists:write");
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const period = usePeriod("familywall.menu.view");
   const [editing, setEditing] = useState<{ meal: MenuMeal | null; date: string } | null>(null);
   const [viewing, setViewing] = useState<Dish | null>(null);
   const [shopping, setShopping] = useState<DishSource[] | null>(null);
   useNewParam(canWrite, () => setEditing({ meal: null, date: dayKey(new Date()) }));
 
-  const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
-  const from = dayKey(days[0]!);
-  const to = dayKey(days[6]!);
+  const days = period.days;
+  const from = dayKey(period.start);
+  const to = dayKey(addDays(period.end, -1));
   const data = useAsyncResource(
     async () => {
-      const [calendar, meals] = await Promise.all([api.getCalendar(weekStart.toISOString(), addDays(weekStart, 7).toISOString()), api.getMenu(from, to)]);
+      const [calendar, meals] = await Promise.all([api.getCalendar(period.start.toISOString(), period.end.toISOString()), api.getMenu(from, to)]);
       return { calendar, meals };
     },
     [from, to],
-    `menu:${from}`
+    `menu:${from}:${to}`
   );
 
   const dishes = useMemo<Dish[]>(() => {
@@ -83,17 +84,13 @@ export const MenuPage = () => {
     <AppShell
       compact
       currentRoute="/menu"
-      eyebrow={`Settimana dal ${days[0]!.toLocaleDateString("it-IT", { day: "numeric", month: "long" })}`}
-      title="Menu della settimana"
+      eyebrow={period.label}
+      title="Menu"
       subtitle=""
       summaryChip={`${weekDishes.length} piatti`}
       toolbarActions={
         <div className="calendar-toolbar">
-          <div className="calendar-toolbar__group">
-            <Button appearance="secondary" icon={<ArrowLeftRegular />} aria-label="Settimana precedente" onClick={() => setWeekStart(addDays(weekStart, -7))} />
-            <Button appearance="secondary" onClick={() => setWeekStart(startOfWeek(new Date()))}>Questa settimana</Button>
-            <Button appearance="secondary" icon={<ArrowRightRegular />} aria-label="Settimana successiva" onClick={() => setWeekStart(addDays(weekStart, 7))} />
-          </div>
+          <PeriodToolbar period={period} />
           {canShop ? (
             <Button appearance="secondary" disabled={weekDishes.length === 0} onClick={() => setShopping(weekDishes.map(toSource))}>
               🛒 Ingredienti → spesa
@@ -108,7 +105,7 @@ export const MenuPage = () => {
       }
     >
       {data.status === "loading" && !data.data ? (
-        <LoadingState title="Caricamento menu" message="Lettura dei menu della settimana." />
+        <LoadingState title="Caricamento menu" message="Lettura dei menu." />
       ) : data.status === "error" ? (
         <ErrorState title="Menu non disponibile" message={data.error.message} actionLabel="Riprova" onAction={data.reload} />
       ) : (
@@ -128,15 +125,18 @@ export const MenuPage = () => {
               ))
             )}
           </div>
-          <div className="schedule-week">
+          <div className={`schedule-week schedule-week--${period.mode}`}>
             {days.map((day) => {
               const key = dayKey(day);
               const dayDishes = dishes.filter((dish) => occursOnDay(dish, day));
               const isToday = key === todayKey;
               return (
-                <section key={key} className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${key < todayKey ? "planner-day--past" : ""}`.trim()}>
+                <section
+                  key={key}
+                  className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${key < todayKey ? "planner-day--past" : ""} ${period.outside(day) ? "schedule-day--outside" : ""}`.trim()}
+                >
                   <header>
-                    <strong>{day.toLocaleDateString("it-IT", { weekday: "long" })}</strong>
+                    <strong>{day.toLocaleDateString("it-IT", { weekday: period.mode === "week" ? "long" : "short" })}</strong>
                     {isToday ? <span className="today-pill">Oggi</span> : <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>}
                   </header>
                   {dayDishes.map((dish) => (

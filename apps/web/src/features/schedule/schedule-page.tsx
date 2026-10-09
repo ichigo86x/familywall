@@ -18,8 +18,9 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
-import { AddRegular, ArrowLeftRegular, ArrowRightRegular } from "@/lib/fluent-icons";
-import { addDays, dayKey, startOfDay, startOfWeek } from "@/features/calendar/calendar-time";
+import { AddRegular } from "@/lib/fluent-icons";
+import { dayKey, startOfDay, startOfWeek } from "@/features/calendar/calendar-time";
+import { PeriodToolbar, usePeriod } from "@/features/calendar/period-view";
 import {
   CHORE_SUGGESTIONS,
   KIND_LABELS,
@@ -40,14 +41,16 @@ export const SchedulePage = () => {
   const schedule = useAsyncResource(() => api.getSchedule(), [], "schedule");
   const members = useAsyncResource(() => api.getMembers(), [], "members");
   const routines = useAsyncResource(() => api.getRoutines(), [], "routines-all");
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const period = usePeriod("familywall.schedule.view");
   const [editing, setEditing] = useState<ScheduleEntry | "new" | null>(null);
   useNewParam(canWrite, () => setEditing("new"));
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
-  const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const days = period.days;
   const todayKey = dayKey(new Date());
-  const parity = isoWeek(weekStart) % 2 === 0 ? "pari" : "dispari";
+  // Stars of the week shown, or of this week when it is in the period.
+  const starsWeek = period.isCurrent ? startOfWeek(new Date()) : period.start;
+  const parityOf = (day: Date) => (isoWeek(day) % 2 === 0 ? "pari" : "dispari");
   const toggleDone = useChoreToggle(schedule.reload);
   const mayTick = (entry: ScheduleEntry, day: Date) => {
     const daysBack = Math.round((startOfDay(new Date()).getTime() - startOfDay(day).getTime()) / 86_400_000);
@@ -58,17 +61,13 @@ export const SchedulePage = () => {
     <AppShell
       compact
       currentRoute="/schedule"
-      eyebrow={`Settimana ${isoWeek(weekStart)} (${parity})`}
+      eyebrow={period.mode === "week" ? `Settimana ${isoWeek(period.start)} (${parityOf(period.start)})` : period.label}
       title="Turni della famiglia"
       subtitle=""
       summaryChip={`${schedule.data?.length ?? 0} turni`}
       toolbarActions={
         <div className="calendar-toolbar">
-          <div className="calendar-toolbar__group">
-            <Button appearance="secondary" icon={<ArrowLeftRegular />} aria-label="Settimana precedente" onClick={() => setWeekStart(addDays(weekStart, -7))} />
-            <Button appearance="secondary" onClick={() => setWeekStart(startOfWeek(new Date()))}>Questa settimana</Button>
-            <Button appearance="secondary" icon={<ArrowRightRegular />} aria-label="Settimana successiva" onClick={() => setWeekStart(addDays(weekStart, 7))} />
-          </div>
+          <PeriodToolbar period={period} />
           {canWrite ? (
             <Button appearance="primary" icon={<AddRegular />} onClick={() => setEditing("new")}>
               Nuovo turno
@@ -88,15 +87,19 @@ export const SchedulePage = () => {
               Nessun turno. Aggiungi lo smart working dei genitori, chi apparecchia e sparecchia, o quando viene la donna delle pulizie.
             </p>
           ) : null}
-          <StarsLine entries={schedule.data ?? []} day={weekStart} membersById={membersById} />
-          <div className="schedule-week">
+          <StarsLine entries={schedule.data ?? []} day={starsWeek} membersById={membersById} />
+          <div className={`schedule-week schedule-week--${period.mode}`}>
             {days.map((day) => {
               const entries = scheduleForDay(schedule.data ?? [], day);
               const isToday = dayKey(day) === todayKey;
               return (
-                <section key={dayKey(day)} className={`schedule-day ${isToday ? "schedule-day--today" : ""}`.trim()}>
+                <section key={dayKey(day)} className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${period.outside(day) ? "schedule-day--outside" : ""}`.trim()}>
                   <header>
-                    <strong>{day.toLocaleDateString("it-IT", { weekday: "long" })}</strong>
+                    <strong>
+                      {day.toLocaleDateString("it-IT", { weekday: period.mode === "week" ? "long" : "short" })}
+                      {/* Every other week matters for the shifts: Mondays say which week it is. */}
+                      {period.mode !== "week" && day.getDay() === 1 ? <span className="schedule-day__week"> · sett. {isoWeek(day)} {parityOf(day)}</span> : null}
+                    </strong>
                     {isToday ? <span className="today-pill">Oggi</span> : <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>}
                   </header>
                   {entries.length === 0 ? <p className="calendar-detail-hint">—</p> : null}
