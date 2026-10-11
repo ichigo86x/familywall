@@ -168,3 +168,7 @@ npm run python:setup   # una volta: Radicale e pyicloud per lo sviluppo
 npm run dev:api        # API su http://localhost:3001
 npm run dev:web        # web su http://localhost:5173
 ```
+
+## Licenza
+
+Familywall è distribuito con licenza [MIT](LICENSE).
