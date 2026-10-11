@@ -16,8 +16,8 @@ data/
 *.key
 *.pem
 
-# Staged add-on build context
-homeassistant/familywall/app/
+# Local add-on folder made by npm run addon:stage
+build/
 
 .DS_Store
 Thumbs.db

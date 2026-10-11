@@ -1,0 +1,15 @@
+# Only the sources go into the image build: never local data, keys, logs or dependencies.
+.git
+.github
+**/node_modules
+**/dist
+**/data
+**/.venv*
+**/*.log
+**/*.tsbuildinfo
+build
+.env
+.env.*
+*.db
+*.key
+*.fwbackup

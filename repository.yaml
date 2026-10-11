@@ -1,0 +1,5 @@
+# Home Assistant add-on repository: Settings > Add-ons > Add-on Store > ⋮ > Repositories,
+# then add https://github.com/ichigo86x/familywall
+name: Familywall
+url: https://github.com/ichigo86x/familywall
+maintainer: ichigo86x

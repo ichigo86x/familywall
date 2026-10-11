@@ -13,12 +13,15 @@ const MODES: Array<{ value: PeriodMode; label: string }> = [
   { value: "month", label: "Mese" }
 ];
 
+/** Two weeks unless the device chose another view. */
+const DEFAULT_MODE: PeriodMode = "fortnight";
+
 const readMode = (key: string): PeriodMode => {
   try {
     const stored = window.localStorage.getItem(key);
-    return stored === "fortnight" || stored === "month" ? stored : "week";
+    return stored === "week" || stored === "fortnight" || stored === "month" ? stored : DEFAULT_MODE;
   } catch {
-    return "week";
+    return DEFAULT_MODE;
   }
 };
 

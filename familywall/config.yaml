@@ -1,10 +1,13 @@
 name: Familywall
 version: "0.8.0"
 slug: familywall
-description: Calendario di famiglia con calendari iCloud, ruoli e pannello a muro.
+description: Calendario, menu, liste e turni della famiglia, con ruoli e pannello a muro.
+url: https://github.com/ichigo86x/familywall
 arch:
   - amd64
   - aarch64
+# Images published by the GitHub workflow; `npm run addon:stage` removes this line for a local build.
+image: ghcr.io/ichigo86x/{arch}-addon-familywall
 startup: application
 boot: auto
 init: true
