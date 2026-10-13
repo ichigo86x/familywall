@@ -64,7 +64,7 @@ Le liste della spesa si ordinano **per reparto**, nell'ordine di un giro al supe
 
 ### Scuola
 
-Con l'account **ClasseViva** (Spaggiari) del genitore o dello studente arrivano compiti e verifiche, un registro per ogni figlio, ognuno con il colore del figlio a cui lo colleghi in Admin. Non si mescolano con gli impegni: il pulsante **🎒 Scuola** in alto mostra in dashboard, al posto di turni e liste, i compiti dei prossimi sette giorni; nel calendario un'icona 🎒 sul giorno apre compiti e verifiche di quel giorno.
+Con l'account **ClasseViva** (Spaggiari) del genitore o dello studente arrivano i compiti (sezione Compiti), le verifiche dell'agenda e il materiale condiviso in Didattica, un registro per ogni figlio, ognuno con il colore del figlio a cui lo colleghi in Admin. Non si mescolano con gli impegni: il pulsante **🎒 Scuola** in alto mostra in dashboard, al posto di turni e liste, i compiti dei prossimi sette giorni; nel calendario un'icona 🎒 sul giorno apre compiti e verifiche di quel giorno.
 
 ### Note, compleanni e ricorrenze
 

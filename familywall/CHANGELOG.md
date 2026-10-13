@@ -1,5 +1,10 @@
 # Novità
 
+## 0.9.3
+
+- ClasseViva: compiti dalla sezione "Compiti", verifiche dall'agenda e materiale condiviso in "Didattica", con l'API del portale web (la vecchia API dell'app resta come riserva); gli errori compaiono nel pannello Scuola.
+- Il registro viene letto solo quando serve, al massimo ogni mezz'ora e per un periodo breve (due settimane indietro, sei avanti); i dati restano in cache anche senza rete.
+
 ## 0.9.2
 
 - Scuola separata dagli impegni: pulsante 🎒 Scuola in alto che mostra in dashboard compiti e verifiche della settimana, icona 🎒 sui giorni del calendario.

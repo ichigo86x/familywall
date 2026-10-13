@@ -54,6 +54,16 @@ const syncWindow = (now: Date): { from: Date; to: Date } => {
   return { from: new Date(today - SYNC_PAST_DAYS * DAY_MS), to: new Date(today + SYNC_FUTURE_DAYS * DAY_MS) };
 };
 
+/**
+ * The school register changes rarely and its unofficial API should not be called often: it is read for a
+ * short window (two weeks back, six ahead), at most every half hour, only when a page asks for it.
+ */
+const SCHOOL_FRESH_MS = 30 * 60 * 1000;
+const schoolWindow = (now: Date): { from: Date; to: Date } => {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return { from: new Date(today - 14 * DAY_MS), to: new Date(today + 45 * DAY_MS) };
+};
+
 /** Events overlapping [from, to); zero-length events count when they start inside. */
 const eventsBetween = (events: RemoteEvent[], from: Date, to: Date): RemoteEvent[] =>
   events.filter((event) => {
@@ -423,10 +433,11 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
    * the last synced events are shown with the error, which is also reported per calendar.
    */
   private async fetchRemote(config: CalendarConfig, from: Date, to: Date): Promise<{ events: RemoteEvent[]; error: string | null }> {
-    const window = syncWindow(this.now());
+    const school = config.provider === "classeviva";
+    const window = school ? schoolWindow(this.now()) : syncWindow(this.now());
     const cached = this.cache.get(config.id);
     const cacheCovers = cached !== undefined && cached.from <= from && cached.to >= to;
-    if (cacheCovers && this.now().getTime() - cached.syncedAt.getTime() < FRESH_MS) {
+    if (cacheCovers && this.now().getTime() - cached.syncedAt.getTime() < (school ? SCHOOL_FRESH_MS : FRESH_MS)) {
       return { events: eventsBetween(cached.events, from, to), error: null };
     }
 
@@ -484,7 +495,8 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
   /** Background sync of every visible calendar, so pages open from the cache. */
   public async syncAll(): Promise<void> {
     const window = syncWindow(this.now());
-    for (const config of this.calendars.list({ enabledOnly: true })) {
+    // School registers are read only when a page asks for them (see SCHOOL_FRESH_MS).
+    for (const config of this.calendars.list({ enabledOnly: true }).filter((entry) => entry.provider !== "classeviva")) {
       const cached = this.cache.get(config.id);
       if (cached && this.now().getTime() - cached.syncedAt.getTime() < FRESH_MS / 2) {
         continue;
