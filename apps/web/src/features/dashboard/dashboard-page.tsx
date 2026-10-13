@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
-import { canTickChore, panelView, scheduleForDay, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
+import { UMBRELLA_CHANCE, canTickChore, panelView, rainChanceDuring, scheduleForDay, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -171,6 +171,7 @@ export const DashboardPage = () => {
               </div>
 
               <DayChips allDay={todayAllDay} membersById={membersById} />
+              <UmbrellaLine weather={weather.data ?? null} events={[...upcoming, ...tomorrowEvents.filter((event) => !event.allDay)]} today={today} />
               <MenuLine label="In tavola oggi" meals={mealsOn(today)} />
 
               {calendar.status === "loading" && !calendar.data ? (
@@ -308,6 +309,26 @@ const DayChips = ({ allDay, membersById }: { allDay: PlannerEvent[]; membersById
       ))}
     </div>
   ) : null;
+
+/** "Porta l'ombrello": the first timed event of today or tomorrow with a high chance of rain. */
+const UmbrellaLine = ({ weather, events, today }: { weather: WeatherReport | null; events: PlannerEvent[]; today: Date }) => {
+  const wet = events
+    .map((event) => ({ event, chance: rainChanceDuring(weather, eventBounds(event).start, eventBounds(event).end) }))
+    .find((entry) => entry.chance !== null && entry.chance >= UMBRELLA_CHANCE);
+  if (!wet) {
+    return null;
+  }
+  const start = eventBounds(wet.event).start;
+  const when = start.toDateString() === today.toDateString() ? "oggi" : "domani";
+  return (
+    <p className="dashboard-umbrella">
+      <strong>☔ Porta l'ombrello</strong>
+      <span>
+        pioggia al {wet.chance}% {when} alle {start.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })} · {wet.event.title}
+      </span>
+    </p>
+  );
+};
 
 /** "In tavola": the dishes of a day from every menu (family menu, Cookidoo, menu calendars). */
 const MenuLine = ({ label, meals }: { label: string; meals: PlannerEvent[] }) =>

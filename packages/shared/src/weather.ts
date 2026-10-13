@@ -23,8 +23,29 @@ export interface WeatherReport {
   current: { temperature: number; condition: WeatherCondition; isDay: boolean };
   today: WeatherDay;
   tomorrow: WeatherDay;
+  /** Chance of precipitation (0-100) by local hour ("YYYY-MM-DDTHH:00"), today and tomorrow. */
+  hourlyRain?: Array<{ time: string; chance: number }>;
   updatedAt: string;
 }
+
+/** An umbrella is suggested from this chance of rain on. */
+export const UMBRELLA_CHANCE = 50;
+
+const localHourKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}:00`;
+
+/** Highest chance of rain in the hours of an event (local time of the device), or null when unknown. */
+export const rainChanceDuring = (report: Pick<WeatherReport, "hourlyRain"> | null, start: Date, end: Date): number | null => {
+  const hours = new Map((report?.hourlyRain ?? []).map((entry) => [entry.time, entry.chance]));
+  let best: number | null = null;
+  for (let time = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours()); time < end; time = new Date(time.getTime() + 3_600_000)) {
+    const chance = hours.get(localHourKey(time));
+    if (chance !== undefined) {
+      best = Math.max(best ?? 0, chance);
+    }
+  }
+  return best;
+};
 
 export interface WeatherResponse {
   /** Null when no place is configured. */

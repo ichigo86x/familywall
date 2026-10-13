@@ -13,6 +13,7 @@ interface ForecastPayload {
     temperature_2m_min?: number[];
     precipitation_probability_max?: Array<number | null>;
   };
+  hourly?: { time?: string[]; precipitation_probability?: Array<number | null> };
 }
 
 interface GeocodingPayload {
@@ -36,6 +37,7 @@ export class WeatherClient {
       longitude: String(location.longitude),
       current: "temperature_2m,weather_code,is_day",
       daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+      hourly: "precipitation_probability",
       timezone,
       forecast_days: "2"
     }).toString();
@@ -61,6 +63,11 @@ export class WeatherClient {
       current: { temperature: Math.round(temperature), condition: weatherCondition(current.weather_code), isDay: current.is_day !== 0 },
       today: day(0),
       tomorrow: day(1),
+      // Local times of the family's timezone, as the events are shown.
+      hourlyRain: (payload.hourly?.time ?? []).flatMap((time, index) => {
+        const chance = payload.hourly?.precipitation_probability?.[index];
+        return typeof chance === "number" ? [{ time, chance }] : [];
+      }),
       updatedAt: new Date().toISOString()
     };
   }

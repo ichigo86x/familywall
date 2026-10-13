@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { weatherCondition } from "@familywall/shared";
+import { rainChanceDuring, weatherCondition } from "@familywall/shared";
 import { openDatabase } from "../../database/database";
 import { SettingsRepository } from "../settings/settings.repository";
 import { WeatherClient } from "./weather-client";
@@ -60,5 +60,12 @@ describe("WeatherService", () => {
     );
     expect(await service.searchPlaces("x")).toEqual([]);
     expect(await service.searchPlaces("Milano")).toEqual([{ name: "Milano, Lombardia, Italia", latitude: 45.46, longitude: 9.19 }]);
+  });
+
+  it("finds the chance of rain in the hours of an event", () => {
+    const report = { hourlyRain: [{ time: "2026-10-14T16:00", chance: 20 }, { time: "2026-10-14T17:00", chance: 70 }, { time: "2026-10-14T18:00", chance: 90 }] };
+    expect(rainChanceDuring(report, new Date(2026, 9, 14, 16, 30), new Date(2026, 9, 14, 17, 30))).toBe(70);
+    expect(rainChanceDuring(report, new Date(2026, 9, 14, 10), new Date(2026, 9, 14, 11))).toBeNull();
+    expect(rainChanceDuring(null, new Date(2026, 9, 14, 16), new Date(2026, 9, 14, 17))).toBeNull();
   });
 });
