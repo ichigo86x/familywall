@@ -37,7 +37,13 @@ export const BackupCard = () => {
       if (!window.confirm(`Ripristinare "${file.name}"? Membri, impostazioni, note, turni, ricorrenze e liste attuali verranno sostituiti.`)) {
         return;
       }
-      const summary = await api.restoreBackup(file);
+      // Remote copies are encrypted ("FWENC1"): the passphrase is asked before uploading.
+      const encrypted = (await file.slice(0, 6).text()) === "FWENC1";
+      const passphrase = encrypted ? window.prompt("Frase segreta del backup remoto:") : null;
+      if (encrypted && !passphrase) {
+        return;
+      }
+      const summary = await api.restoreBackup(file, passphrase ?? undefined);
       setResult({
         intent: summary.credentials === "unreadable" || summary.totpReset > 0 ? "warning" : "success",
         text:

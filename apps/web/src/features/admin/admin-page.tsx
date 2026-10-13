@@ -20,6 +20,7 @@ import { DashboardListsCard } from "./dashboard-lists-card";
 import { FamilyTargetsCard } from "./family-targets-card";
 import { PresenceCard } from "./presence-card";
 import { PhotosCard } from "./photos-card";
+import { RemoteBackupCard } from "./remote-backup-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
@@ -125,6 +126,7 @@ export const AdminPage = () => {
           {section === "security" ? (
             <>
               <BackupCard />
+              <RemoteBackupCard />
               <AuditCard />
               <p className="calendar-detail-hint">La verifica in due passaggi del tuo account è nel Profilo (tocca il tuo cerchio in alto).</p>
             </>

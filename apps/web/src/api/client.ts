@@ -3,6 +3,8 @@ import type {
   FamilyTargetsResponse,
   HomePresenceResponse,
   PhotoSourceStatus,
+  RemoteBackupInput,
+  RemoteBackupStatus,
   ScreensaverPhotoResponse,
   SetFamilyTargetResponse,
   MenuIngredientsResponse,
@@ -218,12 +220,15 @@ export const api = {
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
   },
-  restoreBackup: (file: File) =>
+  restoreBackup: (file: File, passphrase?: string) =>
     request<{ members: number; lists: number; credentials: "kept" | "re-encrypted" | "unreadable"; totpReset: number }>("backup/restore", {
       method: "POST",
-      headers: { "Content-Type": "application/octet-stream" },
+      headers: { "Content-Type": "application/octet-stream", ...(passphrase ? { "X-Backup-Passphrase": encodeURIComponent(passphrase) } : {}) },
       body: file
     }),
+  getRemoteBackup: () => request<RemoteBackupStatus>("backup/remote"),
+  updateRemoteBackup: (input: RemoteBackupInput) => request<RemoteBackupStatus>("backup/remote", { method: "PUT", json: input }),
+  runRemoteBackup: () => request<RemoteBackupStatus>("backup/remote/run", { method: "POST" }),
 
   getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
   runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),

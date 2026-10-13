@@ -1,4 +1,7 @@
-import { Controller, Get, Param, Post, Query, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, Req, Res } from "@nestjs/common";
+import { remoteBackupSchema, type RemoteBackupInput, type RemoteBackupStatus } from "@familywall/shared";
+import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
+import { RemoteBackupService } from "./remote-backup.service";
 import type { Request, Response } from "express";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { AppException } from "../../common/errors/app-exception";
@@ -39,8 +42,24 @@ export class BackupController {
   public constructor(
     private readonly backup: BackupService,
     private readonly dav: DavStore,
-    private readonly migration: LegacyDataMigration
+    private readonly migration: LegacyDataMigration,
+    private readonly remote: RemoteBackupService
   ) {}
+
+  @Get("remote")
+  public remoteStatus(): RemoteBackupStatus {
+    return this.remote.status();
+  }
+
+  @Put("remote")
+  public updateRemote(@Body(new ZodValidationPipe(remoteBackupSchema)) input: RemoteBackupInput): RemoteBackupStatus {
+    return this.remote.update(input);
+  }
+
+  @Post("remote/run")
+  public runRemote(): Promise<RemoteBackupStatus> {
+    return this.remote.run(true);
+  }
 
   @Get("download")
   public download(@Query("key") key: string | undefined, @Res() response: Response): void {
@@ -60,7 +79,8 @@ export class BackupController {
 
   @Post("restore")
   public async restore(@Req() request: Request): Promise<RestoreSummary> {
-    const summary = this.backup.restore(await readBody(request));
+    const passphrase = request.headers["x-backup-passphrase"];
+    const summary = this.backup.restore(await readBody(request), typeof passphrase === "string" ? decodeURIComponent(passphrase) : undefined);
     this.dav.clearCache();
     // Backups made before 0.4 keep menu, birthdays, shifts and notes in the database: move them now.
     if (this.dav.enabled && this.migration.pending() > 0) {

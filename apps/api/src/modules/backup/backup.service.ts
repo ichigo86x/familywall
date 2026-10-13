@@ -5,6 +5,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { SECRET_BOX, SecretBox } from "../../common/crypto/secret-box";
+import { decryptBackup, isEncryptedBackup } from "../../common/crypto/backup-cipher";
 import { AppException } from "../../common/errors/app-exception";
 import { DATABASE, openDatabase, transaction, type Database } from "../../database/database";
 
@@ -103,7 +104,19 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  public restore(packed: Buffer): RestoreSummary {
+  public restore(file: Buffer, passphrase?: string): RestoreSummary {
+    let packed = file;
+    // Remote copies are encrypted with the Admin's passphrase.
+    if (isEncryptedBackup(file)) {
+      if (!passphrase) {
+        throw new AppException("PASSPHRASE_REQUIRED", "Questo backup è cifrato: inserisci la frase segreta del backup remoto.");
+      }
+      try {
+        packed = decryptBackup(file, passphrase);
+      } catch {
+        throw AppException.validation("Frase segreta non corretta, oppure file danneggiato.");
+      }
+    }
     const bundle = this.unpack(packed);
     const staged = path.join(this.dataDir, `restore-${randomBytes(6).toString("hex")}.db`);
     writeFileSync(staged, Buffer.from(bundle.database, "base64"));

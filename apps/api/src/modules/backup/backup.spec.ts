@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { encryptBackup } from "../../common/crypto/backup-cipher";
+import { SettingsRepository } from "../settings/settings.repository";
+import { RemoteBackupService } from "./remote-backup.service";
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -66,5 +69,54 @@ describe("BackupService", () => {
     expect(existsSync(path.join(dataDir, "backups", "familywall-2026-10-07.fwbackup"))).toBe(true);
     // Without the key the credentials of this same installation stay readable.
     expect(service.restore(service.readStored("familywall-2026-10-07.fwbackup")).credentials).toBe("kept");
+  });
+
+  it("restores an encrypted remote copy only with its passphrase", () => {
+    const source = seed(mkdtempSync(path.join(tmpdir(), "fw-src-")), randomBytes(32));
+    const encrypted = encryptBackup(source.service.create({ includeKey: true }), "una frase lunga e segreta");
+    const targetDir = mkdtempSync(path.join(tmpdir(), "fw-dst-"));
+    const target = new BackupService(openDatabase(path.join(targetDir, "familywall.db")), new SecretBox(randomBytes(32)), targetDir);
+
+    expect(() => target.restore(encrypted)).toThrow(/cifrato/);
+    expect(() => target.restore(encrypted, "sbagliata")).toThrow(/non corretta/);
+    expect(target.restore(encrypted, "una frase lunga e segreta")).toMatchObject({ credentials: "re-encrypted", totpReset: 0 });
+  });
+
+  it("uploads an encrypted daily copy to a WebDAV folder and keeps only the latest ones", async () => {
+    const dataDir = mkdtempSync(path.join(tmpdir(), "fw-"));
+    const { db, service } = seed(dataDir, randomBytes(32));
+    const files = new Map<string, Buffer>([
+      ["familywall-2026-10-01.fwbackup.enc", Buffer.from("old")],
+      ["familywall-2026-10-02.fwbackup.enc", Buffer.from("old")],
+      ["altro.txt", Buffer.from("keep")]
+    ]);
+    const requests: string[] = [];
+    const fetchImpl = async (url: string, init: RequestInit) => {
+      requests.push(`${init.method} ${url}`);
+      expect((init.headers as Record<string, string>).Authorization).toBe(`Basic ${Buffer.from("mario:dav-password").toString("base64")}`);
+      const name = decodeURIComponent(url.split("/").pop() ?? "");
+      if (init.method === "PUT") {
+        files.set(name, Buffer.from(init.body as Buffer));
+        return new Response(null, { status: 201 });
+      }
+      if (init.method === "DELETE") {
+        files.delete(name);
+        return new Response(null, { status: 204 });
+      }
+      const xml = [...files.keys()].map((file) => `<d:response><d:href>/dav/Familywall/${file}</d:href></d:response>`).join("");
+      return new Response(`<d:multistatus xmlns:d="DAV:">${xml}</d:multistatus>`, { status: 207 });
+    };
+    const settings = new SettingsRepository(db);
+    const box = new SecretBox(randomBytes(32));
+    const remote = new RemoteBackupService(service, settings, box, fetchImpl, () => new Date("2026-10-13T03:00:00Z"));
+
+    remote.update({ enabled: true, url: "https://nas.example/dav/Familywall", username: "mario", keep: 2, password: "dav-password", passphrase: "una frase lunga e segreta" });
+    expect(JSON.stringify(settings.get())).not.toContain("nas.example");
+    const status = await remote.run(true);
+
+    expect(status).toMatchObject({ lastSuccess: "2026-10-13T03:00:00.000Z", lastError: null, passwordSet: true, passphraseSet: true });
+    expect(requests[0]).toBe("PUT https://nas.example/dav/Familywall/familywall-2026-10-13.fwbackup.enc");
+    expect([...files.keys()].sort()).toEqual(["altro.txt", "familywall-2026-10-02.fwbackup.enc", "familywall-2026-10-13.fwbackup.enc"]);
+    expect(files.get("familywall-2026-10-13.fwbackup.enc")!.subarray(0, 6).toString()).toBe("FWENC1");
   });
 });

@@ -31,6 +31,8 @@ const NAMED: Record<string, string> = {
   "GET /backup/download": "Backup: scaricato",
   "GET /backup/stored/:name": "Backup: copia giornaliera scaricata",
   "POST /backup/restore": "Backup: ripristino",
+  "PUT /backup/remote": "Backup remoto: impostazioni",
+  "POST /backup/remote/run": "Backup remoto: copia eseguita",
   "POST /home/buttons/:id/run": "Home Assistant: pulsante",
   "POST /schedule/:entryId/done": "Turni: faccenda spuntata",
   "POST /routines/:id/steps": "Routine: passo spuntato",
