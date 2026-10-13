@@ -1,12 +1,13 @@
 # Builds the add-on images and publishes them on GitHub Container Registry, where Home Assistant
 # downloads them (config.yaml: image: ghcr.io/ichigo86x/{arch}-addon-familywall).
-# Run it by pushing a tag equal to the version in familywall/config.yaml, e.g. v0.9.0.
+# Run it by pushing a tag with the new version, e.g. v0.9.1. Only after every image is published the
+# workflow writes that version in familywall/config.yaml on main: Home Assistant offers an update only
+# when its images can already be downloaded.
 name: Publish add-on
 
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,16 +19,15 @@ jobs:
     outputs:
       version: ${{ steps.read.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
       - id: read
-        name: Read the add-on version
+        name: Read the version from the tag
         run: |
-          version=$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' familywall/config.yaml)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "v$version" ]; then
-            echo "Tag ${GITHUB_REF_NAME} does not match version $version in familywall/config.yaml" >&2
+          version="${GITHUB_REF_NAME#v}"
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag ${GITHUB_REF_NAME} is not vX.Y.Z" >&2
             exit 1
           fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
   build:
     needs: version
@@ -61,3 +61,26 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-addon-familywall:latest
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Announce the version to Home Assistant
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          sed -i "s/^version: .*/version: \"$VERSION\"/" familywall/config.yaml
+          if git diff --quiet; then
+            echo "familywall/config.yaml already at $VERSION"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: release $VERSION"
+          git push origin HEAD:main

@@ -90,20 +90,18 @@ Non installare insieme l'add-on locale e quello del repository online: hanno lo 
 
 ## Pubblicare una versione
 
-Gli utenti installano l'add-on dal repository GitHub: Home Assistant legge `familywall/config.yaml` e scarica l'immagine `ghcr.io/ichigo86x/{arch}-addon-familywall` della versione indicata.
+Gli utenti installano l'add-on dal repository GitHub: Home Assistant legge `familywall/config.yaml` su `main` e scarica l'immagine `ghcr.io/ichigo86x/{arch}-addon-familywall` della versione indicata.
 
-1. Aggiorna `version` in `familywall/config.yaml` e aggiungi le novità in `familywall/CHANGELOG.md`.
-2. Fai il commit e un tag uguale alla versione, poi pubblicali:
+1. Aggiungi le novità in `familywall/CHANGELOG.md` e pubblica il commit. **Non** cambiare `version` in `config.yaml`.
+2. Crea il tag della nuova versione e pubblicalo:
 
    ```bash
-   git tag v0.9.0
-   git push origin main v0.9.0
+   git tag v0.9.1
+   git push origin v0.9.1
    ```
 
-3. Il workflow **Publish add-on** controlla che il tag corrisponda alla versione, costruisce le immagini `amd64` e `aarch64` e le pubblica su GitHub Container Registry con i tag della versione e `latest`.
+3. Il workflow **Publish add-on** costruisce le immagini `amd64` e `aarch64` e le pubblica su GitHub Container Registry. Solo quando sono tutte pubblicate scrive la versione in `config.yaml` su `main` (commit "chore: release …"): così Home Assistant propone l'aggiornamento solo quando l'immagine si può già scaricare. Dopo, fai `git pull`.
 4. **Solo la prima volta**: su GitHub, in Packages, rendi **pubblici** i pacchetti `amd64-addon-familywall` e `aarch64-addon-familywall`, altrimenti Home Assistant non può scaricarli.
-
-Pubblica il commit con la nuova versione solo insieme al tag: se `config.yaml` annuncia una versione la cui immagine non esiste ancora, gli utenti vedono un aggiornamento che non si installa.
 
 Il workflow **CI** esegue typecheck, test e build a ogni push su `main` e nelle pull request.
 
