@@ -1,5 +1,11 @@
 # Novità
 
+## 0.9.4
+
+- ClasseViva: lettura dei compiti più tollerante sul formato delle risposte; nel log dell'add-on un riepilogo di cosa risponde ClasseViva (solo nomi dei campi e conteggi).
+- Dashboard: le stelline della settimana sono solo un pulsante che apre il dettaglio.
+- Immagine aarch64 costruita su un runner ARM nativo, senza emulazione.
+
 ## 0.9.3
 
 - ClasseViva: compiti dalla sezione "Compiti", verifiche dall'agenda e materiale condiviso in "Didattica", con l'API del portale web (la vecchia API dell'app resta come riserva); gli errori compaiono nel pannello Scuola.

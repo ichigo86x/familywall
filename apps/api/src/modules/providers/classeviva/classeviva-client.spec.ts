@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCalendarSchema } from "@familywall/shared";
-import { ClasseVivaClient, classeVivaUrl } from "./classeviva-client";
+import { ClasseVivaClient, classeVivaUrl, homeworksToEvents, itemsOf } from "./classeviva-client";
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
@@ -97,5 +97,13 @@ describe("ClasseVivaClient", () => {
   it("reports a refused password", async () => {
     const client = new ClasseVivaClient(async () => json({ error: "auth" }, 422));
     await expect(client.identities({ username: "S1", password: "x" })).rejects.toThrow(/rifiutato/);
+  });
+
+  it("reads homework in other shapes of the answer", () => {
+    const body = { homeworks: { items: [{ homeworkId: 7, subject: { description: "SCIENZE" }, expiryDate: "16/10/2026", notes: "Ripassare cap. 2" }] } };
+    expect(homeworksToEvents(itemsOf(body, ["items", "homeworks"]))).toMatchObject([
+      { uid: "classeviva-hw-7", title: "📚 Scienze: Ripassare cap. 2", startAt: "2026-10-16T00:00:00.000Z" }
+    ]);
+    expect(itemsOf([{ a: 1 }], ["items"])).toEqual([{ a: 1 }]);
   });
 });

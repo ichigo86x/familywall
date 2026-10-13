@@ -163,12 +163,35 @@ export const useChoreToggle = (reload: () => void) => {
   };
 };
 
-/** "⭐ Luca 4 · Sofia 6": chores done this week by each child. */
-export const StarsLine = ({ entries, day, membersById }: { entries: ScheduleEntry[]; day: Date; membersById: Map<string, User> }) => {
+/** "⭐ Luca 4 · Sofia 6": chores done this week by each child; buttonOnly (dashboard) shows only the button to the detail. */
+export const StarsLine = ({
+  entries,
+  day,
+  membersById,
+  buttonOnly = false
+}: {
+  entries: ScheduleEntry[];
+  day: Date;
+  membersById: Map<string, User>;
+  buttonOnly?: boolean;
+}) => {
   const [detail, setDetail] = useState(false);
   const stars = [...weekStars(entries, day)].filter(([memberId]) => membersById.has(memberId));
   if (stars.length === 0) {
     return null;
+  }
+  const dialog = detail ? (
+    <StarsDetail entries={entries} day={day} membersById={membersById} memberIds={stars.map(([memberId]) => memberId)} onClose={() => setDetail(false)} />
+  ) : null;
+  if (buttonOnly) {
+    return (
+      <div className="chore-stars">
+        <Button size="small" appearance="secondary" onClick={() => setDetail(true)}>
+          ⭐ Stelline della settimana
+        </Button>
+        {dialog}
+      </div>
+    );
   }
   return (
     <div className="chore-stars" aria-label="Stelline della settimana">
@@ -184,7 +207,7 @@ export const StarsLine = ({ entries, day, membersById }: { entries: ScheduleEntr
       <Button size="small" appearance="subtle" className="chore-stars__detail" onClick={() => setDetail(true)} aria-label="Dettaglio delle stelline">
         Dettaglio
       </Button>
-      {detail ? <StarsDetail entries={entries} day={day} membersById={membersById} memberIds={stars.map(([memberId]) => memberId)} onClose={() => setDetail(false)} /> : null}
+      {dialog}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { CalDavError, type CalDavErrorKind } from "../caldav/caldav-client";
 import type { RemoteEvent } from "../caldav/ics-parser";
 
@@ -64,15 +65,6 @@ interface AgendaEntry {
   homeworkId?: number | null;
 }
 
-interface HomeworkEntry {
-  id: number;
-  subjectDesc?: string | null;
-  teacherName?: string | null;
-  date?: string | null;
-  dueDate?: string | null;
-  text?: string | null;
-}
-
 interface DidacticsFolder {
   folderId: number;
   folderName: string;
@@ -90,6 +82,8 @@ type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 export const classeVivaUrl = (ident: string): string => `${URL_PREFIX}${ident}`;
 export const isClasseVivaUrl = (url: string): boolean => url.startsWith(URL_PREFIX);
 const identOf = (url: string): string => url.slice(URL_PREFIX.length);
+/** "G1234567X" → "G12…7X" in the log. */
+const masked = (ident: string): string => (ident.length > 5 ? `${ident.slice(0, 3)}…${ident.slice(-2)}` : ident);
 /** "S1234567X" or "G1234567X" → "1234567": the student id of the v1 paths. */
 const studentId = (ident: string): string => ident.replace(/\D/g, "");
 const compactDate = (date: Date): string => date.toISOString().slice(0, 10).replace(/-/g, "");
@@ -131,20 +125,87 @@ export const agendaToEvents = (agenda: AgendaEntry[]): RemoteEvent[] =>
     };
   });
 
+/**
+ * The array of items of an answer, whatever its key: the web API is not documented and its shapes vary
+ * ({ items: [...] }, { homeworks: [...] }, a bare array, or one level deeper).
+ */
+export const itemsOf = (body: unknown, keys: string[]): Array<Record<string, unknown>> => {
+  if (Array.isArray(body)) {
+    return body as Array<Record<string, unknown>>;
+  }
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+  const record = body as Record<string, unknown>;
+  for (const key of [...keys, ...Object.keys(record)]) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value as Array<Record<string, unknown>>;
+    }
+    if (value && typeof value === "object" && keys.includes(key)) {
+      const nested = itemsOf(value, keys);
+      if (nested.length > 0) {
+        return nested;
+      }
+    }
+  }
+  return [];
+};
+
+const pick = (item: Record<string, unknown>, keys: string[]): string | null => {
+  for (const key of keys) {
+    const value = item[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+    if (typeof value === "number") {
+      return String(value);
+    }
+    if (value && typeof value === "object" && typeof (value as Record<string, unknown>).description === "string") {
+      return String((value as Record<string, unknown>).description);
+    }
+  }
+  return null;
+};
+
+/** "2026-10-15", "2026-10-15T08:00:00+02:00", "20261015" or "15/10/2026" → "2026-10-15". */
+const isoDay = (value: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+  const italian = /^(\d{2})[/-](\d{2})[/-](\d{4})/.exec(value);
+  if (italian) {
+    return `${italian[3]}-${italian[2]}-${italian[1]}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10);
+  }
+  return /^\d{8}$/.test(value) ? `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}` : null;
+};
+
 /** Items of the "Compiti" section, on their due date. */
-export const homeworksToEvents = (items: HomeworkEntry[]): RemoteEvent[] =>
-  items.flatMap((item) => {
-    const date = item.dueDate || item.date;
+export const homeworksToEvents = (items: Array<Record<string, unknown>>): RemoteEvent[] =>
+  items.flatMap((item, index) => {
+    const date = isoDay(pick(item, ["dueDate", "expiryDate", "deliveryDate", "dataConsegna", "data_consegna", "endDate", "date", "evtDate", "evtDatetimeBegin", "data"]));
     if (!date) {
       return [];
     }
-    const text = (item.text ?? "").trim();
-    const subject = item.subjectDesc ? capitalized(item.subjectDesc) : "Compiti";
-    const description = [text, item.teacherName ? `(${item.teacherName})` : ""].filter(Boolean).join("\n");
-    return [dayEvent(`classeviva-hw-${item.id}`, `📚 ${subject}${text ? `: ${firstLine(text)}` : ""}`, date, description)];
+    const text = pick(item, ["text", "homeworkText", "notes", "description", "content", "evtText", "testo", "title"]) ?? "";
+    const subjectName = pick(item, ["subjectDesc", "subjectName", "subject", "materia"]);
+    const teacher = pick(item, ["teacherName", "authorName", "docente"]);
+    const subject = subjectName ? capitalized(subjectName) : "Compiti";
+    const description = [text, teacher ? `(${teacher})` : ""].filter(Boolean).join("\n");
+    const id = pick(item, ["id", "homeworkId", "evtId"]) ?? `${date}-${index}`;
+    return [dayEvent(`classeviva-hw-${id}`, `📚 ${subject}${text ? `: ${firstLine(text)}` : ""}`, date, description)];
   });
 
+/** Field names of an answer, for the log (never the values: they are the children's data). */
+const shapeOf = (body: unknown, items: Array<Record<string, unknown>>): string =>
+  `${Array.isArray(body) ? "[array]" : body && typeof body === "object" ? `{${Object.keys(body).join(",")}}` : typeof body}` +
+  ` ${items.length} voci${items[0] ? ` [${Object.keys(items[0]).join(",")}]` : ""}`;
+
 export class ClasseVivaClient {
+  private readonly logger = new Logger("ClasseViva");
   private readonly sessions = new Map<string, { token: string; ident: string; expiresAt: number }>();
   private readonly webSessions = new Map<string, { cookie: string; id: string; expiresAt: number }>();
 
@@ -173,8 +234,11 @@ export class ClasseVivaClient {
     try {
       web = await this.webSession(ident, credentials.password);
     } catch (webError) {
+      this.logger.warn(`${masked(ident)}: web portal login failed (${(webError as Error).message}), using the app agenda.`);
       try {
-        return await this.v1Agenda(credentials, ident, from, to);
+        const events = await this.v1Agenda(credentials, ident, from, to);
+        this.logger.log(`${masked(ident)}: app agenda read, ${events.length} items.`);
+        return events;
       } catch (appError) {
         throw new ClasseVivaError("http", `${(webError as Error).message} ${(appError as Error).message}`);
       }
@@ -183,22 +247,33 @@ export class ClasseVivaClient {
     const toDay = to.toISOString().slice(0, 10);
     const inRange = (date: string | null | undefined) => Boolean(date) && date!.slice(0, 10) >= fromDay && date!.slice(0, 10) <= toDay;
 
-    const homeworks = ((await this.webGet(web, `/students/${web.id}/homeworks/index`, "lettura dei compiti")) as { items?: HomeworkEntry[] }).items ?? [];
+    const homeworksBody = await this.webGet(web, `/students/${web.id}/homeworks/index`, "lettura dei compiti");
+    const homeworks = itemsOf(homeworksBody, ["items", "homeworks", "compiti", "data"]);
     const agenda: AgendaEntry[] = [];
+    let agendaShape = "";
     for (let start = from; start < to; start = new Date(start.getTime() + CHUNK_DAYS * DAY_MS)) {
       const end = new Date(Math.min(to.getTime(), start.getTime() + (CHUNK_DAYS - 1) * DAY_MS));
-      const body = (await this.webGet(web, `/students/${web.id}/agendav2/all/${compactDate(start)}/${compactDate(end)}`, "lettura dell'agenda")) as { agenda?: AgendaEntry[] };
-      agenda.push(...(body.agenda ?? []));
+      const body = await this.webGet(web, `/students/${web.id}/agendav2/all/${compactDate(start)}/${compactDate(end)}`, "lettura dell'agenda");
+      const entries = itemsOf(body, ["agenda", "items", "events"]);
+      agendaShape ||= shapeOf(body, entries);
+      agenda.push(...(entries as unknown as AgendaEntry[]).filter((entry) => entry.evtId !== undefined && typeof entry.evtDatetimeBegin === "string"));
     }
     // Agenda homework already in "Compiti" is shown once.
-    const homeworkIds = new Set(homeworks.map((item) => item.id));
+    const homeworkIds = new Set(homeworks.map((item) => Number(item.id ?? item.homeworkId)));
     const uniqueAgenda = [...new Map(agenda.map((entry) => [entry.evtId, entry])).values()].filter((entry) => !(entry.homeworkId && homeworkIds.has(entry.homeworkId)));
 
-    return [
-      ...homeworksToEvents(homeworks.filter((item) => inRange(item.dueDate || item.date))),
+    const homeworkEvents = homeworksToEvents(homeworks);
+    const events = [
+      ...homeworkEvents.filter((event) => inRange(event.startAt)),
       ...agendaToEvents(uniqueAgenda),
       ...(await this.didactics(web, inRange))
     ];
+    // What ClasseViva answered (field names and counts only), to tell an empty register from a changed API.
+    this.logger.log(
+      `${masked(ident)} (id ${web.id}) ${fromDay}..${toDay}: Compiti ${shapeOf(homeworksBody, homeworks)}, ${homeworkEvents.length} con data; ` +
+        `agenda ${agendaShape || "vuota"}; ${events.length} voci mostrate.`
+    );
+    return events;
   }
 
   /** Material shared by the teachers in "Didattica" (sometimes the homework is there), on the day it was shared. */

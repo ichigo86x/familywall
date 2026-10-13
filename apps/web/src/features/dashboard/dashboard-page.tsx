@@ -437,7 +437,7 @@ const HomeCard = ({
           </div>
         ))
       )}
-      <StarsLine entries={entries} day={now} membersById={membersById} />
+      <StarsLine entries={entries} day={now} membersById={membersById} buttonOnly />
     </Card>
   );
 };
