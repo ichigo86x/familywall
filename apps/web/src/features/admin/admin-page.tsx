@@ -18,6 +18,7 @@ import { HomeAssistantHintCard, HomeCalendarsCard, HomeListsCard } from "./home-
 import { AuditCard } from "./security-card";
 import { DashboardListsCard } from "./dashboard-lists-card";
 import { FamilyTargetsCard } from "./family-targets-card";
+import { PresenceCard } from "./presence-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
@@ -113,6 +114,7 @@ export const AdminPage = () => {
                 <HomeButtonsCard buttons={admin.data.settings.homeButtons} onSaved={admin.reload} />
                 <HomeListsCard lists={admin.data.settings.homeLists} onSaved={admin.reload} />
                 <HomeCalendarsCard calendars={admin.data.settings.homeCalendars ?? []} onSaved={admin.reload} />
+                <PresenceCard members={admin.data.members} links={admin.data.settings.homePresence ?? []} onSaved={admin.reload} />
               </>
             ) : (
               <HomeAssistantHintCard />

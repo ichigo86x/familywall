@@ -1,6 +1,7 @@
 import type {
   FamilyDataKind,
   FamilyTargetsResponse,
+  HomePresenceResponse,
   SetFamilyTargetResponse,
   MenuIngredientsResponse,
   MenuMeal,
@@ -203,6 +204,8 @@ export const api = {
   getHomeButtons: () => request<HomeButtonsResponse>("home/buttons"),
   runHomeButton: (id: string) => request<void>(`home/buttons/${encodeURIComponent(id)}/run`, { method: "POST" }),
   getHomeStatus: () => request<{ available: boolean }>("home/status"),
+  getHomePresence: async () => (await request<HomePresenceResponse>("home/presence")).people,
+  getHomePersonEntities: async () => (await request<{ entities: HomeEntity[] }>("home/person-entities")).entities,
   getHomeCalendarEntities: async () => (await request<{ entities: HomeEntity[] }>("home/calendar-entities")).entities,
   getHomeTodoEntities: async () => (await request<{ entities: HomeEntity[] }>("home/todo-entities")).entities,
   getHomeEntities: async () => (await request<{ entities: HomeEntity[] }>("home/entities")).entities,

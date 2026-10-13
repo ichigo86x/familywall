@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { HOME_SERVICES, homeDomain, isAllowedHomeService, panelView, type HomeButton, type HomeButtonsResponse, type HomeEntity, type User } from "@familywall/shared";
+import { HOME_SERVICES, homeDomain, isAllowedHomeService, panelView, type HomeButton, type HomeButtonsResponse, type HomeEntity, type HomePresence, type HomePresenceResponse, type User } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { SettingsRepository } from "../settings/settings.repository";
 import { HomeAssistantClient, HomeAssistantError } from "./home-assistant.client";
@@ -67,6 +67,36 @@ export class HomeService {
         .filter((entity) => homeDomain(entity.entity_id) === domain)
         .map((entity) => ({ entityId: entity.entity_id, name: entity.attributes?.friendly_name ?? entity.entity_id, state: entity.state }))
         .sort((left, right) => left.name.localeCompare(right.name));
+    } catch (error) {
+      throw AppException.providerError(error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.");
+    }
+  }
+
+  /** People of Home Assistant (person.*), to link to the members. */
+  public async personEntities(): Promise<HomeEntity[]> {
+    return this.entitiesOf("person");
+  }
+
+  /** Where the linked members are: at home, away, or in a named zone. Empty without Home Assistant. */
+  public async presence(): Promise<HomePresenceResponse> {
+    const links = this.settings.get().homePresence ?? [];
+    if (!this.client.available || links.length === 0) {
+      return { people: [] };
+    }
+    try {
+      const states = new Map((await this.client.states()).map((entity) => [entity.entity_id, entity]));
+      return {
+        people: links.map((link): HomePresence => {
+          const entity = states.get(link.entityId);
+          const state = entity?.state ?? "unknown";
+          return {
+            memberId: link.memberId,
+            state: state === "home" ? "home" : state === "not_home" ? "away" : state === "unknown" || state === "unavailable" ? "unknown" : "zone",
+            zone: state === "home" || state === "not_home" || state === "unknown" || state === "unavailable" ? null : state,
+            since: entity?.last_changed ?? null
+          };
+        })
+      };
     } catch (error) {
       throw AppException.providerError(error instanceof HomeAssistantError ? error.message : "Home Assistant non disponibile.");
     }

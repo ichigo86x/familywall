@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link } from "react-router-dom";
-import { UMBRELLA_CHANCE, canTickChore, panelView, rainChanceDuring, scheduleForDay, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
+import { UMBRELLA_CHANCE, canTickChore, panelView, rainChanceDuring, scheduleForDay, type HomePresence, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -80,6 +80,7 @@ export const DashboardPage = () => {
   const routines = useAsyncResource(() => api.getRoutines().catch(() => []), [], "routines");
   const settings = useAsyncResource(() => api.getSettings(), [], "settings");
   const weather = useAsyncResource(() => api.getWeather().catch(() => null), [], "weather");
+  const presence = useAsyncResource(() => api.getHomePresence().catch(() => []), [], "presence");
 
   const reloadAll = useCallback(() => {
     calendar.reload();
@@ -89,7 +90,8 @@ export const DashboardPage = () => {
     routines.reload();
     settings.reload();
     weather.reload();
-  }, [calendar.reload, lists.reload, notes.reload, schedule.reload, routines.reload, settings.reload, weather.reload]);
+    presence.reload();
+  }, [calendar.reload, lists.reload, notes.reload, schedule.reload, routines.reload, settings.reload, weather.reload, presence.reload]);
 
   useEffect(() => {
     const timer = window.setInterval(reloadAll, REFRESH_MS);
@@ -275,7 +277,14 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-side-column">
-          <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} viewer={auth.user} onChanged={schedule.reload} />
+          <HomeCard
+            entries={schedule.data ?? []}
+            now={now}
+            membersById={membersById}
+            viewer={auth.user}
+            onChanged={schedule.reload}
+            presence={presence.data ?? []}
+          />
           <SchoolCard events={school} today={today} />
 
           {lists.status === "error" ? (
@@ -309,6 +318,29 @@ const DayChips = ({ allDay, membersById }: { allDay: PlannerEvent[]; membersById
       ))}
     </div>
   ) : null;
+
+/** Who is at home, from the person entities of Home Assistant linked in Admin. */
+const PresenceLine = ({ presence, membersById }: { presence: HomePresence[]; membersById: Map<string, User> }) => {
+  const people = presence.filter((entry) => membersById.has(entry.memberId));
+  if (people.length === 0) {
+    return null;
+  }
+  return (
+    <div className="presence-line" aria-label="Chi è a casa">
+      {people.map((entry) => {
+        const member = membersById.get(entry.memberId)!;
+        const label = entry.state === "home" ? "a casa" : entry.state === "zone" ? entry.zone! : entry.state === "away" ? "fuori" : "?";
+        return (
+          <span key={entry.memberId} className={`presence-chip presence-chip--${entry.state}`} style={{ borderColor: member.color }}>
+            <span aria-hidden="true">{entry.state === "home" ? "🏠" : entry.state === "unknown" ? "❔" : "🚶"}</span>
+            {member.displayName}
+            <small>{label}</small>
+          </span>
+        );
+      })}
+    </div>
+  );
+};
 
 /** "Porta l'ombrello": the first timed event of today or tomorrow with a high chance of rain. */
 const UmbrellaLine = ({ weather, events, today }: { weather: WeatherReport | null; events: PlannerEvent[]; today: Date }) => {
@@ -345,13 +377,15 @@ const HomeCard = ({
   now,
   membersById,
   viewer,
-  onChanged
+  onChanged,
+  presence
 }: {
   entries: ScheduleEntry[];
   now: Date;
   membersById: Map<string, User>;
   viewer: User | null;
   onChanged: () => void;
+  presence: HomePresence[];
 }) => {
   const toggleDone = useChoreToggle(onChanged);
   const todayKey = dayKey(now);
@@ -374,6 +408,7 @@ const HomeCard = ({
         </div>
         <Link to="/schedule" className="dashboard-link">Turni →</Link>
       </div>
+      <PresenceLine presence={presence} membersById={membersById} />
       {shown.length === 0 ? (
         <p className="dashboard-empty">
           <span aria-hidden="true">🏡</span>

@@ -6,6 +6,7 @@ export interface HaState {
   entity_id: string;
   state: string;
   attributes?: { friendly_name?: string };
+  last_changed?: string;
 }
 
 /** An item of a Home Assistant to-do list (todo.get_items). */

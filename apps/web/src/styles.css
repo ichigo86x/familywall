@@ -4230,3 +4230,44 @@ button.schedule-chip {
 .dashboard-umbrella span {
   color: var(--color-muted);
 }
+
+/* Who is at home (Home Assistant person entities). */
+.presence-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.presence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--input-bg);
+  font-weight: 600;
+}
+
+.presence-chip small {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.presence-chip--away,
+.presence-chip--zone,
+.presence-chip--unknown {
+  opacity: 0.7;
+}
+
+.presence-links {
+  display: grid;
+  gap: 8px;
+}
+
+.presence-link {
+  display: grid;
+  grid-template-columns: auto minmax(6rem, 10rem) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}

@@ -69,4 +69,21 @@ describe("panel profiles", () => {
     expect(panelView(stored, "Kiosk")).toEqual({ dashboardListIds: ["dav:cucina"], night: stored.panelNight, screensaverMinutes: 0, homeButtonIds: [] });
     expect(panelView(stored, "other")).toMatchObject({ dashboardListIds: ["dav:spesa"], screensaverMinutes: 5, homeButtonIds: null });
   });
+
+  it("tells who is at home from the person entities", async () => {
+    const settings = new SettingsRepository(openDatabase(":memory:"));
+    settings.update({ homePresence: [{ memberId: "m1", entityId: "person.mario" }, { memberId: "m2", entityId: "person.anna" }, { memberId: "m3", entityId: "person.luca" }] });
+    const states = [
+      { entity_id: "person.mario", state: "home", last_changed: "2026-10-13T07:00:00Z" },
+      { entity_id: "person.anna", state: "Lavoro" },
+      { entity_id: "person.luca", state: "not_home" }
+    ];
+    const service = new HomeService(settings, new HomeAssistantClient({ url: "http://ha/api", token: "t" }, async () => new Response(JSON.stringify(states))));
+    expect((await service.presence()).people).toEqual([
+      { memberId: "m1", state: "home", zone: null, since: "2026-10-13T07:00:00Z" },
+      { memberId: "m2", state: "zone", zone: "Lavoro", since: null },
+      { memberId: "m3", state: "away", zone: null, since: null }
+    ]);
+    expect((await new HomeService(settings, new HomeAssistantClient(null)).presence()).people).toEqual([]);
+  });
 });

@@ -1,4 +1,4 @@
-import type { HomeButton, HomeCalendar, HomeList } from "./home";
+import type { HomeButton, HomeCalendar, HomeList, HomePresenceLink } from "./home";
 import type { WeatherLocation } from "./weather";
 
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
@@ -121,6 +121,8 @@ export interface HouseholdSettings {
   homeCalendars: HomeCalendar[];
   /** Settings of single wall panels, by Kiosk member id (missing = like the family). */
   panelProfiles: Record<string, PanelProfile>;
+  /** Members linked to a person.* entity of Home Assistant: the dashboard shows who is at home. */
+  homePresence: HomePresenceLink[];
   /** Where the family menu is kept: null = automatic, "internal" = built-in server, else a calendar id. */
   menuCalendarId: string | null;
   /** Where birthdays and anniversaries are kept (same values as menuCalendarId). */

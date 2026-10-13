@@ -1,5 +1,5 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from "@nestjs/common";
-import type { HomeButtonsResponse, HomeEntity } from "@familywall/shared";
+import type { HomeButtonsResponse, HomeEntity, HomePresenceResponse } from "@familywall/shared";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import type { RequestWithUser } from "../../common/types/request-with-user";
 import { HomeService } from "./home.service";
@@ -27,6 +27,18 @@ export class HomeController {
   @RequirePermission("calendar:read")
   public status(): { available: boolean } {
     return { available: this.home.available };
+  }
+
+  @Get("presence")
+  @RequirePermission("calendar:read")
+  public presence(): Promise<HomePresenceResponse> {
+    return this.home.presence();
+  }
+
+  @Get("person-entities")
+  @RequirePermission("settings:manage")
+  public async personEntities(): Promise<{ entities: HomeEntity[] }> {
+    return { entities: await this.home.personEntities() };
   }
 
   @Get("calendar-entities")

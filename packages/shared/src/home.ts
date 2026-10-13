@@ -112,6 +112,29 @@ export const homeCalendarSchema = z.object({
 });
 
 /** Calendars of Home Assistant have ids "ha:<entity id>" in GET /calendars. */
+/** A member and the person.* entity that tracks them in Home Assistant. */
+export interface HomePresenceLink {
+  memberId: string;
+  entityId: string;
+}
+
+export const homePresenceLinkSchema = z.object({
+  memberId: z.string().min(1).max(64),
+  entityId: z.string().trim().regex(/^person\.[a-z0-9_]+$/, "Scegli un'entità person.*")
+});
+
+/** Where a member is: "home", "away" or the name of a Home Assistant zone ("Lavoro", "Scuola"). */
+export interface HomePresence {
+  memberId: string;
+  state: "home" | "away" | "zone" | "unknown";
+  zone: string | null;
+  since: string | null;
+}
+
+export interface HomePresenceResponse {
+  people: HomePresence[];
+}
+
 export const HOME_CALENDAR_PREFIX = "ha:";
 
 export const homeListSchema = z.object({

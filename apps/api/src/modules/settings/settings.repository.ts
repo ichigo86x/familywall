@@ -14,6 +14,7 @@ const DEFAULTS: HouseholdSettings = {
   homeLists: [],
   homeCalendars: [],
   panelProfiles: {},
+  homePresence: [],
   menuCalendarId: null,
   occasionsCalendarId: null
 };
