@@ -15,6 +15,7 @@ interface CalendarRow {
   purpose: CalendarConfig["purpose"];
   last_synced_at: string | null;
   last_error: string | null;
+  member_id: string | null;
 }
 
 const SELECT = `
@@ -31,6 +32,7 @@ const toConfig = (row: CalendarRow): CalendarConfig => ({
   color: row.color,
   enabled: row.enabled === 1,
   purpose: row.purpose,
+  memberId: row.member_id ?? null,
   lastSyncedAt: row.last_synced_at,
   lastError: row.last_error
 });
@@ -66,8 +68,15 @@ export class CalendarsRepository {
   public update(id: string, patch: UpdateCalendarInput): CalendarConfig {
     const current = this.findById(id)!;
     this.db
-      .prepare("UPDATE calendars SET name = ?, color = ?, enabled = ?, purpose = ? WHERE id = ?")
-      .run(patch.name ?? current.name, patch.color ?? current.color, Number(patch.enabled ?? current.enabled), patch.purpose ?? current.purpose, id);
+      .prepare("UPDATE calendars SET name = ?, color = ?, enabled = ?, purpose = ?, member_id = ? WHERE id = ?")
+      .run(
+        patch.name ?? current.name,
+        patch.color ?? current.color,
+        Number(patch.enabled ?? current.enabled),
+        patch.purpose ?? current.purpose,
+        patch.memberId === undefined ? current.memberId : patch.memberId,
+        id
+      );
     return this.findById(id)!;
   }
 

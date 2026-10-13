@@ -224,7 +224,10 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     // The calendars that hold the family menu and birthdays are shown as those (below), not twice.
     const menuTarget = this.targets.target("menu");
     const occasionsTarget = this.targets.target("occasions");
-    const configs = this.calendars.list({ enabledOnly: true }).filter((config) => config.id !== menuTarget?.id && config.id !== occasionsTarget?.id);
+    // The school register has a view of its own (getSchool): it is not mixed with the family's events.
+    const configs = this.calendars
+      .list({ enabledOnly: true })
+      .filter((config) => config.id !== menuTarget?.id && config.id !== occasionsTarget?.id && config.provider !== "classeviva");
     const matchMembers = buildMemberMatcher(this.members.list());
     const stored = this.events.listForCalendars(configs.map((config) => config.id), from.toISOString(), to.toISOString());
 
@@ -233,18 +236,11 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
         const rows = stored.filter((row) => row.calendar_id === config.id);
         const { events: remoteEvents, error } = await this.fetchRemote(config, from, to);
         const metaByKey = new Map(rows.filter((row) => row.source === "remote").map((row) => [row.uid, row]));
-        const kind =
-          config.provider === "classeviva"
-            ? "school"
-            : config.provider === "cookidoo" || config.purpose === "meals"
-              ? "meals"
-              : config.purpose === "birthdays"
-                ? "birthdays"
-                : "events";
+        const kind = config.provider === "cookidoo" || config.purpose === "meals" ? "meals" : config.purpose === "birthdays" ? "birthdays" : "events";
 
         const events = [
-          // Menu calendars keep the ingredients in the description, the school register the homework text.
-          ...remoteEvents.map((remote) => ({ ...remoteToEvent(config.id, remote, metaByKey), ...(kind === "meals" || kind === "school" ? { notes: remote.description ?? null } : {}) })),
+          // Menu calendars keep the ingredients in the description.
+          ...remoteEvents.map((remote) => ({ ...remoteToEvent(config.id, remote, metaByKey), ...(kind === "meals" ? { notes: remote.description ?? null } : {}) })),
           ...rows.filter((row) => row.source === "local").map(storedToEvent)
         ]
           .map((event) => withInferredMembers(event, matchMembers))
@@ -313,6 +309,38 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
 
     calendars.push(...(await this.homeCalendars(viewer, from, to, matchMembers)));
 
+    return { range: { from: from.toISOString(), to: to.toISOString() }, calendars };
+  }
+
+  /**
+   * Homework and tests of the school registers (ClasseViva), one calendar per child. A calendar linked to a
+   * member takes that member's colour and tags its items with the member.
+   */
+  public async getSchool(range: CalendarRangeInput): Promise<CalendarResponse> {
+    const from = range.from ? new Date(range.from) : new Date();
+    const to = range.to ? new Date(range.to) : new Date(from.getTime() + 14 * DAY_MS);
+    if (to.getTime() - from.getTime() > MAX_RANGE_MS) {
+      throw AppException.validation("Intervallo troppo ampio (massimo 400 giorni).");
+    }
+    const members = new Map(this.members.list().map((member) => [member.id, member]));
+    const configs = this.calendars.list({ enabledOnly: true }).filter((config) => config.provider === "classeviva");
+    const calendars = await Promise.all(
+      configs.map(async (config): Promise<FamilyCalendar> => {
+        const { events, error } = await this.fetchRemote(config, from, to);
+        const member = config.memberId ? members.get(config.memberId) : undefined;
+        return {
+          id: config.id,
+          name: config.name,
+          color: member?.color ?? config.color,
+          readOnly: true,
+          kind: "school",
+          lastError: error,
+          events: events
+            .map((remote) => ({ ...remoteToEvent(config.id, remote, new Map()), notes: remote.description ?? null, memberIds: member ? [member.id] : [] }))
+            .sort((left, right) => left.startAt.localeCompare(right.startAt))
+        };
+      })
+    );
     return { range: { from: from.toISOString(), to: to.toISOString() }, calendars };
   }
 

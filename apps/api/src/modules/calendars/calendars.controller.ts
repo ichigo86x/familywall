@@ -27,6 +27,13 @@ export class CalendarsController {
     return this.calendarsService.getCalendars(request.user, range);
   }
 
+  /** Homework and tests of the school registers, apart from the family's events. */
+  @Get("school")
+  @RequirePermission("calendar:read")
+  public getSchool(@Query(new ZodValidationPipe(calendarRangeSchema)) range: CalendarRangeInput): Promise<CalendarResponse> {
+    return this.calendarsService.getSchool(range);
+  }
+
   @Get("config")
   @RequirePermission("providers:manage")
   public listConfigs(): CalendarConfigsResponse {

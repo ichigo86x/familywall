@@ -15,7 +15,7 @@ import {
   Spinner,
   Switch
 } from "@fluentui/react-components";
-import type { CalendarConfig, CalendarProvider, ProviderAccount, RemoteCalendar } from "@familywall/shared";
+import type { CalendarConfig, CalendarProvider, ProviderAccount, RemoteCalendar, User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
@@ -47,10 +47,11 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 interface ProvidersSectionProps {
   accounts: ProviderAccount[];
   calendars: CalendarConfig[];
+  members: User[];
   onChanged: () => void;
 }
 
-export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSectionProps) => {
+export const ProvidersSection = ({ accounts, calendars, members, onChanged }: ProvidersSectionProps) => {
   const [addingAccount, setAddingAccount] = useState(false);
   const [discoverAccount, setDiscoverAccount] = useState<ProviderAccount | null>(null);
   const [listsAccount, setListsAccount] = useState<ProviderAccount | null>(null);
@@ -162,7 +163,7 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
         ) : (
           <div className="stack-list">
             {calendars.map((calendar) => (
-              <CalendarRow key={calendar.id} calendar={calendar} onAction={run} onRemove={() => removeCalendar(calendar)} />
+              <CalendarRow key={calendar.id} calendar={calendar} members={members} onAction={run} onRemove={() => removeCalendar(calendar)} />
             ))}
           </div>
         )}
@@ -224,10 +225,12 @@ export const ProvidersSection = ({ accounts, calendars, onChanged }: ProvidersSe
 
 const CalendarRow = ({
   calendar,
+  members,
   onAction,
   onRemove
 }: {
   calendar: CalendarConfig;
+  members: User[];
   onAction: (action: () => Promise<unknown>) => Promise<void>;
   onRemove: () => void;
 }) => {
@@ -257,6 +260,24 @@ const CalendarRow = ({
         </div>
       </div>
       <div className="row-actions">
+        {calendar.provider === "classeviva" ? (
+          // The child the register belongs to: homework and tests take their colour.
+          <select
+            className="native-select calendar-purpose"
+            aria-label="Di chi è il registro"
+            value={calendar.memberId ?? ""}
+            onChange={(change) => void onAction(() => api.updateCalendar(calendar.id, { memberId: change.target.value || null }))}
+          >
+            <option value="">Nessun membro</option>
+            {members
+              .filter((member) => member.role !== "Kiosk")
+              .map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.displayName}
+                </option>
+              ))}
+          </select>
+        ) : null}
         {calendar.provider === "cookidoo" || calendar.provider === "classeviva" ? null : (
           <select
             className="native-select calendar-purpose"

@@ -277,5 +277,9 @@ export const migrations: string[] = [
   INSERT INTO provider_accounts_new SELECT id, provider, label, username, secret_enc, server_url, status, last_error, last_checked_at, created_at FROM provider_accounts;
   DROP TABLE provider_accounts;
   ALTER TABLE provider_accounts_new RENAME TO provider_accounts;
+  `,
+  // A calendar may belong to a member (e.g. a child's ClasseViva register): its events take that member's colour.
+  `
+  ALTER TABLE calendars ADD COLUMN member_id TEXT;
   `
 ];

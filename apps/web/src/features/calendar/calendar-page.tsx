@@ -22,6 +22,7 @@ import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular } from "@/lib/fluent-icons";
+import { SchoolDayDialog, useSchool } from "@/features/school/school";
 import { EventEditor, type CalendarOption } from "./event-editor";
 import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode, birthdayTitle } from "./calendar-time";
 
@@ -104,6 +105,9 @@ export const CalendarPage = () => {
   // Meal plans (Cookidoo) are not drawn as events: a chef hat on the day opens them.
   const meals = useMemo<PlannerEvent[]>(() => toPlannerEvents("meals"), [calendars]);
   const [mealsDay, setMealsDay] = useState<Date | null>(null);
+  // Homework and tests are not events: a backpack on the day opens them.
+  const school = useSchool(days[0]!, addDays(days[days.length - 1]!, 1));
+  const [schoolDay, setSchoolDay] = useState<Date | null>(null);
   const [shopping, setShopping] = useState<DishSource[] | null>(null);
   const events = useMemo<PlannerEvent[]>(
     () =>
@@ -249,6 +253,20 @@ export const CalendarPage = () => {
                           <ChefHatIcon />
                         </button>
                       ) : null}
+                      {school.items.some((item) => occursOnDay(item, day)) ? (
+                        <button
+                          type="button"
+                          className="meal-button school-button"
+                          onClick={() => setSchoolDay(day)}
+                          aria-label={`Scuola di ${day.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}`}
+                          title={school.items
+                            .filter((item) => occursOnDay(item, day))
+                            .map((item) => item.title)
+                            .join("\n")}
+                        >
+                          🎒
+                        </button>
+                      ) : null}
                     </span>
                     {isToday ? <span className="today-pill">Oggi</span> : <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>}
                   </div>
@@ -286,6 +304,7 @@ export const CalendarPage = () => {
         </Card>
       )}
 
+      {schoolDay ? <SchoolDayDialog day={schoolDay} items={school.items} onClose={() => setSchoolDay(null)} /> : null}
       <Dialog open={mealsDay !== null} onOpenChange={(_, data) => (!data.open ? setMealsDay(null) : undefined)}>
         <DialogSurface className="event-dialog meals-dialog">
           <DialogBody>

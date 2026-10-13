@@ -270,6 +270,8 @@ export const api = {
 
   getCalendar: (from: string, to: string) =>
     request<CalendarResponse>(`calendars?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  getSchool: (from: string, to: string) =>
+    request<CalendarResponse>(`calendars/school?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
   createEvent: async (input: CreateEventInput) => (await request<{ event: FamilyEvent }>("events", { method: "POST", json: input })).event,
   updateEvent: (id: string, input: UpdateEventInput) => request<{ id: string }>(`events/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
   deleteEvent: (id: string, scope?: RecurrenceScope) =>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { UMBRELLA_CHANCE, canTickChore, panelView, rainChanceDuring, scheduleForDay, type HomePresence, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type ScheduleKind, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
@@ -15,7 +15,7 @@ import { ActiveRoutines } from "@/features/schedule/routines";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
 import { ActionBar } from "./action-bar";
-import { SchoolCard } from "./school-card";
+import { SchoolPanel } from "@/features/school/school";
 import { WeatherClock } from "./weather-clock";
 
 const REFRESH_MS = 5 * 60 * 1000;
@@ -80,6 +80,9 @@ export const DashboardPage = () => {
   const routines = useAsyncResource(() => api.getRoutines().catch(() => []), [], "routines");
   const settings = useAsyncResource(() => api.getSettings(), [], "settings");
   const weather = useAsyncResource(() => api.getWeather().catch(() => null), [], "weather");
+  // "Scuola" in the header shows homework and tests in place of the household cards (#/?scuola=1).
+  const [params, setParams] = useSearchParams();
+  const schoolOpen = params.get("scuola") === "1";
   const presence = useAsyncResource(() => api.getHomePresence().catch(() => []), [], "presence");
 
   const reloadAll = useCallback(() => {
@@ -110,7 +113,7 @@ export const DashboardPage = () => {
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
 
-  const { events, meals, birthdays, school } = useMemo(() => {
+  const { events, meals, birthdays } = useMemo(() => {
     const entries: Array<PlannerEvent & { kind: "events" | "meals" | "birthdays" | "school" }> = (calendar.data?.calendars ?? []).flatMap((entry) =>
       entry.events.map((event) => ({
         ...event,
@@ -121,9 +124,7 @@ export const DashboardPage = () => {
       }))
     );
     return {
-      // Homework and tests have a card of their own.
       events: entries.filter((event) => event.kind !== "meals" && event.kind !== "school").sort(byStart),
-      school: entries.filter((event) => event.kind === "school").sort(byStart),
       meals: entries.filter((event) => event.kind === "meals"),
       birthdays: entries.filter((event) => event.kind === "birthdays").sort(byStart)
     };
@@ -277,6 +278,10 @@ export const DashboardPage = () => {
         </div>
 
         <div className="dashboard-side-column">
+          {schoolOpen ? (
+            <SchoolPanel today={today} onClose={() => setParams({}, { replace: true })} />
+          ) : (
+          <>
           <HomeCard
             entries={schedule.data ?? []}
             now={now}
@@ -285,7 +290,6 @@ export const DashboardPage = () => {
             onChanged={schedule.reload}
             presence={presence.data ?? []}
           />
-          <SchoolCard events={school} today={today} />
 
           {lists.status === "error" ? (
             <Card className="panel-card dashboard-side">
@@ -301,7 +305,8 @@ export const DashboardPage = () => {
           ) : (
             shownLists.map((list) => <DashboardList key={list.id} list={list} canWrite={auth.can("lists:write")} onChanged={lists.reload} />)
           )}
-
+          </>
+          )}
         </div>
       </div>
     </AppShell>

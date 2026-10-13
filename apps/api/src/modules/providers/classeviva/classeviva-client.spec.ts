@@ -32,6 +32,12 @@ describe("ClasseVivaClient", () => {
 
     expect(calls[0]!.init.headers).toMatchObject({ "Z-Dev-Apikey": "Tg1NWEwNGIgIC0K" });
     expect(calls.at(-1)!.url).toBe("https://web.spaggiari.eu/rest/v1/students/7654321/agenda/all/20261013/20261027");
+
+    // Longer ranges are read a month at a time; the same entry in two answers counts once.
+    calls.length = 0;
+    const long = await client.fetchEvents(credentials, classeVivaUrl("G7654321Y"), new Date("2026-09-13T00:00:00Z"), new Date("2027-01-13T00:00:00Z"));
+    expect(calls.map((call) => call.url.split("/agenda/all/")[1])).toEqual(["20260913/20261013", "20261014/20261113", "20261114/20261214", "20261215/20270113"]);
+    expect(long).toHaveLength(2);
     expect(calls.at(-1)!.init.headers).toMatchObject({ "Z-Auth-Token": "tok" });
     expect(events).toMatchObject([
       { uid: "classeviva-1", title: "📚 Matematica: Pag. 12 es. 3", allDay: true, startAt: "2026-10-15T00:00:00.000Z", endAt: "2026-10-16T00:00:00.000Z" },

@@ -25,7 +25,6 @@ La pagina iniziale è pensata per essere letta da lontano. In un colpo d'occhio:
 - **l'agenda di oggi**, con il prossimo impegno in evidenza, i piatti in tavola e quello che aspetta domani; a giornata finita domani passa in primo piano. Se durante un impegno è prevista pioggia, compare **"☔ Porta l'ombrello"**;
 - **i prossimi giorni**, con i primi impegni di ognuno;
 - **chi fa cosa in casa**: lavoro dei genitori, faccende dei bambini, chi viene a casa, e **chi è a casa** in questo momento (dalle persone di Home Assistant);
-- **la scuola**: compiti e verifiche dei prossimi giorni dal registro **ClasseViva**;
 - **le liste scelte**, con un campo per aggiungere subito una voce;
 - **le note** fissate in bacheca e i **compleanni** in arrivo;
 - **le routine** del mattino e della sera dei bambini, quando è il momento;
@@ -65,7 +64,7 @@ Le liste della spesa si ordinano **per reparto**, nell'ordine di un giro al supe
 
 ### Scuola
 
-Con l'account **ClasseViva** (Spaggiari) del genitore o dello studente, i compiti e le verifiche arrivano nel calendario e nella scheda **Scuola** della dashboard, un calendario per ogni figlio.
+Con l'account **ClasseViva** (Spaggiari) del genitore o dello studente arrivano compiti e verifiche, un registro per ogni figlio, ognuno con il colore del figlio a cui lo colleghi in Admin. Non si mescolano con gli impegni: il pulsante **🎒 Scuola** in alto mostra in dashboard, al posto di turni e liste, i compiti dei prossimi sette giorni; nel calendario un'icona 🎒 sul giorno apre compiti e verifiche di quel giorno.
 
 ### Note, compleanni e ricorrenze
 

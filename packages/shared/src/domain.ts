@@ -236,6 +236,8 @@ export interface CalendarConfig {
   enabled: boolean;
   /** "birthdays": birthdays and anniversaries; "meals": a menu (dishes, ingredients in the description). */
   purpose: "events" | "birthdays" | "meals";
+  /** Member the calendar belongs to (school register of a child): its events take the member's colour. */
+  memberId: string | null;
   lastSyncedAt: string | null;
   lastError: string | null;
 }

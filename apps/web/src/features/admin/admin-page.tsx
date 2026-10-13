@@ -105,7 +105,7 @@ export const AdminPage = () => {
           ) : null}
           {section === "accounts" ? (
             <>
-              <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} onChanged={admin.reload} />
+              <ProvidersSection accounts={admin.data.accounts} calendars={admin.data.calendars} members={admin.data.members} onChanged={admin.reload} />
               <FamilyTargetsCard onChanged={admin.reload} />
               <TaskListsSection lists={admin.data.taskLists} onChanged={admin.reload} />
             </>

@@ -12,7 +12,8 @@ import {
   TabList,
   Toolbar
 } from "@fluentui/react-components";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useHasSchool } from "@/features/school/school";
 
 import { useAuth } from "@/components/auth/use-auth";
 import {
@@ -81,6 +82,9 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
   const auth = useAuth();
   const navigate = useNavigate();
   const theme = useThemePreference();
+  const hasSchool = useHasSchool();
+  const [params] = useSearchParams();
+  const schoolOpen = currentRoute === "/" && params.get("scuola") === "1";
 
   const tabs = [
     { value: "/", label: "Dashboard", icon: <HomeRegular /> },
@@ -122,6 +126,19 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
 
           <div className="app-toolbar__meta">
             <LiveClock />
+            {hasSchool ? (
+              // Opens (or closes) the school panel of the dashboard, from any page.
+              <Button
+                appearance={schoolOpen ? "primary" : "subtle"}
+                className="school-toggle"
+                aria-pressed={schoolOpen}
+                title="Compiti e verifiche della settimana"
+                onClick={() => navigate(schoolOpen ? "/" : "/?scuola=1")}
+              >
+                <span aria-hidden="true">🎒</span>
+                <span className="button-label">Scuola</span>
+              </Button>
+            ) : null}
             <Badge appearance="filled" color="informative">
               {summaryChip}
             </Badge>

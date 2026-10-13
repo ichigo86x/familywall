@@ -165,6 +165,7 @@ export const useChoreToggle = (reload: () => void) => {
 
 /** "⭐ Luca 4 · Sofia 6": chores done this week by each child. */
 export const StarsLine = ({ entries, day, membersById }: { entries: ScheduleEntry[]; day: Date; membersById: Map<string, User> }) => {
+  const [detail, setDetail] = useState(false);
   const stars = [...weekStars(entries, day)].filter(([memberId]) => membersById.has(memberId));
   if (stars.length === 0) {
     return null;
@@ -180,7 +181,74 @@ export const StarsLine = ({ entries, day, membersById }: { entries: ScheduleEntr
           </strong>
         </span>
       ))}
+      <Button size="small" appearance="subtle" className="chore-stars__detail" onClick={() => setDetail(true)} aria-label="Dettaglio delle stelline">
+        Dettaglio
+      </Button>
+      {detail ? <StarsDetail entries={entries} day={day} membersById={membersById} memberIds={stars.map(([memberId]) => memberId)} onClose={() => setDetail(false)} /> : null}
     </div>
+  );
+};
+
+/** Chores done by each child on each day of the week: what the stars are made of. */
+const StarsDetail = ({
+  entries,
+  day,
+  membersById,
+  memberIds,
+  onClose
+}: {
+  entries: ScheduleEntry[];
+  day: Date;
+  membersById: Map<string, User>;
+  memberIds: string[];
+  onClose: () => void;
+}) => {
+  const monday = startOfWeek(day);
+  const week = Array.from({ length: 7 }, (_, index) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index));
+  const chores = entries.filter((entry) => entry.kind === "chore" && entry.memberId);
+  const doneOn = (memberId: string, date: Date) => chores.filter((entry) => entry.memberId === memberId && entry.done.includes(dayKey(date)));
+  const dueOn = (memberId: string, date: Date) => scheduleForDay(chores, date).filter((entry) => entry.memberId === memberId);
+
+  return (
+    <Dialog open onOpenChange={(_, data) => (!data.open ? onClose() : undefined)}>
+      <DialogSurface className="event-dialog stars-dialog">
+        <DialogBody>
+          <CloseableDialogTitle>Stelline · settimana dal {monday.toLocaleDateString("it-IT", { day: "numeric", month: "long" })}</CloseableDialogTitle>
+          <DialogContent className="dialog-form">
+            {memberIds.map((memberId) => {
+              const member = membersById.get(memberId)!;
+              return (
+                <section key={memberId} className="stars-member" style={{ borderLeftColor: member.color }}>
+                  <h4>
+                    {member.displayName} · ⭐ {week.reduce((total, date) => total + doneOn(memberId, date).length, 0)}
+                  </h4>
+                  <ul>
+                    {week.map((date) => {
+                      const done = doneOn(memberId, date);
+                      const missed = dueOn(memberId, date).filter((entry) => !done.includes(entry));
+                      return (
+                        <li key={dayKey(date)}>
+                          <strong>{date.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" })}</strong>
+                          <span>
+                            {done.map((entry) => `⭐ ${entry.title}`).join(" · ")}
+                            {done.length > 0 && missed.length > 0 ? " · " : ""}
+                            {missed.length > 0 ? <em>{missed.map((entry) => `○ ${entry.title}`).join(" · ")}</em> : null}
+                            {done.length === 0 && missed.length === 0 ? "—" : null}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="primary" onClick={onClose}>Chiudi</Button>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
   );
 };
 

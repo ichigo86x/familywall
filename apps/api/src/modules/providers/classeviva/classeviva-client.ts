@@ -13,6 +13,8 @@ const BASE_URL = "https://web.spaggiari.eu/rest/v1";
 /** The app's headers: requests without them are refused. */
 const APP_HEADERS = { "User-Agent": "CVVS/std/4.2.3 Android/12", "Z-Dev-Apikey": "Tg1NWEwNGIgIC0K", "Content-Type": "application/json" };
 const TOKEN_MARGIN_MS = 5 * 60 * 1000;
+/** Days per agenda request. */
+const CHUNK_DAYS = 31;
 /** Remote URL of a ClasseViva calendar: one per identity (student, or parent of one child). */
 const URL_PREFIX = "classeviva://";
 
@@ -101,17 +103,24 @@ export class ClasseVivaClient {
     return [{ ident: login.ident!, name: name || login.ident! }];
   }
 
+  /** The agenda is read a month at a time, like the app does: long ranges are refused by ClasseViva. */
   public async fetchEvents(credentials: ClasseVivaCredentials, remoteUrl: string, from: Date, to: Date): Promise<RemoteEvent[]> {
     const session = await this.session(credentials, identOf(remoteUrl));
-    const response = await this.send(`${BASE_URL}/students/${studentId(session.ident)}/agenda/all/${compactDate(from)}/${compactDate(to)}`, {
-      method: "GET",
-      headers: { ...APP_HEADERS, "Z-Auth-Token": session.token }
-    });
-    if (response.status === 401) {
-      this.sessions.delete(`${credentials.username}|${identOf(remoteUrl)}`);
+    const entries: NonNullable<AgendaJson["agenda"]> = [];
+    for (let start = from; start < to; start = new Date(start.getTime() + CHUNK_DAYS * 86_400_000)) {
+      const end = new Date(Math.min(to.getTime(), start.getTime() + (CHUNK_DAYS - 1) * 86_400_000));
+      const response = await this.send(`${BASE_URL}/students/${studentId(session.ident)}/agenda/all/${compactDate(start)}/${compactDate(end)}`, {
+        method: "GET",
+        headers: { ...APP_HEADERS, "Z-Auth-Token": session.token }
+      });
+      if (response.status === 401) {
+        this.sessions.delete(`${credentials.username}|${identOf(remoteUrl)}`);
+      }
+      const body = (await this.json(response, "lettura dell'agenda")) as AgendaJson;
+      entries.push(...(body.agenda ?? []));
     }
-    const body = (await this.json(response, "lettura dell'agenda")) as AgendaJson;
-    return agendaToEvents(body.agenda ?? []);
+    // A day can be in two months' answers.
+    return agendaToEvents([...new Map(entries.map((entry) => [entry.evtId, entry])).values()]);
   }
 
   private async session(credentials: ClasseVivaCredentials, ident: string) {
@@ -152,8 +161,9 @@ export class ClasseVivaClient {
 
   private async json(response: Response, operation: string): Promise<unknown> {
     if (!response.ok) {
-      await response.text();
-      throw new ClasseVivaError(response.status === 401 ? "auth" : "http", `ClasseViva: ${operation} non riuscita (HTTP ${response.status}).`);
+      // ClasseViva explains the refusal in the body ({"error": "..."}): it is shown with the calendar.
+      const detail = (await response.text()).slice(0, 200).replace(/\s+/g, " ").trim();
+      throw new ClasseVivaError(response.status === 401 ? "auth" : "http", `ClasseViva: ${operation} non riuscita (HTTP ${response.status})${detail ? `: ${detail}` : ""}.`);
     }
     return response.json();
   }

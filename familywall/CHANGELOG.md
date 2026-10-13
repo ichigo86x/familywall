@@ -1,5 +1,13 @@
 # Novità
 
+## 0.9.2
+
+- Scuola separata dagli impegni: pulsante 🎒 Scuola in alto che mostra in dashboard compiti e verifiche della settimana, icona 🎒 sui giorni del calendario.
+- Ogni registro ClasseViva si collega a un figlio e ne prende il colore.
+- L'agenda di ClasseViva viene letta un mese alla volta; gli errori di ClasseViva compaiono nel pannello Scuola.
+- Dettaglio delle stelline della settimana: faccende fatte e mancate per giorno.
+- Le schede Scuola e Turni non vengono più schiacciate dalle liste in dashboard.
+
 ## 0.9.0
 
 - Scuola: compiti e verifiche da ClasseViva (Spaggiari) nel calendario e in una scheda della dashboard, un calendario per ogni figlio.

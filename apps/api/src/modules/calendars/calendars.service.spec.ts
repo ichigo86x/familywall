@@ -302,4 +302,20 @@ describe("Home Assistant calendar events", () => {
       homeEventToFamily("ha:calendar.x", { start: { dateTime: "2026-10-12T09:00:00+02:00" }, end: { dateTime: "2026-10-12T10:00:00+02:00" }, summary: "Pediatra" }, 3)
     ).toMatchObject({ allDay: false, startAt: "2026-10-12T07:00:00.000Z", endAt: "2026-10-12T08:00:00.000Z", id: "ha:calendar.x:3:2026-10-12T07:00:00.000Z" });
   });
+
+  it("keeps the school register apart, in the colour of the child it is linked to", async () => {
+    const { ctx, admin, child } = await setup();
+    const account = ctx.accounts.insert({ provider: "classeviva", label: "Scuola", username: "G1234567X", password: "segreta", serverUrl: null });
+    const register = ctx.calendars.add({ accountId: account.id, remoteUrl: "classeviva://G1234567X", name: "Scuola · Luca", color: "#0F766E" });
+    vi.spyOn(ctx.providers, "fetchSchool").mockResolvedValue([
+      { uid: "classeviva-1", occurrenceKey: "", title: "📚 Matematica: pag. 12", startAt: "2026-10-15T00:00:00.000Z", endAt: "2026-10-16T00:00:00.000Z", allDay: true, description: "pag. 12\nes. 3" }
+    ]);
+
+    expect((await ctx.calendars.getCalendars(admin, range)).calendars.map((entry) => entry.id)).not.toContain(register.id);
+    ctx.calendars.update(register.id, { memberId: child.id });
+    const { calendars } = await ctx.calendars.getSchool(range);
+    expect(calendars).toMatchObject([
+      { id: register.id, kind: "school", color: "#14B8A6", events: [{ title: "📚 Matematica: pag. 12", notes: "pag. 12\nes. 3", memberIds: [child.id] }] }
+    ]);
+  });
 });

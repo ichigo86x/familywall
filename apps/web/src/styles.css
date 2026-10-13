@@ -4175,49 +4175,6 @@ button.schedule-chip {
   }
 }
 
-/* Dashboard: homework and tests from the school register. */
-.dashboard-school {
-  display: grid;
-  gap: 10px;
-}
-
-.dashboard-school__day ul {
-  display: grid;
-  gap: 6px;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dashboard-school__day li {
-  display: grid;
-  gap: 2px;
-  padding: 6px 10px;
-  border-left: 4px solid var(--color-primary);
-  border-radius: 8px;
-  background: var(--input-bg);
-}
-
-.dashboard-school__day li strong {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.dashboard-school__day li span {
-  color: var(--color-muted);
-  font-size: 0.85rem;
-}
-
-@media (min-width: 901px) and (min-height: 600px) {
-  .app-shell--dashboard .dashboard-school {
-    flex: 0 0 auto;
-    min-height: 0;
-    max-height: 35%;
-    overflow-y: auto;
-    align-content: start;
-  }
-}
-
 .dashboard-umbrella {
   display: flex;
   flex-wrap: wrap;
@@ -4320,4 +4277,106 @@ button.schedule-chip {
   to {
     opacity: 1;
   }
+}
+
+/* School: header button, dashboard panel, backpack on calendar days. */
+.school-toggle {
+  min-width: 0;
+}
+
+.school-button {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.school-items {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.school-items li {
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+.school-items li strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.school-items li p {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 0.9rem;
+}
+
+.school-items li span {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.school-days li {
+  align-items: start;
+}
+
+.school-days .school-items {
+  min-width: 0;
+}
+
+/* Items inside a day row: not the day row's two-column grid. */
+.dashboard-days .school-items li {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+@media (min-width: 901px) and (min-height: 600px) {
+  .app-shell--dashboard .school-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+  }
+}
+
+/* Stars detail. */
+.chore-stars__detail {
+  min-width: 0;
+}
+
+.stars-member {
+  padding-left: 10px;
+  border-left: 4px solid var(--color-primary);
+}
+
+.stars-member h4 {
+  margin: 0 0 6px;
+}
+
+.stars-member ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stars-member li {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 8px;
+}
+
+.stars-member em {
+  color: var(--color-muted);
+  font-style: normal;
 }
