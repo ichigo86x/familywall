@@ -4271,3 +4271,31 @@ button.schedule-chip {
   align-items: center;
   gap: 8px;
 }
+
+/* Recipes and menu suggestions. */
+.recipe-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recipe-row {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-row span {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}

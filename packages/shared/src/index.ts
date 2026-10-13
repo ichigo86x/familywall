@@ -9,3 +9,4 @@ export * from "./menu";
 export * from "./routine";
 export * from "./shopping";
 export * from "./family-targets";
+export * from "./recipes";

@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from "@nestjs/common";
 import { DavGatewayService } from "./dav-gateway.service";
 import { DavTasksClient } from "./dav-tasks.client";
-import { MenuStore, NotesStore, OccasionsStore, RoutinesStore, ScheduleStore } from "./family-stores";
+import { MenuStore, NotesStore, OccasionsStore, RecipesStore, RoutinesStore, ScheduleStore } from "./family-stores";
 import { LegacyDataMigration } from "./legacy-migration";
 
 const ATTEMPTS = 10;
@@ -23,6 +23,7 @@ export class DavBootstrap implements OnApplicationBootstrap {
     private readonly schedule: ScheduleStore,
     private readonly notes: NotesStore,
     private readonly routines: RoutinesStore,
+    private readonly recipes: RecipesStore,
     private readonly migration: LegacyDataMigration
   ) {}
 
@@ -37,7 +38,7 @@ export class DavBootstrap implements OnApplicationBootstrap {
   private async prepare(attempt: number): Promise<void> {
     try {
       await this.tasks.ensureDefaultList();
-      for (const store of [this.occasions, this.menu, this.schedule, this.notes, this.routines]) {
+      for (const store of [this.occasions, this.menu, this.schedule, this.notes, this.routines, this.recipes]) {
         await store.ensure();
       }
       await this.migration.run();

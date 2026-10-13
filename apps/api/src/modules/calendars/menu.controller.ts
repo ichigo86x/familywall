@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from "@nestjs/common";
-import { menuMealSchema, menuRangeSchema, type MenuIngredientsResponse, type MenuMeal, type MenuMealsResponse } from "@familywall/shared";
+import { menuMealSchema, menuRangeSchema, menuSuggestionsQuerySchema, suggestMenu, type MealSlot, type MenuSuggestionsResponse, type MenuIngredientsResponse, type MenuMeal, type MenuMealsResponse } from "@familywall/shared";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import { CookidooClient, cookidooRecipeId } from "../providers/cookidoo/cookidoo-client";
@@ -8,14 +8,18 @@ import { CalendarsRepository } from "./calendars.repository";
 import { decodeRemoteEventId } from "./event-ids";
 import type { MenuMealFields } from "../dav/family-ics";
 import { FamilyTargetsService } from "./family-targets.service";
+import { RecipesStore } from "../dav/family-stores";
 
 const MAX_INGREDIENT_LOOKUPS = 30;
+/** Suggestions look at the dishes of the last months. */
+const HISTORY_DAYS = 120;
 
 /** The family menu (built-in CalDAV server or the calendar chosen for it), and the ingredients of Cookidoo recipes. */
 @Controller("menu")
 export class MenuController {
   public constructor(
     private readonly targets: FamilyTargetsService,
+    private readonly recipes: RecipesStore,
     private readonly calendars: CalendarsRepository,
     private readonly accounts: ProviderAccountsRepository,
     private readonly cookidoo: CookidooClient
@@ -25,6 +29,17 @@ export class MenuController {
   @RequirePermission("calendar:read")
   public async list(@Query(new ZodValidationPipe(menuRangeSchema)) range: { from: string; to: string }): Promise<MenuMealsResponse> {
     return { meals: await this.targets.mealsBetween(range.from, range.to) };
+  }
+
+  /** Dishes for the empty meals of a period, from the recipes and what the family cooked in the last months. */
+  @Get("suggestions")
+  @RequirePermission("calendar:read")
+  public async suggestions(
+    @Query(new ZodValidationPipe(menuSuggestionsQuerySchema)) query: { from: string; to: string; slots: MealSlot[] }
+  ): Promise<MenuSuggestionsResponse> {
+    const since = new Date(Date.parse(`${query.from}T00:00:00Z`) - HISTORY_DAYS * 86_400_000).toISOString().slice(0, 10);
+    const [meals, recipes] = await Promise.all([this.targets.mealsBetween(since, query.to), this.recipes.list().catch(() => [])]);
+    return { suggestions: suggestMenu(meals, recipes, query.from, query.to, query.slots.length > 0 ? query.slots : ["cena"]) };
   }
 
   @Post()

@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Button, Card, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface, Field, Input, Textarea } from "@fluentui/react-components";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Card, Checkbox, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface, Field, Input, Textarea } from "@fluentui/react-components";
 import {
   MEAL_SLOTS,
   MEAL_SLOT_LABELS,
@@ -8,7 +8,8 @@ import {
   ingredientsFromText,
   menuMealSchema,
   type MealSlot,
-  type MenuMeal
+  type MenuMeal,
+  type Recipe
 } from "@familywall/shared";
 
 import { api } from "@/api/client";
@@ -23,6 +24,7 @@ import { addDays, dayKey, occursOnDay } from "@/features/calendar/calendar-time"
 import { PeriodToolbar, usePeriod } from "@/features/calendar/period-view";
 import type { PlannerEvent } from "@/features/calendar/calendar-page";
 import { IngredientsDialog, type DishSource } from "./ingredients-dialog";
+import { RecipesDialog, SuggestDialog } from "./recipes-dialogs";
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
 
@@ -47,6 +49,8 @@ export const MenuPage = () => {
   const [editing, setEditing] = useState<{ meal: MenuMeal | null; date: string } | null>(null);
   const [viewing, setViewing] = useState<Dish | null>(null);
   const [shopping, setShopping] = useState<DishSource[] | null>(null);
+  const [recipesOpen, setRecipesOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   useNewParam(canWrite, () => setEditing({ meal: null, date: dayKey(new Date()) }));
 
   const days = period.days;
@@ -91,6 +95,14 @@ export const MenuPage = () => {
       toolbarActions={
         <div className="calendar-toolbar">
           <PeriodToolbar period={period} />
+          <Button appearance="secondary" onClick={() => setRecipesOpen(true)}>
+            📖 Ricette
+          </Button>
+          {canWrite ? (
+            <Button appearance="secondary" onClick={() => setSuggesting(true)}>
+              💡 Suggerisci
+            </Button>
+          ) : null}
           {canShop ? (
             <Button appearance="secondary" disabled={weekDishes.length === 0} onClick={() => setShopping(weekDishes.map(toSource))}>
               🛒 Ingredienti → spesa
@@ -193,6 +205,18 @@ export const MenuPage = () => {
         />
       ) : null}
       {shopping ? <IngredientsDialog dishes={shopping} onClose={() => setShopping(null)} /> : null}
+      {recipesOpen ? <RecipesDialog canWrite={canWrite} onClose={() => setRecipesOpen(false)} /> : null}
+      {suggesting ? (
+        <SuggestDialog
+          from={dayKey(new Date()) > from ? dayKey(new Date()) : from}
+          to={to}
+          onClose={() => setSuggesting(false)}
+          onAdded={() => {
+            setSuggesting(false);
+            data.reload();
+          }}
+        />
+      ) : null}
     </AppShell>
   );
 };
@@ -251,6 +275,13 @@ const MealDialog = ({ meal, date, onClose, onSaved, onShop }: MealDialogProps) =
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [saveRecipe, setSaveRecipe] = useState(false);
+  useEffect(() => {
+    if (!meal) {
+      api.getRecipes().then(setRecipes).catch(() => setRecipes([]));
+    }
+  }, [meal]);
 
   const parsed = () =>
     menuMealSchema.safeParse({
@@ -279,7 +310,12 @@ const MealDialog = ({ meal, date, onClose, onSaved, onShop }: MealDialogProps) =
       setError(result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" · "));
       return;
     }
-    void run(() => (meal ? api.updateMenuMeal(meal.id, result.data) : api.createMenuMeal(result.data)));
+    void run(async () => {
+      await (meal ? api.updateMenuMeal(meal.id, result.data) : api.createMenuMeal(result.data));
+      if (!meal && saveRecipe) {
+        await api.createRecipe({ title: result.data.title, slot: result.data.slot, ingredients: result.data.ingredients, note: result.data.note });
+      }
+    });
   };
 
   return (
@@ -300,6 +336,25 @@ const MealDialog = ({ meal, date, onClose, onSaved, onShop }: MealDialogProps) =
                 </select>
               </Field>
             </div>
+            {!meal && recipes.length > 0 ? (
+              <Field label="Da una ricetta">
+                <select
+                  className="native-select"
+                  value=""
+                  onChange={(change) => {
+                    const recipe = recipes.find((entry) => entry.id === change.target.value);
+                    if (recipe) {
+                      setForm({ ...form, title: recipe.title, slot: recipe.slot ?? form.slot, ingredients: recipe.ingredients.join("\n"), note: recipe.note ?? "" });
+                    }
+                  }}
+                >
+                  <option value="">Scegli una ricetta...</option>
+                  {recipes.map((recipe) => (
+                    <option key={recipe.id} value={recipe.id}>{recipe.title}</option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
             <Field label="Piatto" required>
               <Input value={form.title} maxLength={120} placeholder="Es. Lasagne, minestrone, pizza" onChange={(_, data) => setForm({ ...form, title: data.value })} />
             </Field>
@@ -309,6 +364,9 @@ const MealDialog = ({ meal, date, onClose, onSaved, onShop }: MealDialogProps) =
             <Field label="Nota">
               <Input value={form.note} maxLength={500} onChange={(_, data) => setForm({ ...form, note: data.value })} />
             </Field>
+            {!meal && !recipes.some((recipe) => recipe.title.toLowerCase() === form.title.trim().toLowerCase()) ? (
+              <Checkbox label="Salva anche tra le ricette" checked={saveRecipe} onChange={(_, data) => setSaveRecipe(Boolean(data.checked))} />
+            ) : null}
             {error ? <p className="form-error">{error}</p> : null}
           </DialogContent>
           <DialogActions>

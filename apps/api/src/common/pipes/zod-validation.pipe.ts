@@ -1,10 +1,10 @@
 import { Injectable, PipeTransform } from "@nestjs/common";
-import type { ZodType } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
 import { AppException } from "../errors/app-exception";
 
 @Injectable()
 export class ZodValidationPipe<TOutput> implements PipeTransform<unknown, TOutput> {
-  public constructor(private readonly schema: ZodType<TOutput>) {}
+  public constructor(private readonly schema: ZodType<TOutput, ZodTypeDef, unknown>) {}
 
   public transform(value: unknown): TOutput {
     const result = this.schema.safeParse(value);

@@ -6,7 +6,7 @@ import { DavGatewayService } from "./dav-gateway.service";
 import { DavStore, RadicaleDavStore } from "./dav-store";
 import { DavTasksClient } from "./dav-tasks.client";
 import { DavController } from "./dav.controller";
-import { MenuStore, NotesStore, OccasionsStore, RoutinesStore, ScheduleStore } from "./family-stores";
+import { MenuStore, NotesStore, OccasionsStore, RecipesStore, RoutinesStore, ScheduleStore } from "./family-stores";
 import { LegacyDataMigration } from "./legacy-migration";
 
 @Module({
@@ -22,8 +22,9 @@ import { LegacyDataMigration } from "./legacy-migration";
     NotesStore,
     ScheduleStore,
     RoutinesStore,
+    RecipesStore,
     LegacyDataMigration
   ],
-  exports: [DavGatewayService, DavTasksClient, DavStore, OccasionsStore, MenuStore, NotesStore, ScheduleStore, RoutinesStore, LegacyDataMigration]
+  exports: [DavGatewayService, DavTasksClient, DavStore, OccasionsStore, MenuStore, NotesStore, ScheduleStore, RoutinesStore, RecipesStore, LegacyDataMigration]
 })
 export class DavModule {}

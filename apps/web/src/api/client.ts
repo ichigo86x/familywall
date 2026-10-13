@@ -6,6 +6,10 @@ import type {
   MenuIngredientsResponse,
   MenuMeal,
   MenuMealInput,
+  MenuSuggestionsResponse,
+  Recipe,
+  RecipeInput,
+  RecipesResponse,
   Occasion,
   OccasionInput,
   HomeButtonsResponse,
@@ -168,6 +172,12 @@ export const api = {
   createMenuMeal: (input: MenuMealInput) => request<{ meal: MenuMeal }>("menu", { method: "POST", json: input }),
   updateMenuMeal: (id: string, input: MenuMealInput) => request<{ meal: MenuMeal }>(`menu/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
   deleteMenuMeal: (id: string) => request<void>(`menu/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  getMenuSuggestions: async (from: string, to: string, slots: string[]) =>
+    (await request<MenuSuggestionsResponse>(`menu/suggestions?from=${from}&to=${to}&slots=${slots.join(",")}`)).suggestions,
+  getRecipes: async () => (await request<RecipesResponse>("recipes")).recipes,
+  createRecipe: (input: RecipeInput) => request<{ recipe: Recipe }>("recipes", { method: "POST", json: input }),
+  updateRecipe: (id: string, input: RecipeInput) => request<{ recipe: Recipe }>(`recipes/${encodeURIComponent(id)}`, { method: "PATCH", json: input }),
+  deleteRecipe: (id: string) => request<void>(`recipes/${encodeURIComponent(id)}`, { method: "DELETE" }),
   getCookidooIngredients: async (eventIds: string[]) =>
     (await request<MenuIngredientsResponse>(`menu/ingredients?ids=${encodeURIComponent(eventIds.join(","))}`)).ingredients,
 

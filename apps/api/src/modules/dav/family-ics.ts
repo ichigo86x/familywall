@@ -10,6 +10,7 @@ import {
   type MealSlot,
   type MenuMeal,
   type Occasion,
+  type Recipe,
   type OccasionKind,
   type Routine,
   type ScheduleEntry,
@@ -429,5 +430,37 @@ export const routineMapper: IcsMapper<Routine, RoutineWriteFields> = {
     setText(component, "description", fields.steps.map((step) => `${step.icon} ${step.label}`).join("\n"));
     setText(component, X_WHO, fields.who);
     setText(component, X_MEMBER, fields.memberId);
+  }
+};
+
+/* ---------- Recipes: journal entries ("Lasagne"), ingredients one per line in the description. ---------- */
+
+export type RecipeFields = Omit<Recipe, "id">;
+
+export const recipeMapper: IcsMapper<Recipe, RecipeFields> = {
+  component: "vjournal",
+  read(component, id) {
+    const title = text(component, "summary");
+    if (!title) {
+      return null;
+    }
+    const lines = text(component, "description").split(/\r?\n/);
+    const noteLine = lines.find((line) => NOTE_LINE.test(line));
+    const slot = text(component, X_SLOT);
+    return {
+      id,
+      title,
+      slot: isOneOf(MEAL_SLOTS, slot) ? slot : null,
+      ingredients: ingredientsFromText(lines.filter((line) => line !== noteLine).join("\n")),
+      note: noteLine ? noteLine.replace(NOTE_LINE, "").trim() || null : null
+    };
+  },
+  write(component, fields, context) {
+    setText(component, "summary", fields.title);
+    setText(component, "description", [...fields.ingredients, ...(fields.note ? ["", `Nota: ${fields.note}`] : [])].join("\n").trim());
+    if (context.created) {
+      component.updatePropertyWithValue("dtstart", ICAL.Time.fromDateString(localDate(context.now)));
+    }
+    setText(component, X_SLOT, fields.slot);
   }
 };

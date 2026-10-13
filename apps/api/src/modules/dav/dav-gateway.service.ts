@@ -21,6 +21,8 @@ const COLLECTION_PERMISSIONS: Record<string, Permission> = {
   "familywall-menu": "events:write",
   "familywall-compleanni": "events:write",
   "familywall-turni": "events:write",
+  "familywall-routine": "events:write",
+  "familywall-ricette": "events:write",
   "familywall-note": "lists:write"
 };
 

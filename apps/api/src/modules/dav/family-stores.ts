@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { MEAL_SLOTS, type FamilyNote, type MenuMeal, type Occasion, type Routine, type ScheduleEntry } from "@familywall/shared";
+import { MEAL_SLOTS, type FamilyNote, type MenuMeal, type Occasion, type Recipe, type Routine, type ScheduleEntry } from "@familywall/shared";
 import { MembersRepository } from "../members/members.repository";
 import { SettingsRepository } from "../settings/settings.repository";
 import { DavStore, type CollectionSpec } from "./dav-store";
@@ -7,6 +7,7 @@ import {
   menuMapper,
   noteMapper,
   occasionMapper,
+  recipeMapper,
   routineMapper,
   setRoutineStep,
   scheduleMapper,
@@ -14,6 +15,7 @@ import {
   type MenuMealFields,
   type NoteFields,
   type OccasionFields,
+  type RecipeFields,
   type ReadContext,
   type RoutineFields,
   type RoutineWriteFields,
@@ -28,7 +30,8 @@ export const FAMILY_COLLECTIONS = {
   menu: { name: "familywall-menu", displayName: "Menu", color: "#EA580C", component: "VEVENT" },
   schedule: { name: "familywall-turni", displayName: "Turni", color: "#0EA5E9", component: "VEVENT" },
   notes: { name: "familywall-note", displayName: "Note", color: "#EAB308", component: "VJOURNAL" },
-  routines: { name: "familywall-routine", displayName: "Routine", color: "#8B5CF6", component: "VEVENT" }
+  routines: { name: "familywall-routine", displayName: "Routine", color: "#8B5CF6", component: "VEVENT" },
+  recipes: { name: "familywall-ricette", displayName: "Ricette", color: "#16A34A", component: "VJOURNAL" }
 } satisfies Record<string, CollectionSpec>;
 
 const readContext = (settings: SettingsRepository) => (): ReadContext => ({ timezone: settings.get().timezone, now: new Date() });
@@ -57,6 +60,18 @@ export class MenuStore extends FamilyObjects<MenuMeal, MenuMealFields> {
     return (await this.list())
       .filter((meal) => meal.date >= from && meal.date <= to)
       .sort((left, right) => left.date.localeCompare(right.date) || MEAL_SLOTS.indexOf(left.slot) - MEAL_SLOTS.indexOf(right.slot) || left.title.localeCompare(right.title));
+  }
+}
+
+/** Recipes of the family (journal entries in "Ricette"), reused for the menu. */
+@Injectable()
+export class RecipesStore extends FamilyObjects<Recipe, RecipeFields> {
+  public constructor(store: DavStore, settings: SettingsRepository) {
+    super(store, FAMILY_COLLECTIONS.recipes, recipeMapper, readContext(settings), "Ricetta non trovata.");
+  }
+
+  public override async list(): Promise<Recipe[]> {
+    return (await super.list()).sort((left, right) => left.title.localeCompare(right.title));
   }
 }
 
