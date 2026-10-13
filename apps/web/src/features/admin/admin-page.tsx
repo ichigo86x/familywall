@@ -19,6 +19,7 @@ import { AuditCard } from "./security-card";
 import { DashboardListsCard } from "./dashboard-lists-card";
 import { FamilyTargetsCard } from "./family-targets-card";
 import { PresenceCard } from "./presence-card";
+import { PhotosCard } from "./photos-card";
 
 const loadAdminData = async () => {
   const [members, accounts, calendars, settings, taskLists, home] = await Promise.all([
@@ -91,6 +92,7 @@ export const AdminPage = () => {
             <>
               <DashboardListsCard listIds={admin.data.settings.dashboardListIds} onSaved={admin.reload} />
               <WeatherCard location={admin.data.settings.weatherLocation} onSaved={admin.reload} />
+              <PhotosCard photos={admin.data.settings.photos} onSaved={admin.reload} />
               <PanelSettingsCard
                 night={admin.data.settings.panelNight}
                 panels={admin.data.members.filter((member) => member.role === "Kiosk")}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { photoSettingsSchema } from "./photos";
 import { homeCalendarSchema, homeListSchema, homePresenceLinkSchema, isAllowedHomeService } from "./home";
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Expected a #RRGGBB color");
@@ -136,6 +137,7 @@ export const updateSettingsSchema = z
     homeLists: z.array(homeListSchema).max(20).optional(),
     homeCalendars: z.array(homeCalendarSchema).max(20).optional(),
     homePresence: z.array(homePresenceLinkSchema).max(20).optional(),
+    photos: photoSettingsSchema.optional(),
     panelProfiles: z.record(z.string().min(1).max(64), panelProfileSchema).optional(),
     weatherLocation: z
       .object({

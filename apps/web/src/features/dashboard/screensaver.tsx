@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { api } from "@/api/client";
+import type { ScreensaverPhoto } from "@familywall/shared";
 import { useNow } from "@/components/live-clock";
 
 export type Season = "winter" | "spring" | "summer" | "autumn";
@@ -259,6 +260,58 @@ const useNextEventCaption = (now: Date): string | null => {
   return next.start <= now ? `Adesso: ${next.title}` : `Prossimo: ${next.title} alle ${timeOf(next.start)}`;
 };
 
+/** Photos chosen in Admin (Unsplash, media folder, iCloud album), each loaded before it is shown; null keeps the seasonal scene. */
+const useScreensaverPhoto = () => {
+  const [photo, setPhoto] = useState<{ src: string; credit: ScreensaverPhoto["credit"] } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let timer: number | undefined;
+    let objectUrl: string | null = null;
+    const show = async () => {
+      let delay = 60;
+      try {
+        const next = await api.getScreensaverPhoto();
+        delay = next.intervalSeconds;
+        if (next.photo) {
+          const src = next.photo.viaApi ? await api.photoObjectUrl(next.photo.url) : next.photo.url;
+          await new Promise<void>((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve();
+            image.onerror = () => reject(new Error("image"));
+            image.src = src;
+          });
+          if (!active) {
+            return;
+          }
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+          }
+          objectUrl = next.photo.viaApi ? src : null;
+          setPhoto({ src, credit: next.photo.credit });
+        } else if (active) {
+          setPhoto(null);
+        }
+      } catch {
+        // Offline or a broken photo: keep what is on screen and try again later.
+      }
+      if (active) {
+        timer = window.setTimeout(() => void show(), delay * 1000);
+      }
+    };
+    void show();
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, []);
+
+  return photo;
+};
+
 /**
  * Full-screen seasonal screensaver with a large clock. Any tap or key closes it.
  * The clock slowly drifts to avoid burn-in on always-on panels; a wake lock keeps the screen on.
@@ -268,6 +321,7 @@ export const Screensaver = ({ onExit }: ScreensaverProps) => {
   const caption = useNextEventCaption(now);
   const season = seasonOf(now);
   const rootRef = useRef<HTMLDivElement>(null);
+  const photo = useScreensaverPhoto();
 
   useEffect(() => {
     const root = rootRef.current;
@@ -306,13 +360,29 @@ export const Screensaver = ({ onExit }: ScreensaverProps) => {
 
   return (
     <div ref={rootRef} className="screensaver" role="dialog" aria-label="Screensaver" onClick={onExit} onTouchStart={onExit}>
-      <SeasonCanvas season={season} />
+      {photo ? <div key={photo.src} className="screensaver__photo" style={{ backgroundImage: `url("${photo.src}")` }} /> : <SeasonCanvas season={season} />}
       <div className="screensaver__clock" style={{ transform: `translate(calc(-50% + ${offsetX}vw), calc(-50% + ${offsetY}vh))` }}>
         <strong>{now.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</strong>
         <span>{now.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}</span>
         {caption ? <em>{caption}</em> : null}
       </div>
-      <span className="screensaver__hint">{SEASON_LABELS[season]} · tocca per tornare</span>
+      <span className="screensaver__hint">
+        {photo?.credit ? (
+          <>
+            Foto di{" "}
+            <a href={photo.credit.link} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
+              {photo.credit.name}
+            </a>{" "}
+            su{" "}
+            <a href="https://unsplash.com/?utm_source=familywall&utm_medium=referral" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
+              Unsplash
+            </a>
+          </>
+        ) : (
+          SEASON_LABELS[season]
+        )}{" "}
+        · tocca per tornare
+      </span>
     </div>
   );
 };

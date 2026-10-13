@@ -6,6 +6,8 @@ export interface AppConfig {
   nodeEnv: string;
   port: number;
   dataDir: string;
+  /** Media folder of Home Assistant (/media in the add-on): screensaver photos can come from it. */
+  mediaDir: string;
   /** Built SPA served by the API in production; empty disables static serving. */
   webDistDir: string;
   jwtIssuer: string;
@@ -44,6 +46,7 @@ export const loadAppConfig = (): AppConfig => {
     nodeEnv,
     port: Number(process.env.PORT ?? 3001),
     dataDir: path.resolve(process.env.DATA_DIR ?? "./data"),
+    mediaDir: path.resolve(process.env.MEDIA_DIR ?? (process.env.SUPERVISOR_TOKEN ? "/media" : "./media")),
     webDistDir: process.env.WEB_DIST_DIR ? path.resolve(process.env.WEB_DIST_DIR) : "",
     jwtIssuer: process.env.JWT_ISSUER ?? "familywall-api",
     jwtAudience: process.env.JWT_AUDIENCE ?? "familywall-web",

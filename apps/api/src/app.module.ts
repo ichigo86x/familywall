@@ -14,6 +14,7 @@ import { ProvidersModule } from "./modules/providers/providers.module";
 import { ScheduleModule } from "./modules/schedule/schedule.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { WeatherModule } from "./modules/weather/weather.module";
+import { PhotosModule } from "./modules/photos/photos.module";
 import { HomeModule } from "./modules/home/home.module";
 import { BackupModule } from "./modules/backup/backup.module";
 import { AuditModule } from "./modules/audit/audit.module";
@@ -32,6 +33,7 @@ import { AuditModule } from "./modules/audit/audit.module";
     ScheduleModule,
     WeatherModule,
     HomeModule,
+    PhotosModule,
     BackupModule,
     AuditModule,
     HealthModule

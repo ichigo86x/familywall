@@ -13,6 +13,9 @@ boot: auto
 init: true
 # Lets the dashboard buttons call Home Assistant services (door opener, intercom...) through the Supervisor.
 homeassistant_api: true
+# Screensaver photos can come from the media folder of Home Assistant (read only).
+map:
+  - media:ro
 ingress: true
 ingress_port: 3001
 panel_icon: mdi:calendar-heart

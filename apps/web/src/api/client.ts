@@ -2,6 +2,8 @@ import type {
   FamilyDataKind,
   FamilyTargetsResponse,
   HomePresenceResponse,
+  PhotoSourceStatus,
+  ScreensaverPhotoResponse,
   SetFamilyTargetResponse,
   MenuIngredientsResponse,
   MenuMeal,
@@ -190,6 +192,18 @@ export const api = {
   deleteOccasion: (id: string) => request<void>(`occasions/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getStoredBackups: async () => (await request<{ backups: Array<{ name: string; size: number; createdAt: string }> }>("backup/stored")).backups,
+  getScreensaverPhoto: () => request<ScreensaverPhotoResponse>("photos/next"),
+  /** A photo of the media folder as an object URL (the Authorization header rules out a plain img src). */
+  photoObjectUrl: async (path: string): Promise<string> => {
+    const response = await fetch(new URL(path, document.baseURI).toString(), { headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}` } });
+    if (!response.ok) {
+      throw new ApiError(`Foto non disponibile (HTTP ${response.status})`, response.status);
+    }
+    return URL.createObjectURL(await response.blob());
+  },
+  getPhotoStatus: () => request<PhotoSourceStatus>("photos/status"),
+  setUnsplashKey: (accessKey: string | null) => request<void>("photos/unsplash-key", { method: "PUT", json: { accessKey } }),
+  testPhotos: () => request<{ count: number }>("photos/test", { method: "POST" }),
   /** Downloads a backup file (the Authorization header rules out a plain link). */
   downloadBackup: async (path: string): Promise<void> => {
     const response = await fetch(apiUrl(path), { headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}` }, cache: "no-store" });

@@ -4299,3 +4299,24 @@ button.schedule-chip {
   color: var(--color-muted);
   font-size: 0.85rem;
 }
+
+/* Screensaver photos (Unsplash, media folder, iCloud album). */
+.screensaver__photo {
+  position: absolute;
+  inset: 0;
+  background: #000 center / cover no-repeat;
+  animation: screensaver-photo-in 1.5s ease-out;
+}
+
+.screensaver__hint a {
+  color: inherit;
+}
+
+@keyframes screensaver-photo-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

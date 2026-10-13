@@ -14,7 +14,9 @@ const AREAS: Record<string, string> = {
   lists: "Liste",
   backup: "Backup",
   home: "Home Assistant",
-  "family-targets": "Dove salvare menu e compleanni"
+  "family-targets": "Dove salvare menu e compleanni",
+  photos: "Foto dello screensaver",
+  recipes: "Ricette"
 };
 
 /** Routes with a name of their own (method and route path without the /api prefix). */

@@ -1,4 +1,5 @@
 import type { HomeButton, HomeCalendar, HomeList, HomePresenceLink } from "./home";
+import type { PhotoSettings } from "./photos";
 import type { WeatherLocation } from "./weather";
 
 export type UserRole = "Admin" | "Parent" | "Child" | "Kiosk";
@@ -123,6 +124,8 @@ export interface HouseholdSettings {
   panelProfiles: Record<string, PanelProfile>;
   /** Members linked to a person.* entity of Home Assistant: the dashboard shows who is at home. */
   homePresence: HomePresenceLink[];
+  /** Photos of the screensaver (Unsplash, the media folder, an iCloud shared album) instead of the seasonal scene. */
+  photos: PhotoSettings;
   /** Where the family menu is kept: null = automatic, "internal" = built-in server, else a calendar id. */
   menuCalendarId: string | null;
   /** Where birthdays and anniversaries are kept (same values as menuCalendarId). */

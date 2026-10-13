@@ -10,3 +10,4 @@ export * from "./routine";
 export * from "./shopping";
 export * from "./family-targets";
 export * from "./recipes";
+export * from "./photos";
