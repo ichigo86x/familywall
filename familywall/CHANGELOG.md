@@ -1,5 +1,9 @@
 # Novità
 
+## 0.9.6
+
+- ClasseViva: per i registri che il portale web non apre, i compiti arrivano anche dall'API dell'app (sezione Compiti), non solo dall'agenda.
+
 ## 0.9.5
 
 - ClasseViva: i compiti mostrano il testo (campo homeworkDesc del portale) e ✅ quando sono segnati come fatti; se il portale non accetta il codice di un figlio, prova con l'utente dell'account, solo se apre lo stesso studente.

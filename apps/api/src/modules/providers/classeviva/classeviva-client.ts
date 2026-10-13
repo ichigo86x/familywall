@@ -236,11 +236,9 @@ export class ClasseVivaClient {
     try {
       web = await this.webSessionFor(ident, credentials);
     } catch (webError) {
-      this.logger.warn(`${masked(ident)}: web portal login failed (${(webError as Error).message}), using the app agenda.`);
+      this.logger.warn(`${masked(ident)}: web portal login failed (${(webError as Error).message}), using the app API.`);
       try {
-        const events = await this.v1Agenda(credentials, ident, from, to);
-        this.logger.log(`${masked(ident)}: app agenda read, ${events.length} items.`);
-        return events;
+        return await this.v1Events(credentials, ident, from, to);
       } catch (appError) {
         throw new ClasseVivaError("http", `${(webError as Error).message} ${(appError as Error).message}`);
       }
@@ -374,6 +372,34 @@ export class ClasseVivaClient {
       }
     }
     return this.json(response, operation);
+  }
+
+  /** Homework and agenda of the app API, for the registers the web portal does not open. */
+  private async v1Events(credentials: ClasseVivaCredentials, ident: string, from: Date, to: Date): Promise<RemoteEvent[]> {
+    const fromDay = from.toISOString().slice(0, 10);
+    const toDay = to.toISOString().slice(0, 10);
+    const agenda = await this.v1Agenda(credentials, ident, from, to);
+    let homeworkLog = "non disponibili";
+    let homework: RemoteEvent[] = [];
+    try {
+      // The same "Compiti" of the portal, in the app API (not every school has it: then only the agenda).
+      const session = await this.session(credentials, ident);
+      const response = await this.send(`${V1_URL}/students/${studentId(session.ident)}/homeworks`, {
+        method: "GET",
+        headers: { ...APP_HEADERS, "Z-Auth-Token": session.token }
+      });
+      const body = await this.json(response, "lettura dei compiti");
+      const items = itemsOf(body, ["items", "homeworks", "compiti", "data"]);
+      homework = homeworksToEvents(items).filter((event) => event.startAt.slice(0, 10) >= fromDay && event.startAt.slice(0, 10) <= toDay);
+      homeworkLog = shapeOf(body, items);
+    } catch (error) {
+      homeworkLog = `non disponibili (${(error as Error).message})`;
+    }
+    // Homework in the agenda too is shown once.
+    const titles = new Set(homework.map((event) => `${event.startAt}|${event.title}`));
+    const events = [...homework, ...agenda.filter((event) => !titles.has(`${event.startAt}|${event.title}`))];
+    this.logger.log(`${masked(ident)} (app API) ${fromDay}..${toDay}: Compiti ${homeworkLog}; agenda ${agenda.length} voci; ${events.length} voci mostrate.`);
+    return events;
   }
 
   /** The agenda of the app API, a month at a time (long ranges are refused). */

@@ -77,7 +77,7 @@ describe("ClasseVivaClient", () => {
     expect(calls.filter((call) => call.url.includes("AuthApi4.php")).length).toBe(logins);
   });
 
-  it("falls back to the app agenda, a month at a time, when the web login is refused", async () => {
+  it("falls back to the app API (homework and agenda a month at a time) when the web login is refused", async () => {
     const calls: string[] = [];
     const client = new ClasseVivaClient(async (url, init) => {
       calls.push(url);
@@ -87,11 +87,18 @@ describe("ClasseVivaClient", () => {
       if (url.endsWith("/auth/login")) {
         return v1Login(url, init);
       }
+      if (url.endsWith("/homeworks")) {
+        return json({ homeworks: [{ evtId: 9, homeworkDesc: "Ripassare", expiryDate: "2026-10-16", subjectDesc: "STORIA", homeworkDone: false }] });
+      }
       return json({ agenda: [{ evtId: 1, evtCode: "AGHW", evtDatetimeBegin: "2026-10-15T09:00:00+02:00", evtDatetimeEnd: "2026-10-15T10:00:00+02:00", isFullDay: false, notes: "Pag. 12", authorName: "Prof", subjectDesc: "MATEMATICA" }] });
     });
     const events = await client.fetchEvents({ username: "G1234567X", password: "x" }, classeVivaUrl("G1234567X"), new Date("2026-09-13T00:00:00Z"), new Date("2026-11-13T00:00:00Z"));
-    expect(calls.filter((url) => url.includes("/rest/v1/students/")).map((url) => url.split("/agenda/all/")[1])).toEqual(["20260913/20261013", "20261014/20261113"]);
-    expect(events).toMatchObject([{ uid: "classeviva-1", title: "📚 Matematica: Pag. 12", allDay: true, startAt: "2026-10-15T00:00:00.000Z" }]);
+    expect(calls.filter((url) => url.includes("/agenda/all/")).map((url) => url.split("/agenda/all/")[1])).toEqual(["20260913/20261013", "20261014/20261113"]);
+    expect(calls).toContain("https://web.spaggiari.eu/rest/v1/students/1234567/homeworks");
+    expect(events).toMatchObject([
+      { uid: "classeviva-hw-9", title: "📚 Storia: Ripassare", startAt: "2026-10-16T00:00:00.000Z" },
+      { uid: "classeviva-1", title: "📚 Matematica: Pag. 12", allDay: true, startAt: "2026-10-15T00:00:00.000Z" }
+    ]);
   });
 
   it("reports a refused password", async () => {
