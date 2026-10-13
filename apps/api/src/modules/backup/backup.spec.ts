@@ -12,6 +12,7 @@ const seed = (dataDir: string, key: Buffer) => {
   const box = new SecretBox(key);
   const now = new Date().toISOString();
   db.prepare("INSERT INTO members (id, username, display_name, role, color, password_hash, keywords, created_at, updated_at) VALUES ('m1', 'mario', 'Mario', 'Admin', '#000000', 'x', '[]', ?, ?)").run(now, now);
+  db.prepare("UPDATE members SET totp_enabled = 1, totp_secret_enc = ?, totp_recovery = '[\"h\"]' WHERE id = 'm1'").run(box.encrypt("JBSWY3DPEHPK3PXP"));
   db.prepare("INSERT INTO provider_accounts (id, provider, label, username, secret_enc, created_at) VALUES ('a1', 'icloud', 'Famiglia', 'f@icloud.com', ?, ?)").run(box.encrypt("app-password"), now);
   db.prepare("INSERT INTO notes (id, title, body, color, created_at, updated_at) VALUES ('n1', 'Wifi', 'sul frigo', '#FFFFFF', ?, ?)").run(now, now);
   writeFileSync(path.join(dataDir, "secret.key"), key.toString("base64"));
@@ -33,11 +34,25 @@ describe("BackupService", () => {
     const targetBox = new SecretBox(targetKey);
     const summary = new BackupService(target, targetBox, targetDir).restore(packed);
 
-    expect(summary).toEqual({ members: 1, lists: 1, credentials: "re-encrypted" });
+    expect(summary).toEqual({ members: 1, lists: 1, credentials: "re-encrypted", totpReset: 0 });
+    // The two-step secret is re-encrypted with the new key, so the codes keep working.
+    const { totp_secret_enc: totp } = target.prepare("SELECT totp_secret_enc FROM members").get() as { totp_secret_enc: string };
+    expect(targetBox.decrypt(totp)).toBe("JBSWY3DPEHPK3PXP");
     expect(target.prepare("SELECT title FROM notes").all()).toEqual([{ title: "Wifi" }]);
     const { secret_enc: secret } = target.prepare("SELECT secret_enc FROM provider_accounts").get() as { secret_enc: string };
     expect(targetBox.decrypt(secret)).toBe("app-password");
     expect(readFileSync(path.join(targetDir, "radicale", "collections", "collection-root", "famiglia", "spesa", "latte.ics"), "utf8")).toContain("VCALENDAR");
+  });
+
+  it("turns off two-step sign-in when the backup has no key, instead of locking the member out", () => {
+    const source = seed(mkdtempSync(path.join(tmpdir(), "fw-src-")), randomBytes(32));
+    const packed = source.service.create({ includeKey: false });
+    const targetDir = mkdtempSync(path.join(tmpdir(), "fw-dst-"));
+    const target = openDatabase(path.join(targetDir, "familywall.db"));
+    const summary = new BackupService(target, new SecretBox(randomBytes(32)), targetDir).restore(packed);
+
+    expect(summary).toMatchObject({ credentials: "unreadable", totpReset: 1 });
+    expect(target.prepare("SELECT totp_enabled, totp_secret_enc, totp_recovery FROM members").get()).toEqual({ totp_enabled: 0, totp_secret_enc: null, totp_recovery: "[]" });
   });
 
   it("refuses files that are not backups and keeps daily copies", () => {

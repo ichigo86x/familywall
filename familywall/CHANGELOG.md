@@ -1,5 +1,9 @@
 # Novità
 
+## 0.8.1
+
+- Ripristino di un backup con la verifica in due passaggi attiva: il segreto viene ricifrato con la chiave della nuova installazione se il backup la contiene; altrimenti la verifica in due passaggi viene disattivata per quei membri (da riattivare dal Profilo) invece di bloccare l'accesso.
+
 ## 0.8.0
 
 - Menu e compleanni anche su un calendario di iCloud, Google o di un server CalDAV, scelto in automatico o in Admin, con lo spostamento dei dati da una posizione all'altra.

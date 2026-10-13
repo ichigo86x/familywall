@@ -194,7 +194,7 @@ export const api = {
     window.setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
   },
   restoreBackup: (file: File) =>
-    request<{ members: number; lists: number; credentials: "kept" | "re-encrypted" | "unreadable" }>("backup/restore", {
+    request<{ members: number; lists: number; credentials: "kept" | "re-encrypted" | "unreadable"; totpReset: number }>("backup/restore", {
       method: "POST",
       headers: { "Content-Type": "application/octet-stream" },
       body: file

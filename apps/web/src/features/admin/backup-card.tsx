@@ -39,8 +39,13 @@ export const BackupCard = () => {
       }
       const summary = await api.restoreBackup(file);
       setResult({
-        intent: summary.credentials === "unreadable" ? "warning" : "success",
-        text: `Ripristino completato: ${summary.members} membri, ${summary.lists} file delle liste. ${CREDENTIALS_TEXT[summary.credentials]} Se la pagina non risponde, accedi di nuovo.`
+        intent: summary.credentials === "unreadable" || summary.totpReset > 0 ? "warning" : "success",
+        text:
+          `Ripristino completato: ${summary.members} membri, ${summary.lists} file delle liste. ${CREDENTIALS_TEXT[summary.credentials]}` +
+          (summary.totpReset > 0
+            ? ` La verifica in due passaggi è stata disattivata per ${summary.totpReset} membri (il backup non conteneva la chiave): riattivatela dal Profilo.`
+            : "") +
+          " Se la pagina non risponde, accedi di nuovo."
       });
       stored.reload();
     });

@@ -22,7 +22,14 @@ export class TotpService {
       return false;
     }
     if (/^\d{6}$/.test(code)) {
-      const step = matchTotp(this.secrets.decrypt(member.totp_secret_enc), code, now);
+      let secret: string;
+      try {
+        secret = this.secrets.decrypt(member.totp_secret_enc);
+      } catch {
+        // Encrypted with another key (secret.key replaced): only the recovery codes still work.
+        return false;
+      }
+      const step = matchTotp(secret, code, now);
       if (step === null || step <= member.totp_last_step) {
         return false;
       }

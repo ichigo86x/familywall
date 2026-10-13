@@ -35,6 +35,8 @@ export interface RestoreSummary {
   members: number;
   lists: number;
   credentials: "kept" | "re-encrypted" | "unreadable";
+  /** Members whose two-step sign-in was turned off: its secret could not be read without the backup's key. */
+  totpReset: number;
 }
 
 export interface StoredBackup {
@@ -119,10 +121,11 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       }
 
       const credentials = this.reencryptCredentials(staged, bundle.secretKey);
+      const totpReset = this.reencryptTotp(staged, bundle.secretKey);
       const members = this.copyInto(staged);
       const lists = this.restoreFiles(bundle.files);
-      this.logger.log(`Backup of ${bundle.createdAt} restored (${members} members, ${lists} list files, credentials ${credentials}).`);
-      return { members, lists, credentials };
+      this.logger.log(`Backup of ${bundle.createdAt} restored (${members} members, ${lists} list files, credentials ${credentials}, two-step sign-in reset for ${totpReset}).`);
+      return { members, lists, credentials, totpReset };
     } finally {
       for (const suffix of ["", "-wal", "-shm"]) {
         rmSync(staged + suffix, { force: true });
@@ -237,6 +240,50 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
         update.run(this.secrets.encrypt(plain), row.id);
       }
       return unreadable ? "unreadable" : "re-encrypted";
+    } finally {
+      db.close();
+    }
+  }
+
+  /**
+   * Two-step sign-in secrets are encrypted like the credentials. Secrets readable with neither key would
+   * lock their members out: two-step sign-in is turned off for them, to be turned on again from the Profile.
+   */
+  private reencryptTotp(staged: string, backupKey: string | null): number {
+    const db = new DatabaseSync(staged);
+    try {
+      const key = backupKey ? Buffer.from(backupKey, "base64") : null;
+      const backupBox = key?.length === 32 ? new SecretBox(key) : null;
+      const recover = (value: string | null): string | null => {
+        if (!value) {
+          return null;
+        }
+        for (const box of [this.secrets, backupBox]) {
+          try {
+            return box ? this.secrets.encrypt(box.decrypt(value)) : null;
+          } catch {
+            // Try the next key.
+          }
+        }
+        return null;
+      };
+      const rows = db.prepare("SELECT id, totp_enabled, totp_secret_enc, totp_pending_enc FROM members").all() as Array<{
+        id: string;
+        totp_enabled: number;
+        totp_secret_enc: string | null;
+        totp_pending_enc: string | null;
+      }>;
+      let reset = 0;
+      for (const row of rows) {
+        const secret = recover(row.totp_secret_enc);
+        if (row.totp_enabled === 1 && secret === null) {
+          db.prepare("UPDATE members SET totp_enabled = 0, totp_secret_enc = NULL, totp_pending_enc = NULL, totp_last_step = 0, totp_recovery = '[]' WHERE id = ?").run(row.id);
+          reset += 1;
+          continue;
+        }
+        db.prepare("UPDATE members SET totp_secret_enc = ?, totp_pending_enc = ? WHERE id = ?").run(secret, recover(row.totp_pending_enc), row.id);
+      }
+      return reset;
     } finally {
       db.close();
     }
