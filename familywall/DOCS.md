@@ -31,12 +31,17 @@ Sul telefono compaiono le liste della famiglia nei Promemoria e i calendari Menu
 
 Dentro l'add-on Familywall usa Home Assistant senza token: in **Admin → Home Assistant** aggiungi i pulsanti della dashboard (cancello, portone, luci, scene), le liste to-do e i calendari di Home Assistant.
 
+## Foto dello screensaver
+
+In **Admin → Dashboard e pannelli → Foto** scegli la fonte. Per la cartella media, copia le foto in `/media` di Home Assistant (l'add-on la legge in sola lettura) e indica la sottocartella.
+
 ## Dati e backup
 
 Tutti i dati stanno nella cartella dell'add-on e sono inclusi nel backup di Home Assistant. In più:
 
 - **Admin → Backup e sicurezza → Scarica backup** salva un file con tutto; con "Includi la chiave delle credenziali" si può ripristinare su un'altra installazione senza ricollegare gli account (conserva quel file in un posto sicuro);
-- ogni giorno Familywall salva una copia e tiene le ultime 7.
+- ogni giorno Familywall salva una copia e tiene le ultime 7;
+- **Copia remota cifrata**: una copia al giorno su una cartella WebDAV (Nextcloud, Synology...), cifrata con una frase segreta; per ripristinarla servono il file e la frase.
 
 Menu e compleanni salvati su calendari di iCloud o Google restano su quei calendari e non entrano nel backup.
 

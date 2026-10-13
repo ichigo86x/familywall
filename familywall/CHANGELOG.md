@@ -1,5 +1,14 @@
 # Novità
 
+## 0.9.0
+
+- Scuola: compiti e verifiche da ClasseViva (Spaggiari) nel calendario e in una scheda della dashboard, un calendario per ogni figlio.
+- Ricette di casa e menu suggerito per i pasti vuoti.
+- Foto nello screensaver: cartella media di Home Assistant, album condiviso di iCloud o paesaggi della stagione da Unsplash.
+- Chi è a casa, dalle persone di Home Assistant.
+- "Porta l'ombrello" nell'agenda quando è prevista pioggia durante un impegno.
+- Copia remota giornaliera del backup, cifrata, su una cartella WebDAV (Nextcloud, Synology, QNAP...).
+
 ## 0.8.1
 
 - Ripristino di un backup con la verifica in due passaggi attiva: il segreto viene ricifrato con la chiave della nuova installazione se il backup la contiene; altrimenti la verifica in due passaggi viene disattivata per quei membri (da riattivare dal Profilo) invece di bloccare l'accesso.

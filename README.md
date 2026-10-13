@@ -22,15 +22,16 @@ Familywall si installa come add-on di Home Assistant e si usa dal browser. Si co
 La pagina iniziale è pensata per essere letta da lontano. In un colpo d'occhio:
 
 - **ora, data e meteo**, su uno sfondo animato che segue il tempo del giorno, con la previsione di domani;
-- **l'agenda di oggi**, con il prossimo impegno in evidenza, i piatti in tavola e quello che aspetta domani; a giornata finita domani passa in primo piano;
+- **l'agenda di oggi**, con il prossimo impegno in evidenza, i piatti in tavola e quello che aspetta domani; a giornata finita domani passa in primo piano. Se durante un impegno è prevista pioggia, compare **"☔ Porta l'ombrello"**;
 - **i prossimi giorni**, con i primi impegni di ognuno;
-- **chi fa cosa in casa**: lavoro dei genitori, faccende dei bambini, chi viene a casa;
+- **chi fa cosa in casa**: lavoro dei genitori, faccende dei bambini, chi viene a casa, e **chi è a casa** in questo momento (dalle persone di Home Assistant);
+- **la scuola**: compiti e verifiche dei prossimi giorni dal registro **ClasseViva**;
 - **le liste scelte**, con un campo per aggiungere subito una voce;
 - **le note** fissate in bacheca e i **compleanni** in arrivo;
 - **le routine** del mattino e della sera dei bambini, quando è il momento;
 - **i pulsanti** per creare un evento, un piatto o una nota, e quelli di Home Assistant (cancello, portone, luci).
 
-Su pannelli e tablet la dashboard sta sempre in uno schermo: le schede lunghe scorrono al loro interno. Toccando l'orologio parte uno screensaver stagionale con l'ora e il prossimo impegno.
+Su pannelli e tablet la dashboard sta sempre in uno schermo: le schede lunghe scorrono al loro interno. Toccando l'orologio parte lo screensaver con l'ora e il prossimo impegno: una scena animata della stagione, oppure le foto di famiglia (cartella media di Home Assistant o album condiviso di iCloud) o paesaggi della stagione da Unsplash.
 
 ### Calendario di famiglia
 
@@ -41,6 +42,8 @@ Ogni membro ha un colore: Familywall riconosce i nomi nei titoli ("Karate Luca" 
 ### Menu e spesa
 
 Il menu raccoglie i piatti di casa, il piano settimanale di **Cookidoo** (Bimby) e i calendari che usi come menu, in vista settimana, 14 giorni o mese. Ogni piatto ha pasto, ingredienti e nota.
+
+Le **ricette** di casa (piatto, ingredienti, pasto abituale) si riusano con un tocco, e **💡 Suggerisci** riempie i pasti vuoti con i piatti che cucinate più spesso e le ricette, senza ripetere lo stesso piatto nella settimana.
 
 Con **Ingredienti → spesa** Familywall raccoglie gli ingredienti della settimana, di un giorno o di un piatto, unisce i doppioni e li aggiunge alla lista che scegli, saltando quello che c'è già.
 
@@ -59,6 +62,10 @@ Le liste della spesa si ordinano **per reparto**, nell'ordine di un giro al supe
 - **Turni**: smart working e ufficio dei genitori, faccende dei bambini, presenze in casa (pulizie, babysitter, nonni). Ricorrenti ogni settimana, solo nelle settimane pari o dispari (per alternare due figli), oppure una volta sola. Vista settimana, 14 giorni o mese.
 - **Faccende e stelline**: il bambino spunta la faccenda fatta e guadagna una ⭐; la dashboard conta le stelline della settimana.
 - **Routine**: la sequenza del mattino o della sera (vestirsi, denti, zaino...) con tessere grandi da toccare e il conto alla rovescia fino all'ora di uscire.
+
+### Scuola
+
+Con l'account **ClasseViva** (Spaggiari) del genitore o dello studente, i compiti e le verifiche arrivano nel calendario e nella scheda **Scuola** della dashboard, un calendario per ogni figlio.
 
 ### Note, compleanni e ricorrenze
 
@@ -110,8 +117,8 @@ Usa sempre HTTPS. Se non pubblichi Familywall, svuota la porta nella scheda **Re
 ## Primi passi
 
 1. **Membri**: in Admin → Famiglia aggiungi genitori, figli e un account **Pannello** per ogni schermo a muro. Dai a ognuno un colore e gli "altri nomi" con cui compare nei titoli degli eventi.
-2. **Calendari e liste**: in Admin → Calendari e liste → **Collega account**. Per ogni tipo di account (Calendari iCloud, Promemoria iCloud, Google, CalDAV, Cookidoo) la finestra spiega cosa si può usare e come ottenere la password per app o le credenziali. Poi scegli i calendari e le liste da mostrare.
-3. **Dashboard**: in Admin → Dashboard e pannelli scegli la città del meteo e le liste da mostrare.
+2. **Calendari e liste**: in Admin → Calendari e liste → **Collega account**. Per ogni tipo di account (Calendari iCloud, Promemoria iCloud, Google, CalDAV, Cookidoo, ClasseViva) la finestra spiega cosa si può usare e come ottenere la password per app o le credenziali. Poi scegli i calendari e le liste da mostrare.
+3. **Dashboard**: in Admin → Dashboard e pannelli scegli la città del meteo, le liste da mostrare e le foto dello screensaver.
 4. **Telefoni**: ognuno, dal proprio Profilo, collega il telefono (vedi sotto).
 
 ## Sul telefono
@@ -142,7 +149,8 @@ Dentro l'add-on Familywall parla con Home Assistant da solo, senza token:
 
 - **Pulsanti** in dashboard per serrature, cancelli, tapparelle, luci, script e scene, con conferma per porte e cancelli e la scelta di chi può usarli;
 - **Liste to-do** di Home Assistant nella pagina Liste;
-- **Calendari** di Home Assistant (raccolta rifiuti, scuola, festività...) in sola lettura.
+- **Calendari** di Home Assistant (raccolta rifiuti, scuola, festività...) in sola lettura;
+- **Chi è a casa**: collega ogni membro alla sua persona (`person.*`, di solito con l'app Companion) e la dashboard mostra chi è a casa, chi è fuori e in quale zona.
 
 Le azioni ammesse sono solo quelle sicure per ogni tipo di entità (per esempio una serratura si apre o si chiude, uno script si esegue).
 
@@ -152,10 +160,11 @@ Le azioni ammesse sono solo quelle sicure per ogni tipo di entità (per esempio 
 - Le **password** degli account collegati sono cifrate; la verifica in due passaggi è disponibile per tutti; un **registro attività** mostra chi ha fatto cosa (senza mai salvare password o testi).
 - Gli **accessi** falliti sono limitati per indirizzo e per utente.
 - **Backup**: dall'Admin si scarica un file con tutto (con la chiave delle credenziali, se serve per spostarlo su un'altra installazione) e si ripristina senza riavviare. Ogni giorno Familywall salva da solo una copia e tiene le ultime 7; anche il backup di Home Assistant le include.
+- **Copia remota cifrata**: ogni giorno una copia completa va in una cartella WebDAV fuori casa (Nextcloud, Synology, QNAP...), cifrata con una frase segreta che conosci solo tu.
 
 Cose da sapere:
 
-- Cookidoo e i Promemoria iCloud usano API non ufficiali: possono smettere di funzionare se Vorwerk o Apple le cambiano. I Promemoria iCloud non sono leggibili con la Protezione avanzata dei dati attiva.
+- Cookidoo, ClasseViva, i Promemoria iCloud e gli album condivisi di iCloud usano API non ufficiali: possono smettere di funzionare se Vorwerk, Spaggiari o Apple le cambiano. I Promemoria iCloud non sono leggibili con la Protezione avanzata dei dati attiva.
 - Le note non compaiono nell'app Note dell'iPhone né in Google Keep, che non hanno API adatte.
 
 ## Sviluppo
