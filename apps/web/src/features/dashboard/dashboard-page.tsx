@@ -15,6 +15,7 @@ import { ActiveRoutines } from "@/features/schedule/routines";
 import { KIND_LABELS } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
 import { ActionBar } from "./action-bar";
+import { SchoolCard } from "./school-card";
 import { WeatherClock } from "./weather-clock";
 
 const REFRESH_MS = 5 * 60 * 1000;
@@ -107,8 +108,8 @@ export const DashboardPage = () => {
 
   const membersById = useMemo(() => new Map((members.data ?? []).map((member) => [member.id, member])), [members.data]);
 
-  const { events, meals, birthdays } = useMemo(() => {
-    const entries: Array<PlannerEvent & { kind: "events" | "meals" | "birthdays" }> = (calendar.data?.calendars ?? []).flatMap((entry) =>
+  const { events, meals, birthdays, school } = useMemo(() => {
+    const entries: Array<PlannerEvent & { kind: "events" | "meals" | "birthdays" | "school" }> = (calendar.data?.calendars ?? []).flatMap((entry) =>
       entry.events.map((event) => ({
         ...event,
         title: entry.kind === "birthdays" ? birthdayTitle(event.title) : event.title,
@@ -118,7 +119,9 @@ export const DashboardPage = () => {
       }))
     );
     return {
-      events: entries.filter((event) => event.kind !== "meals").sort(byStart),
+      // Homework and tests have a card of their own.
+      events: entries.filter((event) => event.kind !== "meals" && event.kind !== "school").sort(byStart),
+      school: entries.filter((event) => event.kind === "school").sort(byStart),
       meals: entries.filter((event) => event.kind === "meals"),
       birthdays: entries.filter((event) => event.kind === "birthdays").sort(byStart)
     };
@@ -272,6 +275,7 @@ export const DashboardPage = () => {
 
         <div className="dashboard-side-column">
           <HomeCard entries={schedule.data ?? []} now={now} membersById={membersById} viewer={auth.user} onChanged={schedule.reload} />
+          <SchoolCard events={school} today={today} />
 
           {lists.status === "error" ? (
             <Card className="panel-card dashboard-side">

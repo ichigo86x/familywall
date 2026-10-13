@@ -24,7 +24,7 @@ import { GoogleConnect } from "./google-connect";
 import { PROVIDER_GUIDES, ProviderHelp, capabilitySummary, guideFor } from "./provider-guides";
 import { DiscoverListsDialog } from "./task-lists-section";
 
-const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "Calendari iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google", icloudweb: "Promemoria iCloud" };
+const PROVIDER_LABELS: Record<CalendarProvider, string> = { icloud: "Calendari iCloud", caldav: "CalDAV", cookidoo: "Cookidoo", google: "Google", icloudweb: "Promemoria iCloud", classeviva: "ClasseViva" };
 
 /** Localized Cookidoo sites (country and language come from the URL). */
 const COOKIDOO_SITES = [
@@ -257,7 +257,7 @@ const CalendarRow = ({
         </div>
       </div>
       <div className="row-actions">
-        {calendar.provider === "cookidoo" ? null : (
+        {calendar.provider === "cookidoo" || calendar.provider === "classeviva" ? null : (
           <select
             className="native-select calendar-purpose"
             aria-label="Uso del calendario"
@@ -408,7 +408,7 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
                 <Field label="Nome account" hint="Come appare nell'app, es. 'iCloud famiglia'">
                   <Input value={form.label} onChange={(_, data) => setForm({ ...form, label: data.value })} />
                 </Field>
-                <Field label={form.provider === "icloud" || form.provider === "icloudweb" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : "Utente"} required>
+                <Field label={form.provider === "icloud" || form.provider === "icloudweb" ? "Apple ID (email)" : form.provider === "cookidoo" ? "Email Cookidoo" : form.provider === "classeviva" ? "Codice utente o email ClasseViva" : "Utente"} required>
                   <Input autoCapitalize="none" autoComplete="off" value={form.username} onChange={(_, data) => setForm({ ...form, username: data.value })} />
                 </Field>
                 <Field

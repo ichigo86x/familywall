@@ -4173,3 +4173,46 @@ button.schedule-chip {
     display: none;
   }
 }
+
+/* Dashboard: homework and tests from the school register. */
+.dashboard-school {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-school__day ul {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-school__day li {
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--input-bg);
+}
+
+.dashboard-school__day li strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-school__day li span {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+@media (min-width: 901px) and (min-height: 600px) {
+  .app-shell--dashboard .dashboard-school {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 35%;
+    overflow-y: auto;
+    align-content: start;
+  }
+}

@@ -10,6 +10,8 @@ import type {
 } from "@familywall/shared";
 import { AppException } from "../../common/errors/app-exception";
 import { CalDavClient, CalDavError, ICLOUD_CALDAV_URL, type CalDavCredentials } from "./caldav/caldav-client";
+import type { RemoteEvent } from "./caldav/ics-parser";
+import { ClasseVivaClient, classeVivaUrl } from "./classeviva/classeviva-client";
 import { CookidooClient, DEFAULT_COOKIDOO_URL, parseCookidooSite } from "./cookidoo/cookidoo-client";
 import { GoogleClient, parseGoogleSecret, type GoogleSecret } from "./google/google-client";
 import { ProviderAccountsRepository } from "./provider-accounts.repository";
@@ -55,7 +57,8 @@ export class ProvidersService {
     private readonly caldav: CalDavClient,
     private readonly cookidoo: CookidooClient,
     private readonly google: GoogleClient,
-    private readonly icloud: IcloudBridge
+    private readonly icloud: IcloudBridge,
+    private readonly classeviva: ClasseVivaClient = new ClasseVivaClient()
   ) {}
 
   public list(): ProviderAccount[] {
@@ -68,9 +71,11 @@ export class ProvidersService {
       return this.createIcloudWeb(input);
     }
     const serverUrl =
-      input.provider === "icloud" ? null : input.provider === "cookidoo" ? (input.serverUrl ?? DEFAULT_COOKIDOO_URL) : input.serverUrl!;
+      input.provider === "icloud" || input.provider === "classeviva" ? null : input.provider === "cookidoo" ? (input.serverUrl ?? DEFAULT_COOKIDOO_URL) : input.serverUrl!;
     try {
-      if (input.provider === "cookidoo") {
+      if (input.provider === "classeviva") {
+        await this.classeviva.identities({ username: input.username, password: input.password });
+      } else if (input.provider === "cookidoo") {
         await this.cookidoo.verify({ serverUrl: serverUrl!, username: input.username, password: input.password });
       } else {
         await this.caldav.discoverCalendars({
@@ -235,7 +240,9 @@ export class ProvidersService {
     try {
       const provider = this.accounts.findById(accountId)?.provider;
       const calendars =
-        provider === "cookidoo"
+        provider === "classeviva"
+          ? (await this.classeviva.identities(credentials)).map((identity) => ({ remoteUrl: classeVivaUrl(identity.ident), name: `Scuola · ${identity.name}`, color: "#0F766E" }))
+          : provider === "cookidoo"
           ? await this.discoverCookidoo(credentials)
           : provider === "google"
             ? await this.google.listCalendars(parseGoogleSecret(credentials.password))
@@ -265,6 +272,11 @@ export class ProvidersService {
       void this.icloud.forget(accountId);
       rmSync(path.join(appConfig.dataDir, "icloud", accountId), { recursive: true, force: true });
     }
+  }
+
+  /** Homework and tests of one ClasseViva identity (calendar remote URL classeviva://<ident>). */
+  public fetchSchool(credentials: CalDavCredentials, remoteUrl: string, from: Date, to: Date): Promise<RemoteEvent[]> {
+    return this.classeviva.fetchEvents(credentials, remoteUrl, from, to);
   }
 
   private async discoverCookidoo(credentials: CalDavCredentials) {

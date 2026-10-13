@@ -19,7 +19,8 @@ const PROVIDER_LABELS: Record<FamilyTargetOption["provider"], string> = {
   caldav: "CalDAV",
   google: "Google",
   cookidoo: "Cookidoo",
-  icloudweb: "Promemoria iCloud"
+  icloudweb: "Promemoria iCloud",
+  classeviva: "ClasseViva"
 };
 
 const optionLabel = (option: FamilyTargetOption) =>

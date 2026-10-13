@@ -151,7 +151,7 @@ export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 export const createProviderAccountSchema = z
   .object({
-    provider: z.enum(["icloud", "caldav", "cookidoo", "icloudweb"]),
+    provider: z.enum(["icloud", "caldav", "cookidoo", "icloudweb", "classeviva"]),
     label: z.string().trim().min(1).max(80),
     username: z.string().trim().min(1).max(200),
     password: z.string().min(1).max(200),

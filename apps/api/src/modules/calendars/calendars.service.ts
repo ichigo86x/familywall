@@ -233,11 +233,18 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
         const rows = stored.filter((row) => row.calendar_id === config.id);
         const { events: remoteEvents, error } = await this.fetchRemote(config, from, to);
         const metaByKey = new Map(rows.filter((row) => row.source === "remote").map((row) => [row.uid, row]));
-        const kind = config.provider === "cookidoo" || config.purpose === "meals" ? "meals" : config.purpose === "birthdays" ? "birthdays" : "events";
+        const kind =
+          config.provider === "classeviva"
+            ? "school"
+            : config.provider === "cookidoo" || config.purpose === "meals"
+              ? "meals"
+              : config.purpose === "birthdays"
+                ? "birthdays"
+                : "events";
 
         const events = [
-          // Menu calendars keep the ingredients in the description.
-          ...remoteEvents.map((remote) => ({ ...remoteToEvent(config.id, remote, metaByKey), ...(kind === "meals" ? { notes: remote.description ?? null } : {}) })),
+          // Menu calendars keep the ingredients in the description, the school register the homework text.
+          ...remoteEvents.map((remote) => ({ ...remoteToEvent(config.id, remote, metaByKey), ...(kind === "meals" || kind === "school" ? { notes: remote.description ?? null } : {}) })),
           ...rows.filter((row) => row.source === "local").map(storedToEvent)
         ]
           .map((event) => withInferredMembers(event, matchMembers))
@@ -439,6 +446,8 @@ export class CalendarsService implements OnModuleInit, OnModuleDestroy {
     }
     return config.provider === "cookidoo"
       ? this.cookidoo.fetchMealPlan(credentials, from, to)
+      : config.provider === "classeviva"
+        ? this.providers.fetchSchool(credentials, config.remoteUrl, from, to)
       : config.provider === "google"
         ? this.google.fetchEvents(parseGoogleSecret(credentials.password), config.remoteUrl, from, to)
         : this.caldav.fetchEvents(credentials, config.remoteUrl, from, to);

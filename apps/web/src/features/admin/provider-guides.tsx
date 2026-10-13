@@ -131,6 +131,26 @@ export const PROVIDER_GUIDES: ProviderGuide[] = [
       <>Se accedi a Cookidoo con Google o Apple, crea prima una password: nella pagina di accesso di Cookidoo usa "Password dimenticata?" con la tua email.</>
     ],
     notes: [<>Usa le stesse API non ufficiali dell'app Cookidoo: può smettere di funzionare se Vorwerk le cambia.</>]
+  },
+  {
+    provider: "classeviva",
+    icon: "🎒",
+    title: "ClasseViva (scuola)",
+    tagline: "Compiti e verifiche dal registro elettronico Spaggiari",
+    capabilities: [
+      { label: "Compiti e verifiche in dashboard e nel calendario", level: "yes", note: "Un calendario per ogni figlio." },
+      { label: "Voti, assenze, bacheca", level: "no" },
+      { label: "Modifiche dall'app", level: "no", note: "Sola lettura." }
+    ],
+    credentialsTitle: "Cosa serve",
+    steps: [
+      <>Le credenziali di ClasseViva del genitore (codice che inizia con "G" o email) o dello studente: le stesse dell'app ClasseViva.</>,
+      <>Con un account genitore con più figli, "Scegli calendari" mostra un calendario per ciascuno.</>
+    ],
+    notes: [
+      <>Spaggiari non ha API pubbliche: Familywall usa quelle dell'app ClasseViva, che possono cambiare senza preavviso.</>,
+      <>Se la scuola usa l'accesso solo con SPID o CIE, le credenziali di ClasseViva potrebbero non funzionare.</>
+    ]
   }
 ];
 

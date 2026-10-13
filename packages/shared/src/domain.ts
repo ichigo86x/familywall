@@ -180,10 +180,11 @@ export const isNightTime = (night: PanelNight, now: Date): boolean => {
 };
 
 /** "icloudweb": Apple ID login through pyicloud, for iCloud Reminders (the "icloud" accounts use CalDAV with an app password). */
-export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google" | "icloudweb";
+/** "classeviva": the ClasseViva school register (homework and tests), read-only. */
+export type CalendarProvider = "icloud" | "caldav" | "cookidoo" | "google" | "icloudweb" | "classeviva";
 
 /** Providers Familywall can only read from (no event writes). */
-export const READ_ONLY_PROVIDERS: readonly CalendarProvider[] = ["cookidoo"];
+export const READ_ONLY_PROVIDERS: readonly CalendarProvider[] = ["cookidoo", "classeviva"];
 
 /** "verify": iCloud waits for the two-factor code sent to the trusted devices. */
 export type ConnectionStatus = "ok" | "error" | "unknown" | "verify";
@@ -274,7 +275,8 @@ export interface FamilyCalendar {
   /** Events cannot be created or changed here (e.g. Cookidoo meal plan). */
   readOnly: boolean;
   /** "meals": planned recipes, shown as a chef hat on the day; "birthdays": birthdays and anniversaries, shown as a cake. */
-  kind: "events" | "meals" | "birthdays";
+  /** "school": homework and tests from the school register. */
+  kind: "events" | "meals" | "birthdays" | "school";
   lastError: string | null;
   events: FamilyEvent[];
 }
