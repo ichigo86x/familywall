@@ -1,5 +1,9 @@
 # Novità
 
+## 0.9.5
+
+- ClasseViva: i compiti mostrano il testo (campo homeworkDesc del portale) e ✅ quando sono segnati come fatti; se il portale non accetta il codice di un figlio, prova con l'utente dell'account, solo se apre lo stesso studente.
+
 ## 0.9.4
 
 - ClasseViva: lettura dei compiti più tollerante sul formato delle risposte; nel log dell'add-on un riepilogo di cosa risponde ClasseViva (solo nomi dei campi e conteggi).

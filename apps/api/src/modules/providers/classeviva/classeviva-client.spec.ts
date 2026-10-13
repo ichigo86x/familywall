@@ -105,5 +105,40 @@ describe("ClasseVivaClient", () => {
       { uid: "classeviva-hw-7", title: "📚 Scienze: Ripassare cap. 2", startAt: "2026-10-16T00:00:00.000Z" }
     ]);
     expect(itemsOf([{ a: 1 }], ["items"])).toEqual([{ a: 1 }]);
+    // The shape the portal answers today (Compiti): text in homeworkDesc, done when ticked in the app.
+    const portal = { items: [
+      { evtId: 31, evtCode: "AGHW", teacherName: "Prof. Bianchi", homeworkDesc: "Pag. 40 es. 1-5", homeworkDone: false, homeworkMarkedDone: false, assignmentDate: "2026-10-12", expiryDate: "2026-10-15", subjectDesc: "MATEMATICA" },
+      { evtId: 32, evtCode: "AGHW", teacherName: "Prof. Verdi", homeworkDesc: "Leggere cap. 3", homeworkDone: false, homeworkMarkedDone: true, assignmentDate: "2026-10-12", expiryDate: "2026-10-14", subjectDesc: "ITALIANO" }
+    ] };
+    expect(homeworksToEvents(itemsOf(portal, ["items"]))).toMatchObject([
+      { uid: "classeviva-hw-31", title: "📚 Matematica: Pag. 40 es. 1-5", startAt: "2026-10-15T00:00:00.000Z", description: "Pag. 40 es. 1-5\n(Prof. Bianchi)" },
+      { uid: "classeviva-hw-32", title: "✅ Italiano: Leggere cap. 3", startAt: "2026-10-14T00:00:00.000Z" }
+    ]);
+  });
+
+  it("opens the portal with the account username when a child code is refused, only for that same child", async () => {
+    const tried: string[] = [];
+    const client = new ClasseVivaClient(async (url, init) => {
+      if (url.includes("AuthApi4.php")) {
+        const uid = new URLSearchParams(String(init.body)).get("uid")!;
+        tried.push(uid);
+        return uid === "genitore@example.com"
+          ? json({ data: { auth: { loggedIn: true, accountInfo: { id: 1234567 } } } }, 200, { "Set-Cookie": "PHPSESSID=s1; path=/" })
+          : json({ data: { auth: { loggedIn: false, errors: ["Identificativo o password errati"] } } });
+      }
+      if (url.endsWith("/misc/whoami")) {
+        return json({ id: "1234567" });
+      }
+      if (url.endsWith("/auth/login")) {
+        return v1Login(url, init);
+      }
+      return url.includes("/rest/w1/") ? json({ items: [], agenda: [] }) : json({ agenda: [] });
+    });
+    const credentials = { username: "genitore@example.com", password: "segreta" };
+    await client.fetchEvents(credentials, classeVivaUrl("G1234567X"), new Date("2026-10-13T00:00:00Z"), new Date("2026-10-20T00:00:00Z"));
+    expect(tried).toEqual(["G1234567X", "genitore@example.com"]);
+    // Another child: the username opens student 1234567, not 7654321, so the app agenda is used instead.
+    const events = await client.fetchEvents(credentials, classeVivaUrl("G7654321Y"), new Date("2026-10-13T00:00:00Z"), new Date("2026-10-20T00:00:00Z"));
+    expect(events).toEqual([]);
   });
 });

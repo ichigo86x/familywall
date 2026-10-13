@@ -190,13 +190,15 @@ export const homeworksToEvents = (items: Array<Record<string, unknown>>): Remote
     if (!date) {
       return [];
     }
-    const text = pick(item, ["text", "homeworkText", "notes", "description", "content", "evtText", "testo", "title"]) ?? "";
+    const text = pick(item, ["homeworkDesc", "text", "homeworkText", "notes", "description", "content", "evtText", "testo", "title"]) ?? "";
+    // Ticked as done by the student or the parent in the app.
+    const done = item.homeworkDone === true || item.homeworkMarkedDone === true;
     const subjectName = pick(item, ["subjectDesc", "subjectName", "subject", "materia"]);
     const teacher = pick(item, ["teacherName", "authorName", "docente"]);
     const subject = subjectName ? capitalized(subjectName) : "Compiti";
     const description = [text, teacher ? `(${teacher})` : ""].filter(Boolean).join("\n");
     const id = pick(item, ["id", "homeworkId", "evtId"]) ?? `${date}-${index}`;
-    return [dayEvent(`classeviva-hw-${id}`, `📚 ${subject}${text ? `: ${firstLine(text)}` : ""}`, date, description)];
+    return [dayEvent(`classeviva-hw-${id}`, `${done ? "✅" : "📚"} ${subject}${text ? `: ${firstLine(text)}` : ""}`, date, description)];
   });
 
 /** Field names of an answer, for the log (never the values: they are the children's data). */
@@ -232,7 +234,7 @@ export class ClasseVivaClient {
     const ident = identOf(remoteUrl);
     let web: { cookie: string; id: string };
     try {
-      web = await this.webSession(ident, credentials.password);
+      web = await this.webSessionFor(ident, credentials);
     } catch (webError) {
       this.logger.warn(`${masked(ident)}: web portal login failed (${(webError as Error).message}), using the app agenda.`);
       try {
@@ -298,6 +300,30 @@ export class ClasseVivaClient {
       }
     }
     return events;
+  }
+
+  /**
+   * The web portal does not always accept the code of every child of a parent account: then the username
+   * of the account is tried, and its session is used only when it opens that same student.
+   */
+  private async webSessionFor(ident: string, credentials: ClasseVivaCredentials): Promise<{ cookie: string; id: string }> {
+    try {
+      return await this.webSession(ident, credentials.password);
+    } catch (error) {
+      if (credentials.username === ident) {
+        throw error;
+      }
+      let session: { cookie: string; id: string };
+      try {
+        session = await this.webSession(credentials.username, credentials.password);
+      } catch {
+        throw error;
+      }
+      if (session.id !== studentId(ident)) {
+        throw new ClasseVivaError("auth", `${(error as Error).message} Con l'utente dell'account il portale apre un altro studente.`);
+      }
+      return session;
+    }
   }
 
   /** Login on the web portal: a session cookie and the student id of the w1 paths. */
