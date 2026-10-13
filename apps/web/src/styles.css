@@ -4074,8 +4074,9 @@ button.schedule-chip {
     overflow-y: auto;
   }
 
+  /* Chores and school keep their height (up to the max): the lists share what is left and scroll. */
   .app-shell--dashboard .dashboard-home {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
     max-height: 45%;
     overflow-y: auto;
@@ -4209,7 +4210,7 @@ button.schedule-chip {
 
 @media (min-width: 901px) and (min-height: 600px) {
   .app-shell--dashboard .dashboard-school {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
     max-height: 35%;
     overflow-y: auto;
