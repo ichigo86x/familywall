@@ -12,6 +12,8 @@ export interface AuthContextValue {
   logout: () => void;
   retry: () => void;
   reloadHousehold: () => Promise<void>;
+  /** The signed-in member changed (e.g. their picture): shown at once without signing in again. */
+  updateUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

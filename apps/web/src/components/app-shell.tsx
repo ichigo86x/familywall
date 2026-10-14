@@ -14,6 +14,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useHasSchool } from "@/features/school/school";
 
+import { MemberAvatar } from "@/components/member-avatar";
 import { useAuth } from "@/components/auth/use-auth";
 import {
   CalendarRegular,
@@ -68,13 +69,6 @@ interface AppShellProps {
 
 const ROLE_LABELS = { Admin: "Admin", Parent: "Genitore", Child: "Figlio", Kiosk: "Pannello" } as const;
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
 
 export const AppShell = ({ currentRoute, eyebrow, title, subtitle, children, toolbarActions, compact = false, headless = false, fit = false, dashboard = false }: AppShellProps) => {
   const auth = useAuth();
@@ -140,7 +134,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, children, too
             {auth.user ? (
               auth.user.role === "Kiosk" ? (
                 <span className="member-avatar" style={{ background: auth.user.color }} title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}>
-                  {initials(auth.user.displayName)}
+                  <MemberAvatar member={auth.user} />
                 </span>
               ) : (
                 // The member's own page: password, phone setup, two-step sign-in.
@@ -152,7 +146,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, children, too
                   aria-label={`Profilo di ${auth.user.displayName}`}
                   onClick={() => navigate("/profile")}
                 >
-                  {initials(auth.user.displayName)}
+                  <MemberAvatar member={auth.user} />
                 </button>
               )
             ) : null}

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { CreateMemberInput, SetPasswordInput, UpdateMemberInput, User } from "@familywall/shared";
+import type { CreateMemberInput, SetAvatarInput, SetPasswordInput, UpdateMemberInput, User } from "@familywall/shared";
 import { hasPermission } from "@familywall/shared";
 import { hashPassword, verifyPassword } from "../../common/crypto/password";
 import { AppException } from "../../common/errors/app-exception";
@@ -68,6 +68,16 @@ export class MembersService {
     }
 
     this.members.setPassword(memberId, await hashPassword(input.password));
+  }
+
+  /** Members change their own picture; Admins can change anyone's (children have no sign-in). */
+  public setAvatar(actor: User, memberId: string, input: SetAvatarInput): User {
+    this.requireMember(memberId);
+    if (actor.id !== memberId && !hasPermission(actor.role, "members:manage")) {
+      throw AppException.forbidden("Puoi cambiare solo la tua foto.");
+    }
+    this.members.setAvatar(memberId, input.avatar);
+    return toUser(this.requireMember(memberId));
   }
 
   public delete(actor: User, memberId: string): void {

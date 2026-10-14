@@ -27,6 +27,7 @@ import { createMemberSchema, type User, type UserRole } from "@familywall/shared
 import { api } from "@/api/client";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { useAuth } from "@/components/auth/use-auth";
+import { AvatarDialog, MemberAvatar } from "@/components/member-avatar";
 import { DeleteRegular, EditRegular, KeyRegular, PersonAddRegular } from "@/lib/fluent-icons";
 
 export const ROLE_INFO: Record<UserRole, { label: string; description: string }> = {
@@ -44,6 +45,7 @@ type Dialogs =
   | { kind: "create" }
   | { kind: "edit"; member: User }
   | { kind: "password"; member: User }
+  | { kind: "avatar"; member: User }
   | null;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : "Operazione non riuscita.");
@@ -102,7 +104,7 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
             <TableRow key={member.id}>
               <TableCell>
                 <div className="identity-cell">
-                  <span className="member-chip__swatch" style={{ background: member.color }} />
+                  <MemberAvatar member={member} className="member-picture--small" />
                   <span>{member.displayName}</span>
                   {member.disabled ? <Badge appearance="outline" color="danger">disattivato</Badge> : null}
                 </div>
@@ -118,6 +120,9 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
               <TableCell>
                 <div className="row-actions">
                   <Button size="small" appearance="subtle" icon={<EditRegular />} aria-label="Modifica" onClick={() => setDialog({ kind: "edit", member })} />
+                  <Button size="small" appearance="subtle" aria-label="Foto o emoji" title="Foto o emoji" onClick={() => setDialog({ kind: "avatar", member })}>
+                    🖼️
+                  </Button>
                   <Button size="small" appearance="subtle" icon={<KeyRegular />} aria-label="Reimposta password" onClick={() => setDialog({ kind: "password", member })} />
                   {member.totpEnabled && member.id !== auth.user?.id ? (
                     <Button
@@ -166,6 +171,16 @@ export const MembersSection = ({ members, onChanged }: MembersSectionProps) => {
         />
       ) : null}
       {dialog?.kind === "password" ? <PasswordDialog member={dialog.member} onClose={() => setDialog(null)} /> : null}
+      {dialog?.kind === "avatar" ? (
+        <AvatarDialog
+          member={dialog.member}
+          onClose={() => setDialog(null)}
+          onSaved={(member) => {
+            auth.updateUser(member);
+            onChanged();
+          }}
+        />
+      ) : null}
     </Card>
   );
 };

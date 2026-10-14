@@ -3,10 +3,11 @@ import type {
   CreateMemberInput,
   MemberResponse,
   MembersResponse,
+  SetAvatarInput,
   SetPasswordInput,
   UpdateMemberInput
 } from "@familywall/shared";
-import { createMemberSchema, setPasswordSchema, updateMemberSchema } from "@familywall/shared";
+import { createMemberSchema, setAvatarSchema, setPasswordSchema, updateMemberSchema } from "@familywall/shared";
 import { RequirePermission } from "../../common/auth/permissions.decorator";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
 import type { RequestWithUser } from "../../common/types/request-with-user";
@@ -47,6 +48,15 @@ export class MembersController {
     @Body(new ZodValidationPipe(setPasswordSchema)) input: SetPasswordInput
   ): Promise<void> {
     await this.membersService.setPassword(request.user, memberId, input);
+  }
+
+  @Put(":memberId/avatar")
+  public setAvatar(
+    @Req() request: RequestWithUser,
+    @Param("memberId") memberId: string,
+    @Body(new ZodValidationPipe(setAvatarSchema)) input: SetAvatarInput
+  ): MemberResponse {
+    return { member: this.membersService.setAvatar(request.user, memberId, input) };
   }
 
   @Delete(":memberId")

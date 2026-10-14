@@ -281,5 +281,9 @@ export const migrations: string[] = [
   // A calendar may belong to a member (e.g. a child's ClasseViva register): its events take that member's colour.
   `
   ALTER TABLE calendars ADD COLUMN member_id TEXT;
+  `,
+  // Member picture: one emoji or a small photo (data URL).
+  `
+  ALTER TABLE members ADD COLUMN avatar TEXT;
   `
 ];

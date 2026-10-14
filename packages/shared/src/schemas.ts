@@ -93,6 +93,24 @@ export const setPasswordSchema = z.object({
 
 export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
 
+/** A photo is resized in the browser before upload; this also keeps it under the JSON body limit. */
+export const AVATAR_PHOTO_MAX_LENGTH = 90_000;
+
+/** A member's picture: one emoji (shown animated when possible) or a small photo as a data URL. */
+export const avatarSchema = z.union([
+  z
+    .string()
+    .max(32)
+    .regex(/^\p{Extended_Pictographic}[\p{Extended_Pictographic}\p{Emoji_Modifier}‍️]*$/u, "Scegli un'emoji"),
+  z
+    .string()
+    .max(AVATAR_PHOTO_MAX_LENGTH, "Foto troppo grande")
+    .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/, "Foto non valida")
+]);
+
+export const setAvatarSchema = z.object({ avatar: avatarSchema.nullable() }).strict();
+export type SetAvatarInput = z.infer<typeof setAvatarSchema>;
+
 export const homeButtonSchema = z
   .object({
     id: z.string().trim().min(1).max(64),

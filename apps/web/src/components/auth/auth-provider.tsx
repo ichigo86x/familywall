@@ -75,10 +75,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   const can = useCallback((permission: Permission) => Boolean(user && userCan(user, permission)), [user]);
   const reloadHousehold = useCallback(async () => setHousehold(await api.getSettings()), []);
+  const updateUser = useCallback((next: User) => setUser((current) => (current?.id === next.id ? next : current)), []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, household, error, can, login, setup, logout, retry, reloadHousehold }),
-    [status, user, household, error, can, login, setup, logout, retry, reloadHousehold]
+    () => ({ status, user, household, error, can, login, setup, logout, retry, reloadHousehold, updateUser }),
+    [status, user, household, error, can, login, setup, logout, retry, reloadHousehold, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

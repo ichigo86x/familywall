@@ -249,6 +249,8 @@ export const api = {
     (await request<{ member: User }>(`members/${encodeURIComponent(id)}`, { method: "PATCH", json: input })).member,
   setMemberPassword: (id: string, input: SetPasswordInput) =>
     request<void>(`members/${encodeURIComponent(id)}/password`, { method: "PUT", json: input }),
+  setMemberAvatar: async (id: string, avatar: string | null) =>
+    (await request<{ member: User }>(`members/${encodeURIComponent(id)}/avatar`, { method: "PUT", json: { avatar } })).member,
   deleteMember: (id: string) => request<void>(`members/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   getProviderAccounts: async () => (await request<{ accounts: ProviderAccount[] }>("providers/accounts")).accounts,

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
+import { AvatarDialog, MemberAvatar } from "@/components/member-avatar";
 import { SecurityCard } from "@/features/admin/security-card";
 import { PhoneSetupCard } from "./phone-setup";
 
@@ -14,6 +15,7 @@ const ROLE_LABELS = { Admin: "Admin", Parent: "Genitore", Child: "Figlio", Kiosk
 export const ProfilePage = () => {
   const auth = useAuth();
   const user = auth.user;
+  const [picking, setPicking] = useState(false);
 
   return (
     <AppShell compact currentRoute="/profile" eyebrow="Profilo" title={user?.displayName ?? "Profilo"} subtitle="">
@@ -22,11 +24,14 @@ export const ProfilePage = () => {
           <div className="panel-card__header">
             <div>
               <p className="eyebrow">Il mio account</p>
-              <h3>
-                <span className="member-avatar member-avatar--inline" style={{ background: user.color }} aria-hidden="true" /> {user.displayName}
-              </h3>
+              <h3>{user.displayName}</h3>
             </div>
           </div>
+          <div className="profile-picture">
+            <MemberAvatar member={user} className="member-picture--large" />
+            <Button appearance="secondary" onClick={() => setPicking(true)}>Cambia foto o emoji</Button>
+          </div>
+          {picking ? <AvatarDialog member={user} onClose={() => setPicking(false)} onSaved={auth.updateUser} /> : null}
           <p>
             Nome utente <code>{user.username}</code> · {ROLE_LABELS[user.role]}
           </p>

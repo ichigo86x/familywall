@@ -4801,3 +4801,110 @@ button.home-tiles__item--done {
   color: var(--color-muted);
   text-decoration: line-through;
 }
+
+/* Member pictures: photo, emoji (animated when available) or initials. */
+.member-picture {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--member-color, var(--color-primary));
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.member-picture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.member-picture--emoji {
+  background: color-mix(in srgb, var(--member-color, var(--color-primary)) 22%, var(--color-surface-raised));
+}
+
+.member-picture--emoji .member-picture__emoji-img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+}
+
+.member-picture__emoji {
+  font-size: 1.15em;
+}
+
+.member-picture--small {
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.8rem;
+}
+
+.member-picture--large {
+  width: 5rem;
+  height: 5rem;
+  font-size: 1.8rem;
+}
+
+.member-avatar .member-picture {
+  width: 100%;
+  height: 100%;
+  font-size: inherit;
+}
+
+.home-tiles__avatar.member-picture {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.home-tiles li {
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+}
+
+.profile-picture {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar-dialog__preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.8rem, 1fr));
+  gap: 6px;
+}
+
+.avatar-dialog__emoji {
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.avatar-dialog__emoji--selected {
+  border-color: var(--color-primary);
+  background: var(--today-bg);
+}
+
+.member-avatar {
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+}
+
+.member-picture__emoji-img--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}

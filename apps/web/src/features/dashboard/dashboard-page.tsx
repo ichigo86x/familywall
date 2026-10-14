@@ -14,6 +14,7 @@ import { StarsLine, useChoreToggle } from "@/features/schedule/schedule-page";
 import { ActiveRoutines } from "@/features/schedule/routines";
 import { entryIcon, entryTime } from "@/features/schedule/schedule-labels";
 import { AddRegular } from "@/lib/fluent-icons";
+import { MemberAvatar } from "@/components/member-avatar";
 import { ActionBar } from "./action-bar";
 import { SchoolPanel } from "@/features/school/school";
 import { WeatherClock } from "./weather-clock";
@@ -396,8 +397,8 @@ const HomeCard = ({
   const rows = [...membersById.values()]
     .map((member) => ({
       key: member.id,
+      member,
       name: member.displayName,
-      color: member.color,
       entries: shown.filter((entry) => entry.memberId === member.id),
       presence: presenceOf.get(member.id)
     }))
@@ -420,9 +421,7 @@ const HomeCard = ({
         <ul className="home-tiles">
           {rows.map((row) => (
             <li key={row.key}>
-              <span className="home-tiles__avatar" style={{ background: row.color }} aria-hidden="true">
-                {row.name.charAt(0).toUpperCase()}
-              </span>
+              <MemberAvatar member={row.member} className="home-tiles__avatar" />
               <span className="home-tiles__body">
                 <strong>{row.name}</strong>
                 {row.entries.map((entry) => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AVATAR_PHOTO_MAX_LENGTH, setAvatarSchema } from "@familywall/shared";
 import { createTestContext } from "../../test/test-context";
 
 const setup = async () => {
@@ -37,6 +38,23 @@ describe("MembersService", () => {
     await expect(ctx.members.setPassword(child, child.id, { password: "password2", currentPassword: "password1" })).resolves.toBeUndefined();
     await expect(ctx.members.setPassword(child, admin.id, { password: "hijacked1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(ctx.members.setPassword(admin, child.id, { password: "password3" })).resolves.toBeUndefined();
+  });
+
+  it("sets a member's picture: their own, or anyone's for an Admin", async () => {
+    const { ctx, admin } = await setup();
+    const child = await ctx.members.create({ username: "luca", displayName: "Luca", role: "Child", color: "#16A34A", password: "password1" });
+    const photo = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+
+    expect(ctx.members.setAvatar(child, child.id, { avatar: "🦖" }).avatar).toBe("🦖");
+    expect(() => ctx.members.setAvatar(child, admin.id, { avatar: "🦖" })).toThrow(/solo la tua foto/);
+    expect(ctx.members.setAvatar(admin, child.id, { avatar: photo }).avatar).toBe(photo);
+    expect(ctx.members.list().find((member) => member.id === child.id)?.avatar).toBe(photo);
+    expect(ctx.members.setAvatar(admin, child.id, { avatar: null }).avatar).toBeNull();
+
+    expect(setAvatarSchema.safeParse({ avatar: "👩🏽‍💻" }).success).toBe(true);
+    expect(setAvatarSchema.safeParse({ avatar: "ciao" }).success).toBe(false);
+    expect(setAvatarSchema.safeParse({ avatar: "data:text/html;base64,PHNjcmlwdD4=" }).success).toBe(false);
+    expect(setAvatarSchema.safeParse({ avatar: `data:image/png;base64,${"A".repeat(AVATAR_PHOTO_MAX_LENGTH)}` }).success).toBe(false);
   });
 
   it("supports tag-only children that cannot sign in", async () => {

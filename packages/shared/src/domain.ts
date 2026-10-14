@@ -47,6 +47,8 @@ export interface User {
   canLogin: boolean;
   /** Kiosk only: the panel may also write events, shifts, lists and notes. */
   panelWrite: boolean;
+  /** One emoji or a small photo (data URL); null shows the initials. */
+  avatar: string | null;
   /** Sign-in asks a code of an authenticator app after the password. */
   totpEnabled: boolean;
 }

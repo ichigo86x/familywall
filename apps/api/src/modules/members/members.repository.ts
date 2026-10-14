@@ -20,6 +20,7 @@ export interface MemberRow {
   totp_last_step: number;
   /** JSON array of sha256 hashes of the unused recovery codes. */
   totp_recovery: string;
+  avatar: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +59,7 @@ export const toUser = (row: MemberRow): User => ({
   keywords: JSON.parse(row.keywords) as string[],
   canLogin: row.password_hash !== NO_PASSWORD,
   panelWrite: row.role === "Kiosk" && row.panel_write === 1,
+  avatar: row.avatar ?? null,
   totpEnabled: row.totp_enabled === 1
 });
 
@@ -180,6 +182,10 @@ export class MembersRepository {
     this.db
       .prepare("UPDATE members SET password_hash = ?, token_version = token_version + 1, updated_at = ? WHERE id = ?")
       .run(passwordHash, nowIso(), id);
+  }
+
+  public setAvatar(id: string, avatar: string | null): void {
+    this.db.prepare("UPDATE members SET avatar = ?, updated_at = ? WHERE id = ?").run(avatar, nowIso(), id);
   }
 
   public delete(id: string): void {
