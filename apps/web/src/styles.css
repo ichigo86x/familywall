@@ -61,7 +61,7 @@ body {
     linear-gradient(180deg, var(--page-bg-start) 0%, var(--page-bg-end) 100%);
   background-attachment: fixed;
   color: var(--color-text);
-  font-family: "Inter Variable", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
@@ -4382,11 +4382,10 @@ button.schedule-chip {
 }
 
 /*
- * Lighter look (from the README mockup): a brand tile, pill navigation, a serif clock,
+ * Lighter look (from the README mockup): a brand tile, pill navigation,
  * flatter cards with hairline rows instead of nested boxes, colour bars instead of outlined pills.
  */
 :root {
-  --font-display: "Fraunces Variable", Fraunces, Georgia, serif;
   --radius-card: 22px;
 }
 
@@ -4410,17 +4409,6 @@ button.schedule-chip {
   color: #fff;
   font-weight: 700;
   font-size: 1rem;
-}
-
-.app-toolbar__title,
-.page-header h2 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.app-toolbar__title {
-  font-size: 1.35rem;
 }
 
 /* Navigation: the selected page is a soft pill, not an underline. */
@@ -4447,13 +4435,7 @@ button.schedule-chip {
   border-radius: var(--radius-card);
 }
 
-/* Clock: serif digits; without weather, a green to amber sky. */
-.dashboard-clock strong {
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-
+/* Clock without weather: a green to amber sky. */
 .panel-card.dashboard-clock:not([class*="weather-sky--"]) {
   background: linear-gradient(135deg, #3a7d6e, #5e9c8b 55%, #e9a24d);
 }

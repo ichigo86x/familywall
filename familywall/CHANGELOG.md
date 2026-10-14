@@ -2,7 +2,7 @@
 
 ## 0.9.7
 
-- Aspetto più leggero: orologio con cifre serif, menu a pillole, righe sottili al posto dei riquadri nei prossimi giorni e nelle liste, note come foglietti in bacheca. I caratteri (Inter e Fraunces) sono inclusi nell'add-on e funzionano anche senza internet.
+- Aspetto più leggero: menu a pillole, righe sottili al posto dei riquadri nei prossimi giorni e nelle liste, eventi come barre colorate, note come foglietti in bacheca.
 
 ## 0.9.6
 

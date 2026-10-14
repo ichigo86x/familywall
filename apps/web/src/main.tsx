@@ -3,8 +3,6 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "@/App";
 
-import "@fontsource-variable/inter";
-import "@fontsource-variable/fraunces";
 import "./styles.css";
 
 // Offline app shell (production only: the dev server must always serve fresh modules).
