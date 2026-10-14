@@ -4354,19 +4354,19 @@ button.schedule-chip {
   }
 }
 
-/* Top right: one card with the "+" menu, the Home Assistant buttons and the birthdays. */
+/* Top right: the "+" and the Home Assistant buttons as a grid of equal tiles, the birthdays below. */
 .fui-Card.dashboard-top-side,
 .dashboard-top-side {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 14px;
+  display: grid;
+  align-content: center;
+  gap: 12px;
+  padding: 14px;
 }
 
 .dashboard-top-side > .action-bar {
-  flex: 0 0 auto;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 8px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -4376,36 +4376,114 @@ button.schedule-chip {
 
 .dashboard-top-side .action-bar__item {
   width: auto;
-  min-height: 2.6rem;
-  grid-auto-flow: column;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 999px;
+  min-height: 4.6rem;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 8px 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+  box-shadow: none;
 }
 
 .dashboard-top-side .action-bar__icon {
-  font-size: 1.2rem;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  font-size: 1.25rem;
 }
 
 .dashboard-top-side .action-bar__label {
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .dashboard-top-side .action-bar__state {
   font-size: 0.72rem;
 }
 
-.action-bar__add.fui-Button {
-  min-width: 2.6rem;
-  height: 2.6rem;
+.dashboard-top-side .action-bar__item--add {
+  border-color: transparent;
+  background: var(--color-primary);
+  color: #fff;
 }
 
+.dashboard-top-side .action-bar__item--add .action-bar__icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dashboard-top-side .action-bar__item--active {
+  border-color: var(--color-accent);
+  background: rgba(233, 162, 77, 0.14);
+  box-shadow: none;
+}
+
+.dashboard-top-side .action-bar__item--active .action-bar__state {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Birthdays: a row of small cards (icon, name, when) that scrolls sideways. */
 .fui-Card.dashboard-top-side .dashboard-birthday-strip,
 .dashboard-top-side .dashboard-birthday-strip {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.dashboard-birthday-strip > .eyebrow {
+  margin: 0;
+}
+
+.dashboard-birthday-strip ul {
+  margin: 0;
   padding: 0;
-  flex-wrap: nowrap;
+  list-style: none;
+  display: flex;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.dashboard-birthday-strip li {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 6px;
+  border-radius: 14px;
+  background: var(--color-surface-soft);
+}
+
+.dashboard-birthday-strip li > span:last-child {
+  display: grid;
+  line-height: 1.2;
+}
+
+.dashboard-birthday-strip small {
+  color: var(--color-muted);
+}
+
+.dashboard-birthday-strip__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  font-size: 1.1rem;
+}
+
+.dashboard-birthday-strip li.dashboard-birthday-chip--today {
+  background: linear-gradient(90deg, rgba(219, 39, 119, 0.16), rgba(233, 162, 77, 0.16));
 }
 
 /* Clock without weather: the "set a city" link sits small in the corner. */
@@ -4579,18 +4657,27 @@ button.home-tiles__item--done {
 }
 
 .home-tiles__presence {
-  width: 10px;
-  height: 10px;
-  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.home-tiles__presence::before {
+  content: "";
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--color-border);
 }
 
-.home-tiles__presence--home {
+.home-tiles__presence--home::before {
   background: var(--color-primary);
 }
 
-.home-tiles__presence--zone {
+.home-tiles__presence--zone::before {
   background: var(--color-accent);
 }
 
@@ -4652,20 +4739,6 @@ button.home-tiles__item--done {
 
 :root[data-theme="dark"] .dashboard-note {
   color: #1f2933;
-}
-
-/* The "+" and the birthdays share one row; the Home Assistant buttons follow. */
-.fui-Card.dashboard-top-side,
-.dashboard-top-side {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: center;
-}
-
-.dashboard-top-side > .dashboard-birthday-strip {
-  flex: 1 1 14rem;
-  min-width: 0;
 }
 
 .dashboard-meals .dashboard-chip {

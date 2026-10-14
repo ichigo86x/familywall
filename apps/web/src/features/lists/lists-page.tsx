@@ -249,7 +249,7 @@ const TaskListCard = ({ list, canWrite, onChanged, onDashboard, onToggleDashboar
         </form>
       ) : null}
 
-      {(canWrite && hasHistory) || shopping ? (
+      {shopping ? (
         <div className="task-tools">
           {canWrite && hasHistory ? (
             <Button size="small" appearance={showSuggestions ? "primary" : "secondary"} aria-pressed={showSuggestions} onClick={toggleSuggestions}>

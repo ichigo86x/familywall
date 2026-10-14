@@ -79,7 +79,12 @@ export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => 
       {shortcuts.length > 0 ? (
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button appearance="primary" shape="circular" size="large" className="action-bar__add" icon={<AddRegular />} aria-label="Aggiungi" title="Aggiungi" />
+            <button type="button" className="action-bar__item action-bar__item--add" title="Aggiungi">
+              <span className="action-bar__icon" aria-hidden="true">
+                <AddRegular />
+              </span>
+              <span className="action-bar__label">Aggiungi</span>
+            </button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -92,7 +97,6 @@ export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => 
           </MenuPopover>
         </Menu>
       ) : null}
-      {shortcuts.length > 0 && buttons.length > 0 ? <span className="action-bar__divider" aria-hidden="true" /> : null}
       {buttons.map((button) => {
         // Only meaningful states (locks, covers, switches); buttons and scripts report timestamps or "unknown".
         const state = button.state ? (HOME_STATE_LABELS[button.state] ?? null) : null;

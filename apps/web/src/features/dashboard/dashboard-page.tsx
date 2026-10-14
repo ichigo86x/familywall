@@ -409,7 +409,6 @@ const HomeCard = ({
       <div className="panel-card__header">
         <div>
           <p className="eyebrow">{evening ? "Stasera e domani" : "Oggi in casa"}</p>
-          <h3>Chi fa cosa</h3>
         </div>
         <Link to="/schedule" className="dashboard-link">Turni →</Link>
       </div>
@@ -426,7 +425,6 @@ const HomeCard = ({
               </span>
               <span className="home-tiles__body">
                 <strong>{row.name}</strong>
-                {row.entries.length === 0 ? <small>{row.presence ? presenceLabel(row.presence) : ""}</small> : null}
                 {row.entries.map((entry) => {
                   const done = entry.done.includes(todayKey);
                   const time = entryTime(entry);
@@ -453,11 +451,7 @@ const HomeCard = ({
                 })}
               </span>
               {row.presence ? (
-                <span
-                  className={`home-tiles__presence home-tiles__presence--${row.presence.state}`}
-                  title={presenceLabel(row.presence)}
-                  aria-label={presenceLabel(row.presence)}
-                />
+                <span className={`home-tiles__presence home-tiles__presence--${row.presence.state}`}>{presenceLabel(row.presence)}</span>
               ) : null}
             </li>
           ))}
@@ -485,18 +479,27 @@ const BirthdayStrip = ({ birthdays, today }: { birthdays: PlannerEvent[]; today:
   const when = (days: number, event: PlannerEvent) =>
     days <= 0 ? "oggi 🎉" : days === 1 ? "domani" : days < 7 ? `tra ${days} giorni` : eventBounds(event).start.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
   return (
-    <div className="dashboard-birthday-strip" aria-label="Compleanni e ricorrenze">
+    <section className="dashboard-birthday-strip" aria-label="Compleanni e ricorrenze">
       <span className="eyebrow">Ricorrenze</span>
-      {upcoming.map((event) => {
-        const days = daysUntil(event);
-        return (
-          <span key={event.id} className={`dashboard-birthday-chip ${days <= 0 ? "dashboard-birthday-chip--today" : ""}`.trim()}>
-            {event.title}
-            <span>{when(days, event)}</span>
-          </span>
-        );
-      })}
-    </div>
+      <ul>
+        {upcoming.map((event) => {
+          const days = daysUntil(event);
+          // birthdayTitle puts an emoji first ("🎂 Nonna Rita"): it becomes the round icon of the card.
+          const match = event.title.match(/^(\p{Extended_Pictographic}️?)\s*(.*)$/u);
+          const icon = match?.[1] ?? "🎂";
+          const name = match?.[2] ?? event.title;
+          return (
+            <li key={event.id} className={days <= 0 ? "dashboard-birthday-chip--today" : undefined}>
+              <span className="dashboard-birthday-strip__icon" aria-hidden="true">{icon}</span>
+              <span>
+                <strong>{name}</strong>
+                <small>{when(days, event)}</small>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 };
 
