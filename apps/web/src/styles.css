@@ -4510,84 +4510,102 @@ button.schedule-chip {
   justify-items: start;
 }
 
-/* Oggi in casa: one row per person. */
-.home-rows {
+/* Oggi in casa: a grid of people, as in the mockup. */
+.home-tiles {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 8px;
 }
 
-.home-rows li {
+.home-tiles li {
   display: grid;
-  grid-template-columns: 2rem 5.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: center;
-  padding: 7px 2px;
-  border-top: 1px solid var(--line);
+  align-items: start;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--color-surface-soft);
 }
 
-.home-rows li:first-child {
-  border-top: 0;
-}
-
-.home-rows__avatar {
-  width: 2rem;
-  height: 2rem;
+.home-tiles__avatar {
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 50%;
   display: grid;
   place-items: center;
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
 }
 
-.home-rows__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-rows__items {
+.home-tiles__body {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
-.home-rows__item {
-  padding: 3px 10px;
+.home-tiles__body strong {
+  flex-basis: 100%;
+}
+
+.home-tiles__body small {
+  color: var(--color-muted);
+}
+
+.home-tiles__item {
+  padding: 1px 8px;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--color-surface-soft);
-  color: inherit;
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+  color: var(--color-muted);
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
+  text-align: left;
 }
 
-button.home-rows__item {
+button.home-tiles__item {
   cursor: pointer;
+  color: inherit;
 }
 
-.home-rows__item--done {
+.home-tiles__item--done,
+button.home-tiles__item--done {
   border-color: transparent;
   background: var(--today-bg);
   color: var(--color-primary);
 }
 
-.home-rows__presence {
+.home-tiles__presence {
   width: 10px;
   height: 10px;
+  margin-top: 6px;
   border-radius: 50%;
   background: var(--color-border);
 }
 
-.home-rows__presence--home {
+.home-tiles__presence--home {
   background: var(--color-primary);
 }
 
-.home-rows__presence--zone {
+.home-tiles__presence--zone {
   background: var(--color-accent);
+}
+
+.home-tiles__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+}
+
+.home-tiles__footer .chore-stars {
+  margin: 0 0 0 auto;
 }
 
 /* Lists: a colour dot by the title, the add field at the bottom. */
@@ -4675,4 +4693,38 @@ button.home-rows__item {
     margin-top: 6px;
     text-align: right;
   }
+}
+
+/* Dashboard lists: a tick per item (bought or done); ticked items stay until the next refresh. */
+.dashboard-shopping li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-shopping label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.dashboard-shopping input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  accent-color: var(--color-primary);
+}
+
+.dashboard-shopping small {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.dashboard-shopping__done span {
+  color: var(--color-muted);
+  text-decoration: line-through;
 }

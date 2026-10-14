@@ -5,9 +5,9 @@
 - Dashboard più semplice e leggera:
   - **Oggi**: un solo elenco con il prossimo impegno evidenziato e i piatti come etichette; a giornata finita compare domani.
   - **In arrivo**: parte da domani, i giorni liberi di fila stanno su una riga ("Liberi fino a martedì").
-  - **Oggi in casa**: una riga per persona, con lavoro, faccende (si spuntano toccandole) e il pallino di chi è a casa.
+  - **Oggi in casa**: una griglia di persone, ognuna con lavoro, faccende (si spuntano toccandole) e il pallino di chi è a casa; sotto, chi viene a casa e le stelline.
   - Un solo pulsante **+** con il menu (evento, turno, piatto, nota, voce in lista), accanto alle ricorrenze.
-  - Le liste hanno il pallino colorato vicino al titolo e la casella per aggiungere in fondo.
+  - Le liste hanno una spunta per ogni voce (comprato o fatto), il reparto accanto alle voci della spesa, il pallino colorato vicino al titolo e la casella per aggiungere in fondo. Una voce spuntata per sbaglio si toglie finché la pagina non si aggiorna.
   - Senza meteo, "Imposta la città" sta piccolo in un angolo dell'orologio.
 - Turni: una faccenda fatta è una scheda colorata con una piccola ✓, non più barrata con la stella.
 - Barra in alto: menu a pillole; Schermo ed Esci sono solo icone e il contatore è stato tolto.

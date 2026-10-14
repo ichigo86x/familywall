@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card } from "@fluentui/react-components";
 import { Link, useSearchParams } from "react-router-dom";
-import { UMBRELLA_CHANCE, canTickChore, panelView, rainChanceDuring, scheduleForDay, type HomePresence, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type User } from "@familywall/shared";
+import { UMBRELLA_CHANCE, aisleOf, canTickChore, isShoppingList, panelView, rainChanceDuring, scheduleForDay, type HomePresence, type WeatherReport, type FamilyNote, type FamilyTaskList, type ScheduleEntry, type User } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { AppShell } from "@/components/app-shell";
@@ -401,12 +401,8 @@ const HomeCard = ({
       entries: shown.filter((entry) => entry.memberId === member.id),
       presence: presenceOf.get(member.id)
     }))
-    .filter((row) => row.entries.length > 0 || row.presence)
-    .concat(
-      shown
-        .filter((entry) => !entry.memberId)
-        .map((entry) => ({ key: entry.id, name: entry.person ?? "", color: "var(--color-muted)", entries: [entry], presence: undefined }))
-    );
+    .filter((row) => row.entries.length > 0 || row.presence);
+  const visitors = shown.filter((entry) => !entry.memberId);
 
   return (
     <Card className="panel-card dashboard-home">
@@ -417,24 +413,25 @@ const HomeCard = ({
         </div>
         <Link to="/schedule" className="dashboard-link">Turni →</Link>
       </div>
-      {rows.length === 0 ? (
+      {rows.length === 0 && visitors.length === 0 ? (
         <p className="dashboard-agenda__empty">
           🏡 Nessun turno {evening ? "per stasera e domani" : "oggi"}. Organizza lavoro, faccende e presenze dalla pagina Turni.
         </p>
       ) : (
-        <ul className="home-rows">
+        <ul className="home-tiles">
           {rows.map((row) => (
             <li key={row.key}>
-              <span className="home-rows__avatar" style={{ background: row.color }} aria-hidden="true">
+              <span className="home-tiles__avatar" style={{ background: row.color }} aria-hidden="true">
                 {row.name.charAt(0).toUpperCase()}
               </span>
-              <strong className="home-rows__name">{row.name}</strong>
-              <span className="home-rows__items">
+              <span className="home-tiles__body">
+                <strong>{row.name}</strong>
+                {row.entries.length === 0 ? <small>{row.presence ? presenceLabel(row.presence) : ""}</small> : null}
                 {row.entries.map((entry) => {
                   const done = entry.done.includes(todayKey);
                   const time = entryTime(entry);
                   const label = `${entryIcon(entry)} ${entry.title}${time ? ` · ${time}` : ""}${entry.kind === "work" && evening ? " (domani)" : ""}`;
-                  const className = `home-rows__item ${done ? "home-rows__item--done" : ""}`.trim();
+                  const className = `home-tiles__item ${done ? "home-tiles__item--done" : ""}`.trim();
                   return entry.kind === "chore" && viewer && canTickChore(viewer, entry) ? (
                     <button
                       key={entry.id}
@@ -457,7 +454,7 @@ const HomeCard = ({
               </span>
               {row.presence ? (
                 <span
-                  className={`home-rows__presence home-rows__presence--${row.presence.state}`}
+                  className={`home-tiles__presence home-tiles__presence--${row.presence.state}`}
                   title={presenceLabel(row.presence)}
                   aria-label={presenceLabel(row.presence)}
                 />
@@ -466,7 +463,14 @@ const HomeCard = ({
           ))}
         </ul>
       )}
-      <StarsLine entries={entries} day={now} membersById={membersById} buttonOnly />
+      <div className="home-tiles__footer">
+        {visitors.length > 0 ? (
+          <span>
+            {visitors.map((entry) => `${entryIcon(entry)} ${entry.title}: ${entry.person ?? ""}${entryTime(entry) ? `, ${entryTime(entry)}` : ""}`).join(" · ")}
+          </span>
+        ) : null}
+        <StarsLine entries={entries} day={now} membersById={membersById} buttonOnly />
+      </div>
     </Card>
   );
 };
@@ -497,9 +501,24 @@ const BirthdayStrip = ({ birthdays, today }: { birthdays: PlannerEvent[]; today:
 };
 
 const DashboardList = ({ list, canWrite, onChanged }: { list: FamilyTaskList; canWrite: boolean; onChanged: () => void }) => {
-  const open = list.tasks.filter((task) => !task.completed);
+  // Items ticked here stay visible (ticked) until the page is reloaded, so a wrong tap can be undone.
+  const [ticked, setTicked] = useState<Map<string, boolean>>(new Map());
+  const isDone = (task: FamilyTaskList["tasks"][number]) => ticked.get(task.id) ?? task.completed;
+  const shown = list.tasks.filter((task) => !task.completed || ticked.has(task.id));
+  const open = shown.filter((task) => !isDone(task));
+  const shopping = isShoppingList(list.name);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const tick = async (taskId: string, completed: boolean) => {
+    setTicked((current) => new Map(current).set(taskId, completed));
+    try {
+      await api.updateTask(list.id, taskId, { completed });
+      onChanged();
+    } catch {
+      setTicked((current) => new Map(current).set(taskId, !completed));
+    }
+  };
 
   const add = async () => {
     const title = draft.trim();
@@ -528,12 +547,24 @@ const DashboardList = ({ list, canWrite, onChanged }: { list: FamilyTaskList; ca
         </div>
         <Link to="/lists" className="dashboard-link">Liste →</Link>
       </div>
-      {open.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="dashboard-agenda__empty">✨ Tutto fatto.</p>
       ) : (
         <ul className="dashboard-shopping">
-          {open.map((task) => (
-            <li key={task.id}>{task.title}</li>
+          {shown.map((task) => (
+            <li key={task.id} className={isDone(task) ? "dashboard-shopping__done" : undefined}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isDone(task)}
+                  disabled={!canWrite}
+                  aria-label={shopping ? `Comprato: ${task.title}` : `Fatto: ${task.title}`}
+                  onChange={(change) => void tick(task.id, change.target.checked)}
+                />
+                <span>{task.title}</span>
+              </label>
+              {shopping ? <small>{aisleOf(task.title).label}</small> : null}
+            </li>
           ))}
         </ul>
       )}
