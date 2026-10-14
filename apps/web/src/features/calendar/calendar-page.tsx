@@ -21,10 +21,11 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { EmptyState, ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
+import { useDragMove } from "@/hooks/use-drag-move";
 import { ArrowLeftRegular, ArrowRightRegular, CalendarRegular } from "@/lib/fluent-icons";
 import { SchoolDayDialog, useSchool } from "@/features/school/school";
 import { EventEditor, type CalendarOption } from "./event-editor";
-import { addDays, dayKey, eventBounds, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode, birthdayTitle } from "./calendar-time";
+import { addDays, dayKey, daysBetweenKeys, eventBounds, shiftEventTime, occursOnDay, plannerDays, plannerTitle, timeLabel, type PlannerMode, birthdayTitle } from "./calendar-time";
 
 /** Wall panels stay open for days: refresh periodically so provider changes show up. */
 const AUTO_REFRESH_MS = 5 * 60 * 1000;
@@ -125,6 +126,31 @@ export const CalendarPage = () => {
     [calendars]
   );
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null;
+  // Events of writable event calendars can be dragged to another day (birthdays and read-only calendars cannot).
+  const movableCalendarIds = useMemo(
+    () => new Set(calendars.filter((entry) => !entry.readOnly && (entry.kind ?? "events") === "events").map((entry) => entry.id)),
+    [calendars]
+  );
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const drag = useDragMove((payload, targetKey) => {
+    const { id, from } = JSON.parse(payload) as { id: string; from: string };
+    const event = events.find((entry) => entry.id === id);
+    const days = daysBetweenKeys(from, targetKey);
+    if (!event || days === 0) {
+      return;
+    }
+    setMoveError(null);
+    // A recurring event moves only on the day it was dragged from.
+    api
+      .updateEvent(event.id, {
+        allDay: event.allDay,
+        startAt: shiftEventTime(event.startAt, days, event.allDay),
+        endAt: shiftEventTime(event.endAt, days, event.allDay),
+        ...(event.recurring ? { scope: "occurrence" as const } : {})
+      })
+      .then(calendar.reload)
+      .catch((error: unknown) => setMoveError(error instanceof Error ? error.message : "Spostamento non riuscito."));
+  });
   const failingCalendars = calendars.filter((entry) => entry.lastError);
   const dialogOpen = creating || selectedEvent !== null;
 
@@ -195,6 +221,11 @@ export const CalendarPage = () => {
         />
       ) : (
         <Card className="panel-card calendar-planner-card">
+          {moveError ? (
+            <MessageBar intent="error">
+              <MessageBarBody>{moveError}</MessageBarBody>
+            </MessageBar>
+          ) : null}
           {failingCalendars.map((entry) => (
             <MessageBar key={entry.id} intent="warning">
               <MessageBarBody>
@@ -230,7 +261,11 @@ export const CalendarPage = () => {
               // Past days and finished events fade out; today stands out.
               const isPast = dayKey(day) < todayKey;
               return (
-                <div key={dayKey(day)} className={["planner-day", isMuted ? "planner-day--muted" : "", isToday ? "planner-day--today" : "", isPast ? "planner-day--past" : ""].join(" ").trim()}>
+                <div
+                  key={dayKey(day)}
+                  className={["planner-day", isMuted ? "planner-day--muted" : "", isToday ? "planner-day--today" : "", isPast ? "planner-day--past" : "", drag.isOver(dayKey(day)) ? "drop-target--over" : ""].join(" ").trim()}
+                  {...(canWrite ? drag.target(dayKey(day)) : {})}
+                >
                   <div className="planner-day__header">
                     <span className="planner-day__title">
                       <strong>
@@ -276,7 +311,8 @@ export const CalendarPage = () => {
                         <button
                           key={event.id}
                           type="button"
-                          className={["planner-event", selectedEventId === event.id ? "planner-event--selected" : "", isToday && eventBounds(event).end.getTime() <= Date.now() ? "planner-event--past" : ""].join(" ").trim()}
+                          {...(canWrite && movableCalendarIds.has(event.calendarId) ? drag.source(JSON.stringify({ id: event.id, from: dayKey(day) })) : {})}
+                          className={["planner-event", drag.draggingId?.includes(event.id) ? "drag-source--dragging" : "", selectedEventId === event.id ? "planner-event--selected" : "", isToday && eventBounds(event).end.getTime() <= Date.now() ? "planner-event--past" : ""].join(" ").trim()}
                           onClick={() => {
                             setCreating(false);
                             setSelectedEventId(event.id);

@@ -4908,3 +4908,18 @@ button.home-tiles__item--done {
   height: 1px;
   opacity: 0;
 }
+
+/* Drag and drop between days (calendar, menu, shifts). */
+[draggable="true"] {
+  cursor: grab;
+}
+
+.drag-source--dragging {
+  opacity: 0.45;
+}
+
+.drop-target--over {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+  background: var(--today-bg);
+}

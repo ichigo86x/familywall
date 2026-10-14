@@ -18,6 +18,7 @@ import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/components/auth/use-auth";
 import { ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
+import { useDragMove } from "@/hooks/use-drag-move";
 import { AddRegular } from "@/lib/fluent-icons";
 import { dayKey, startOfDay, startOfWeek } from "@/features/calendar/calendar-time";
 import { PeriodToolbar, usePeriod } from "@/features/calendar/period-view";
@@ -52,6 +53,30 @@ export const SchedulePage = () => {
   const starsWeek = period.isCurrent ? startOfWeek(new Date()) : period.start;
   const parityOf = (day: Date) => (isoWeek(day) % 2 === 0 ? "pari" : "dispari");
   const toggleDone = useChoreToggle(schedule.reload);
+  // Shifts are dragged to another day: a dated one changes date, a weekly one its weekday (after a confirmation).
+  const [moving, setMoving] = useState<{ entry: ScheduleEntry; input: ScheduleEntryInput; text: string } | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const saveMove = (entry: ScheduleEntry, input: ScheduleEntryInput) => {
+    setMoving(null);
+    setMoveError(null);
+    api
+      .updateScheduleEntry(entry.id, input)
+      .then(schedule.reload)
+      .catch((error: unknown) => setMoveError(error instanceof Error ? error.message : "Spostamento non riuscito."));
+  };
+  const drag = useDragMove((payload, targetKey) => {
+    const { id, from } = JSON.parse(payload) as { id: string; from: string };
+    const entry = (schedule.data ?? []).find((candidate) => candidate.id === id);
+    if (!entry || from === targetKey) {
+      return;
+    }
+    const move = movedEntry(entry, from, targetKey);
+    if (entry.date !== null) {
+      saveMove(entry, move.input);
+    } else if (move.text) {
+      setMoving({ entry, ...move });
+    }
+  });
   const mayTick = (entry: ScheduleEntry, day: Date) => {
     const daysBack = Math.round((startOfDay(new Date()).getTime() - startOfDay(day).getTime()) / 86_400_000);
     return Boolean(auth.user && canTickChore(auth.user, entry)) && daysBack >= 0 && daysBack <= 6;
@@ -87,12 +112,17 @@ export const SchedulePage = () => {
             </p>
           ) : null}
           <StarsLine entries={schedule.data ?? []} day={starsWeek} membersById={membersById} />
+          {moveError ? <p className="form-error">{moveError}</p> : null}
           <div className={`schedule-week schedule-week--${period.mode}`}>
             {days.map((day) => {
               const entries = scheduleForDay(schedule.data ?? [], day);
               const isToday = dayKey(day) === todayKey;
               return (
-                <section key={dayKey(day)} className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${period.outside(day) ? "schedule-day--outside" : ""}`.trim()}>
+                <section
+                  key={dayKey(day)}
+                  className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${period.outside(day) ? "schedule-day--outside" : ""} ${drag.isOver(dayKey(day)) ? "drop-target--over" : ""}`.trim()}
+                  {...(canWrite ? drag.target(dayKey(day)) : {})}
+                >
                   <header>
                     <strong>
                       {day.toLocaleDateString("it-IT", { weekday: period.mode === "week" ? "long" : "short" })}
@@ -102,16 +132,20 @@ export const SchedulePage = () => {
                     {isToday ? <span className="today-pill">Oggi</span> : <span>{day.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit" })}</span>}
                   </header>
                   {entries.length === 0 ? <p className="calendar-detail-hint">—</p> : null}
-                  {entries.map((entry) => (
-                    <ScheduleChip
-                      key={entry.id}
-                      entry={entry}
-                      membersById={membersById}
-                      onOpen={canWrite ? () => setEditing(entry) : undefined}
-                      done={entry.done.includes(dayKey(day))}
-                      onToggleDone={mayTick(entry, day) ? () => void toggleDone(entry, dayKey(day)) : undefined}
-                    />
-                  ))}
+                  {entries.map((entry) => {
+                    const payload = JSON.stringify({ id: entry.id, from: dayKey(day) });
+                    return (
+                      <div key={entry.id} className={drag.draggingId === payload ? "drag-source--dragging" : undefined} {...(canWrite ? drag.source(payload) : {})}>
+                        <ScheduleChip
+                          entry={entry}
+                          membersById={membersById}
+                          onOpen={canWrite ? () => setEditing(entry) : undefined}
+                          done={entry.done.includes(dayKey(day))}
+                          onToggleDone={mayTick(entry, day) ? () => void toggleDone(entry, dayKey(day)) : undefined}
+                        />
+                      </div>
+                    );
+                  })}
                 </section>
               );
             })}
@@ -128,6 +162,21 @@ export const SchedulePage = () => {
         />
       ) : null}
 
+      {moving ? (
+        <Dialog open onOpenChange={(_, data) => (!data.open ? setMoving(null) : undefined)}>
+          <DialogSurface className="event-dialog">
+            <DialogBody>
+              <CloseableDialogTitle>Spostare {moving.entry.title}?</CloseableDialogTitle>
+              <DialogContent>{moving.text}</DialogContent>
+              <DialogActions>
+                <Button appearance="secondary" onClick={() => setMoving(null)}>Annulla</Button>
+                <Button appearance="primary" onClick={() => saveMove(moving.entry, moving.input)}>Sposta</Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
+      ) : null}
+
       {editing ? (
         <ScheduleDialog
           entry={editing === "new" ? null : editing}
@@ -141,6 +190,44 @@ export const SchedulePage = () => {
       ) : null}
     </AppShell>
   );
+};
+
+const WEEKDAY_NAMES = ["", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"];
+const weekdayOf = (key: string) => new Date(`${key}T12:00:00`).getDay() || 7;
+
+/**
+ * The shift moved from one day to another: a dated shift takes the new date; a weekly one swaps the
+ * weekday it was dragged from for the new one, every week (and, if every other week, the new week's turn).
+ */
+export const movedEntry = (entry: ScheduleEntry, fromKey: string, toKey: string): { input: ScheduleEntryInput; text: string } => {
+  const base: ScheduleEntryInput = {
+    kind: entry.kind,
+    title: entry.title,
+    memberId: entry.memberId,
+    person: entry.person,
+    weekdays: entry.weekdays,
+    weekParity: entry.weekParity,
+    date: entry.date,
+    startTime: entry.startTime,
+    endTime: entry.endTime,
+    note: entry.note
+  };
+  if (entry.date !== null) {
+    return { input: { ...base, date: toKey }, text: "" };
+  }
+  const from = weekdayOf(fromKey);
+  const to = weekdayOf(toKey);
+  const target = new Date(`${toKey}T12:00:00`);
+  const parity: WeekParity = entry.weekParity === "all" ? "all" : isoWeek(target) % 2 === 0 ? "even" : "odd";
+  if (from === to && parity === entry.weekParity) {
+    return { input: base, text: "" };
+  }
+  const weekdays = [...new Set([...entry.weekdays.filter((day) => day !== from), to])].sort((left, right) => left - right);
+  const every = entry.weekParity === "all" ? "ogni settimana" : "a settimane alterne";
+  return {
+    input: { ...base, weekdays, weekParity: parity },
+    text: `Il turno si ripete ${every}: passerà da ${WEEKDAY_NAMES[from]} a ${WEEKDAY_NAMES[to]} in tutte le settimane, non solo in questa.`
+  };
 };
 
 /** Ticks a chore for a day, then reloads; errors are shown in an alert (the wall has no room for more). */

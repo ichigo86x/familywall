@@ -92,3 +92,23 @@ export const plannerTitle = (mode: PlannerMode, anchor: Date): string => {
   const format = (value: Date) => value.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
   return `${format(days[0]!)} - ${format(days[days.length - 1]!)}`;
 };
+
+/** Whole days from one local date key (YYYY-MM-DD) to another. */
+export const daysBetweenKeys = (from: string, to: string): number => {
+  const parse = (key: string) => {
+    const [year, month, day] = key.split("-").map(Number);
+    return Date.UTC(year!, month! - 1, day!);
+  };
+  return Math.round((parse(to) - parse(from)) / 86_400_000);
+};
+
+/** An event time moved by whole days: all-day times stay UTC midnights, timed ones keep their local clock time. */
+export const shiftEventTime = (iso: string, days: number, allDay: boolean): string => {
+  const date = new Date(iso);
+  if (allDay) {
+    date.setUTCDate(date.getUTCDate() + days);
+  } else {
+    date.setDate(date.getDate() + days);
+  }
+  return date.toISOString();
+};

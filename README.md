@@ -34,13 +34,13 @@ Su pannelli e tablet la dashboard sta sempre in uno schermo: le schede lunghe sc
 
 ### Calendario di famiglia
 
-Tutti i calendari insieme, in vista 7 giorni, 14 giorni o mese. Gli eventi si creano e si modificano dall'app e vengono scritti subito su iCloud, Google o sul server CalDAV da cui arrivano, con ripetizioni (giornaliere, settimanali, mensili, annuali) e la scelta tra "solo questo" e "tutta la serie".
+Tutti i calendari insieme, in vista 7 giorni, 14 giorni o mese. Gli eventi si creano e si modificano dall'app e vengono scritti subito su iCloud, Google o sul server CalDAV da cui arrivano, con ripetizioni (giornaliere, settimanali, mensili, annuali) e la scelta tra "solo questo" e "tutta la serie". Per cambiare giorno basta **trascinare** l'evento.
 
-Ogni membro ha un colore: Familywall riconosce i nomi nei titoli ("Karate Luca" prende il colore di Luca) oppure li assegni tu. Un evento può essere **condiviso**, **privato** (gli altri vedono solo "Occupato") o **nascosto sul pannello**.
+Ogni membro ha un colore e, se vuole, una foto o un'emoji animata: Familywall riconosce i nomi nei titoli ("Karate Luca" prende il colore di Luca) oppure li assegni tu. Un evento può essere **condiviso**, **privato** (gli altri vedono solo "Occupato") o **nascosto sul pannello**.
 
 ### Menu e spesa
 
-Il menu raccoglie i piatti di casa, il piano settimanale di **Cookidoo** (Bimby) e i calendari che usi come menu, in vista settimana, 14 giorni o mese. Ogni piatto ha pasto, ingredienti e nota.
+Il menu raccoglie i piatti di casa, il piano settimanale di **Cookidoo** (Bimby) e i calendari che usi come menu, in vista settimana, 14 giorni o mese. Ogni piatto ha pasto, ingredienti e nota, e si sposta trascinandolo su un altro giorno.
 
 Le **ricette** di casa (piatto, ingredienti, pasto abituale) si riusano con un tocco, e **💡 Suggerisci** riempie i pasti vuoti con i piatti che cucinate più spesso e le ricette, senza ripetere lo stesso piatto nella settimana.
 
@@ -58,7 +58,7 @@ Le liste della spesa si ordinano **per reparto**, nell'ordine di un giro al supe
 
 ### Turni, faccende e routine
 
-- **Turni**: smart working e ufficio dei genitori, faccende dei bambini, presenze in casa (pulizie, babysitter, nonni). Ricorrenti ogni settimana, solo nelle settimane pari o dispari (per alternare due figli), oppure una volta sola. Vista settimana, 14 giorni o mese.
+- **Turni**: smart working e ufficio dei genitori, faccende dei bambini, presenze in casa (pulizie, babysitter, nonni). Ricorrenti ogni settimana, solo nelle settimane pari o dispari (per alternare due figli), oppure una volta sola. Vista settimana, 14 giorni o mese; un turno si sposta trascinandolo su un altro giorno.
 - **Faccende e stelline**: il bambino spunta la faccenda fatta e guadagna una ⭐; la dashboard conta le stelline della settimana.
 - **Routine**: la sequenza del mattino o della sera (vestirsi, denti, zaino...) con tessere grandi da toccare e il conto alla rovescia fino all'ora di uscire.
 

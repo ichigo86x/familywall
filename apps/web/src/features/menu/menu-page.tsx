@@ -19,6 +19,7 @@ import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { ErrorState, LoadingState } from "@/components/page-states";
 import { useAsyncResource } from "@/hooks/use-async-resource";
 import { useNewParam } from "@/hooks/use-new-param";
+import { useDragMove } from "@/hooks/use-drag-move";
 import { AddRegular } from "@/lib/fluent-icons";
 import { addDays, dayKey, occursOnDay } from "@/features/calendar/calendar-time";
 import { PeriodToolbar, usePeriod } from "@/features/calendar/period-view";
@@ -84,6 +85,20 @@ export const MenuPage = () => {
   const todayKey = dayKey(new Date());
   const weekDishes = dishes.filter((dish) => days.some((day) => occursOnDay(dish, day)));
 
+  // Dishes of the family menu can be dragged to another day (same meal); Cookidoo and other calendars cannot.
+  const [moveError, setMoveError] = useState<string | null>(null);
+  const drag = useDragMove((mealId, date) => {
+    const meal = (data.data?.meals ?? []).find((entry) => entry.id === mealId);
+    if (!meal || meal.date === date) {
+      return;
+    }
+    setMoveError(null);
+    api
+      .updateMenuMeal(meal.id, { date, slot: meal.slot, title: meal.title, ingredients: meal.ingredients, note: meal.note })
+      .then(data.reload)
+      .catch((error: unknown) => setMoveError(error instanceof Error ? error.message : "Spostamento non riuscito."));
+  });
+
   return (
     <AppShell
       compact
@@ -136,6 +151,7 @@ export const MenuPage = () => {
               ))
             )}
           </div>
+          {moveError ? <p className="form-error">{moveError}</p> : null}
           <div className={`schedule-week schedule-week--${period.mode}`}>
             {days.map((day) => {
               const key = dayKey(day);
@@ -144,7 +160,8 @@ export const MenuPage = () => {
               return (
                 <section
                   key={key}
-                  className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${key < todayKey ? "planner-day--past" : ""} ${period.outside(day) ? "schedule-day--outside" : ""}`.trim()}
+                  className={`schedule-day ${isToday ? "schedule-day--today" : ""} ${key < todayKey ? "planner-day--past" : ""} ${period.outside(day) ? "schedule-day--outside" : ""} ${drag.isOver(key) ? "drop-target--over" : ""}`.trim()}
+                  {...(canWrite ? drag.target(key) : {})}
                 >
                   <header>
                     <strong>{day.toLocaleDateString("it-IT", { weekday: period.mode === "week" ? "long" : "short" })}</strong>
@@ -154,8 +171,9 @@ export const MenuPage = () => {
                     <button
                       key={dish.id}
                       type="button"
-                      className="menu-dish"
+                      className={`menu-dish ${dish.meal && drag.draggingId === dish.meal.id ? "drag-source--dragging" : ""}`.trim()}
                       style={{ borderLeftColor: dish.calendarColor }}
+                      {...(dish.meal && canWrite ? drag.source(dish.meal.id) : {})}
                       onClick={() => (dish.meal && canWrite ? setEditing({ meal: dish.meal, date: dish.meal.date }) : setViewing(dish))}
                     >
                       <strong>{dish.title}</strong>

@@ -1,5 +1,12 @@
 # Novità
 
+## 0.9.8
+
+- **Trascina per spostare**: eventi del calendario, piatti del menu di casa e turni si spostano trascinandoli su un altro giorno. Un evento ripetuto si sposta solo in quel giorno; un turno settimanale cambia giorno in tutte le settimane, dopo una conferma.
+- **Foto profilo**: ogni membro può avere una foto o un'emoji, animata quando il pannello è collegato a internet. Si sceglie dal Profilo (la propria) o da Admin → Famiglia (quella di tutti, anche dei bambini). Compare in "Oggi in casa" e nella barra in alto.
+- Dashboard: il "+" e i pulsanti di Home Assistant sono tasselli uguali in griglia; le ricorrenze sono schede con icona, nome e quando. In "Oggi in casa" il pallino di presenza ha la sua scritta (a casa, fuori, zona) e il titolo "Chi fa cosa" è stato tolto.
+- Liste: "Comprati spesso", come "Per reparto", compare solo nelle liste della spesa.
+
 ## 0.9.7
 
 - Dashboard più semplice e leggera:
