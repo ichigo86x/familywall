@@ -102,7 +102,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
       <div className={["app-shell", fit ? "app-shell--fit" : "", dashboard ? "app-shell--dashboard" : ""].filter(Boolean).join(" ")}>
         <Toolbar className="app-toolbar" aria-label="Family wall toolbar">
           <div className="app-toolbar__brand">
-            <span className="app-toolbar__dot" />
+            <span className="app-toolbar__dot" aria-hidden="true">{(auth.household?.householdName ?? "Familywall").replace(/^famiglia\s+/i, "").charAt(0).toUpperCase()}</span>
             <div className="app-toolbar__brand-text">
               <h1 className="app-toolbar__title">{auth.household?.householdName ?? "Familywall"}</h1>
             </div>

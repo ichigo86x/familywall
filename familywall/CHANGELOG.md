@@ -1,5 +1,9 @@
 # Novità
 
+## 0.9.7
+
+- Aspetto più leggero: orologio con cifre serif, menu a pillole, righe sottili al posto dei riquadri nei prossimi giorni e nelle liste, note come foglietti in bacheca. I caratteri (Inter e Fraunces) sono inclusi nell'add-on e funzionano anche senza internet.
+
 ## 0.9.6
 
 - ClasseViva: per i registri che il portale web non apre, i compiti arrivano anche dall'API dell'app (sezione Compiti), non solo dall'agenda.

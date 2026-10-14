@@ -61,7 +61,7 @@ body {
     linear-gradient(180deg, var(--page-bg-start) 0%, var(--page-bg-end) 100%);
   background-attachment: fixed;
   color: var(--color-text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Inter Variable", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
@@ -4379,4 +4379,144 @@ button.schedule-chip {
 .stars-member em {
   color: var(--color-muted);
   font-style: normal;
+}
+
+/*
+ * Lighter look (from the README mockup): a brand tile, pill navigation, a serif clock,
+ * flatter cards with hairline rows instead of nested boxes, colour bars instead of outlined pills.
+ */
+:root {
+  --font-display: "Fraunces Variable", Fraunces, Georgia, serif;
+  --radius-card: 22px;
+}
+
+.app-toolbar {
+  padding: 10px 16px;
+  border-radius: 20px;
+}
+
+.app-toolbar__brand {
+  align-items: center;
+}
+
+.app-toolbar__dot {
+  width: 32px;
+  height: 32px;
+  margin-top: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.app-toolbar__title,
+.page-header h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.app-toolbar__title {
+  font-size: 1.35rem;
+}
+
+/* Navigation: the selected page is a soft pill, not an underline. */
+.app-toolbar__nav .fui-Tab {
+  border-radius: 10px;
+}
+
+.app-toolbar__nav .fui-Tab::after,
+.app-toolbar__nav .fui-Tab::before {
+  display: none;
+}
+
+.app-toolbar__nav .fui-Tab[aria-selected="true"] {
+  background: var(--today-bg);
+}
+
+.app-toolbar__nav .fui-Tab[aria-selected="true"] .fui-Tab__content,
+.app-toolbar__nav .fui-Tab[aria-selected="true"] .fui-Tab__icon {
+  color: var(--color-primary);
+}
+
+.fui-Card.panel-card,
+.panel-card {
+  border-radius: var(--radius-card);
+}
+
+/* Clock: serif digits; without weather, a green to amber sky. */
+.dashboard-clock strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.panel-card.dashboard-clock:not([class*="weather-sky--"]) {
+  background: linear-gradient(135deg, #3a7d6e, #5e9c8b 55%, #e9a24d);
+}
+
+/* Next days: hairline rows, events as colour bars. */
+.dashboard-days {
+  gap: 0;
+}
+
+.dashboard-days li {
+  padding: 8px 4px;
+  border-radius: 0;
+  background: transparent;
+  border-top: 1px solid var(--line);
+}
+
+.dashboard-days li:first-child {
+  border-top: 0;
+}
+
+.dashboard-days__event {
+  padding: 3px 10px;
+  border-width: 0 0 0 3px;
+  border-style: solid;
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+  font-weight: 500;
+}
+
+.dashboard-empty {
+  border-radius: 14px;
+}
+
+/* Lists on the dashboard: one row per item. */
+.dashboard-shopping {
+  gap: 0;
+}
+
+.dashboard-shopping li {
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-shopping li:last-child {
+  border-bottom: 0;
+}
+
+/* Notes look pinned to the board. */
+.dashboard-note {
+  border-radius: 14px;
+  transform: rotate(-1deg);
+}
+
+.dashboard-note:nth-child(even) {
+  transform: rotate(1deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-note {
+    transition: transform 0.2s ease;
+  }
+
+  .dashboard-note:hover {
+    transform: none;
+  }
 }
