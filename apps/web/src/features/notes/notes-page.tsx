@@ -44,7 +44,6 @@ export const NotesPage = () => {
       eyebrow="Note"
       title="Bacheca della famiglia"
       subtitle=""
-      summaryChip={`${notes.data?.length ?? 0} note`}
       toolbarActions={
         canWrite ? (
           <Button appearance="primary" icon={<AddRegular />} onClick={() => setEditing("new")}>

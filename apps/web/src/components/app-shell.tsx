@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   Menu,
   MenuGroup,
@@ -55,7 +54,6 @@ interface AppShellProps {
   eyebrow: string;
   title: string;
   subtitle: string;
-  summaryChip: string;
   children: React.ReactNode;
   toolbarActions?: React.ReactNode;
   /** Slim one-line header instead of the hero card, leaving the content as much room as possible. */
@@ -78,7 +76,7 @@ const initials = (name: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join("");
 
-export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, children, toolbarActions, compact = false, headless = false, fit = false, dashboard = false }: AppShellProps) => {
+export const AppShell = ({ currentRoute, eyebrow, title, subtitle, children, toolbarActions, compact = false, headless = false, fit = false, dashboard = false }: AppShellProps) => {
   const auth = useAuth();
   const navigate = useNavigate();
   const theme = useThemePreference();
@@ -139,9 +137,6 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
                 <span className="button-label">Scuola</span>
               </Button>
             ) : null}
-            <Badge appearance="filled" color="informative">
-              {summaryChip}
-            </Badge>
             {auth.user ? (
               auth.user.role === "Kiosk" ? (
                 <span className="member-avatar" style={{ background: auth.user.color }} title={`${auth.user.displayName} · ${ROLE_LABELS[auth.user.role]}`}>
@@ -179,9 +174,7 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
                   icon={THEME_OPTIONS[theme.preference].icon}
                   title="Tema e dimensione del testo (solo su questo dispositivo)"
                   aria-label="Tema e dimensione del testo"
-                >
-                  <span className="button-label">Schermo</span>
-                </Button>
+                />
               </MenuTrigger>
               <MenuPopover>
                 <MenuList>
@@ -209,13 +202,13 @@ export const AppShell = ({ currentRoute, eyebrow, title, subtitle, summaryChip, 
               appearance="subtle"
               className="logout-button"
               icon={<SignOutRegular />}
+              title="Esci"
+              aria-label="Esci"
               onClick={() => {
                 auth.logout();
                 navigate("/login");
               }}
-            >
-              <span className="button-label">Esci</span>
-            </Button>
+            />
           </div>
         </Toolbar>
 

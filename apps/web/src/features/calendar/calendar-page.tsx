@@ -154,7 +154,6 @@ export const CalendarPage = () => {
       eyebrow="Calendario"
       title={plannerTitle(plannerMode, anchorDate)}
       subtitle=""
-      summaryChip={`${events.length} eventi`}
       toolbarActions={
         <div className="calendar-toolbar">
           <div className="calendar-toolbar__group">

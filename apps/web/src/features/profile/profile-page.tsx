@@ -16,7 +16,7 @@ export const ProfilePage = () => {
   const user = auth.user;
 
   return (
-    <AppShell compact currentRoute="/profile" eyebrow="Profilo" title={user?.displayName ?? "Profilo"} subtitle="" summaryChip={user ? ROLE_LABELS[user.role] : ""}>
+    <AppShell compact currentRoute="/profile" eyebrow="Profilo" title={user?.displayName ?? "Profilo"} subtitle="">
       {user ? (
         <Card className="panel-card">
           <div className="panel-card__header">

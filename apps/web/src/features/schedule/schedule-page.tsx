@@ -64,7 +64,6 @@ export const SchedulePage = () => {
       eyebrow={period.mode === "week" ? `Settimana ${isoWeek(period.start)} (${parityOf(period.start)})` : period.label}
       title="Turni della famiglia"
       subtitle=""
-      summaryChip={`${schedule.data?.length ?? 0} turni`}
       toolbarActions={
         <div className="calendar-toolbar">
           <PeriodToolbar period={period} />
@@ -328,7 +327,7 @@ export const ScheduleChip = ({
         disabled={!onToggleDone}
         onClick={onToggleDone}
       >
-        {done ? "⭐" : "✓"}
+        ✓
       </button>
     </div>
   );

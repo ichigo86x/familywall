@@ -64,7 +64,6 @@ export const ListsPage = () => {
       eyebrow="Liste"
       title="Liste della famiglia"
       subtitle=""
-      summaryChip={`${openCount} da fare`}
       toolbarActions={
         <Button appearance="secondary" icon={<ArrowClockwiseRegular />} onClick={lists.reload}>
           Aggiorna

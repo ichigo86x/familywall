@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Button, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface } from "@fluentui/react-components";
-import { Link } from "react-router-dom";
+import { Button, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface, Menu, MenuItem, MenuList, MenuPopover, MenuTrigger } from "@fluentui/react-components";
+import { useNavigate } from "react-router-dom";
 import { HOME_STATE_LABELS, type HomeButtonView } from "@familywall/shared";
 
 import { api } from "@/api/client";
 import { CloseableDialogTitle } from "@/components/closeable-dialog-title";
 import { useAsyncResource } from "@/hooks/use-async-resource";
+import { AddRegular } from "@/lib/fluent-icons";
 
 const STATE_REFRESH_MS = 30 * 1000;
 
@@ -15,10 +16,11 @@ interface ActionBarProps {
 }
 
 /**
- * Row of round shortcuts at the top of the dashboard: new event/shift/note, lists,
+ * Top of the dashboard: one "+" button with a menu (new event, shift, dish, note, list item)
  * and the Home Assistant buttons chosen by the Admin (door opener, intercom, lights...).
  */
 export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => {
+  const navigate = useNavigate();
   const home = useAsyncResource(() => api.getHomeButtons().catch(() => null), [], "home-buttons");
   const [confirming, setConfirming] = useState<HomeButtonView | null>(null);
   const [running, setRunning] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => 
     ...(canWriteLists
       ? [
           { to: "/notes?new=1", icon: "📝", label: "Nota" },
-          { to: "/lists", icon: "🛒", label: "Liste" }
+          { to: "/lists", icon: "🛒", label: "Voce in lista" }
         ]
       : [])
   ];
@@ -74,12 +76,22 @@ export const ActionBar = ({ canWriteEvents, canWriteLists }: ActionBarProps) => 
 
   return (
     <nav className="action-bar" aria-label="Azioni rapide">
-      {shortcuts.map((shortcut) => (
-        <Link key={shortcut.to} to={shortcut.to} className="action-bar__item" title={`Nuovo: ${shortcut.label}`}>
-          <span className="action-bar__icon" aria-hidden="true">{shortcut.icon}</span>
-          <span className="action-bar__label">{shortcut.label}</span>
-        </Link>
-      ))}
+      {shortcuts.length > 0 ? (
+        <Menu>
+          <MenuTrigger disableButtonEnhancement>
+            <Button appearance="primary" shape="circular" size="large" className="action-bar__add" icon={<AddRegular />} aria-label="Aggiungi" title="Aggiungi" />
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              {shortcuts.map((shortcut) => (
+                <MenuItem key={shortcut.to} icon={<span aria-hidden="true">{shortcut.icon}</span>} onClick={() => navigate(shortcut.to)}>
+                  {shortcut.label}
+                </MenuItem>
+              ))}
+            </MenuList>
+          </MenuPopover>
+        </Menu>
+      ) : null}
       {shortcuts.length > 0 && buttons.length > 0 ? <span className="action-bar__divider" aria-hidden="true" /> : null}
       {buttons.map((button) => {
         // Only meaningful states (locks, covers, switches); buttons and scripts report timestamps or "unknown".

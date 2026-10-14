@@ -2,7 +2,16 @@
 
 ## 0.9.7
 
-- Aspetto più leggero: menu a pillole, righe sottili al posto dei riquadri nei prossimi giorni e nelle liste, eventi come barre colorate, note come foglietti in bacheca.
+- Dashboard più semplice e leggera:
+  - **Oggi**: un solo elenco con il prossimo impegno evidenziato e i piatti come etichette; a giornata finita compare domani.
+  - **In arrivo**: parte da domani, i giorni liberi di fila stanno su una riga ("Liberi fino a martedì").
+  - **Oggi in casa**: una riga per persona, con lavoro, faccende (si spuntano toccandole) e il pallino di chi è a casa.
+  - Un solo pulsante **+** con il menu (evento, turno, piatto, nota, voce in lista), accanto alle ricorrenze.
+  - Le liste hanno il pallino colorato vicino al titolo e la casella per aggiungere in fondo.
+  - Senza meteo, "Imposta la città" sta piccolo in un angolo dell'orologio.
+- Turni: una faccenda fatta è una scheda colorata con una piccola ✓, non più barrata con la stella.
+- Barra in alto: menu a pillole; Schermo ed Esci sono solo icone e il contatore è stato tolto.
+- Tema scuro: più contrasto per le schede evidenziate e le note.
 
 ## 0.9.6
 

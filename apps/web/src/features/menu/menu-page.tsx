@@ -91,7 +91,6 @@ export const MenuPage = () => {
       eyebrow={period.label}
       title="Menu"
       subtitle=""
-      summaryChip={`${weekDishes.length} piatti`}
       toolbarActions={
         <div className="calendar-toolbar">
           <PeriodToolbar period={period} />

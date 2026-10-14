@@ -61,7 +61,6 @@ export const AdminPage = () => {
       eyebrow="Amministrazione"
       title={current.label}
       subtitle={current.hint}
-      summaryChip={admin.data ? `${admin.data.members.length} membri · ${admin.data.calendars.length} calendari` : "Admin"}
     >
       <TabList
         className="admin-sections"
